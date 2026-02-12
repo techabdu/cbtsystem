@@ -24,11 +24,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'uuid'              => (string) Str::uuid(),
+            'first_name'        => fake()->firstName(),
+            'last_name'         => fake()->lastName(),
+            'email'             => fake()->unique()->safeEmail(),
+            'password'          => static::$password ??= Hash::make('password'),
+            'role'              => 'student',
+            'is_active'         => true,
+            'is_verified'       => true,
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
         ];
     }
 
@@ -39,6 +43,40 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+            'is_verified'       => false,
+        ]);
+    }
+
+    /**
+     * Create an admin user.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role'     => 'admin',
+            'staff_id' => 'STAFF/' . fake()->unique()->numerify('####'),
+        ]);
+    }
+
+    /**
+     * Create a lecturer user.
+     */
+    public function lecturer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role'     => 'lecturer',
+            'staff_id' => 'STAFF/' . fake()->unique()->numerify('####'),
+        ]);
+    }
+
+    /**
+     * Create a student user.
+     */
+    public function student(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role'       => 'student',
+            'student_id' => '2024/CS/' . fake()->unique()->numerify('###'),
         ]);
     }
 }

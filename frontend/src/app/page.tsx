@@ -1,65 +1,90 @@
-import Image from "next/image";
+
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between">
+          <div className="mr-4 hidden md:flex">
+            <Link href="/" className="mr-6 flex items-center space-x-2 font-bold">
+              CBT System
+            </Link>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Link href="/login">
+              <Button variant="ghost">Login</Button>
+            </Link>
+            <Link href="/register">
+              <Button>Get Started</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+      <main className="flex-1">
+        <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
+          <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
+            <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold">
+              Secure, Reliable <br /> Computer Based Testing
+            </h1>
+            <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
+              A comprehensive platform for online assessments, offline exams, and automated grading. Built for modern educational institutions.
+            </p>
+            <div className="space-x-4">
+              <Link href="/register">
+                <Button size="lg" className="h-11 px-8">
+                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="outline" size="lg" className="h-11 px-8">
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+        <section className="container space-y-6 py-8 md:py-12 lg:py-24 bg-slate-50 dark:bg-slate-900 rounded-3xl">
+          <div className="mx-auto grid justify-center gap-4 sm:grid-cols-2 md:max-w-[64rem] md:grid-cols-3">
+            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <CheckCircle2 className="h-12 w-12 text-primary" />
+                <div className="space-y-2">
+                  <h3 className="font-bold">Secure Exams</h3>
+                  <p className="text-sm text-muted-foreground">Browser locking, violation detection, and activity logging.</p>
+                </div>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <CheckCircle2 className="h-12 w-12 text-primary" />
+                <div className="space-y-2">
+                  <h3 className="font-bold">Automated Grading</h3>
+                  <p className="text-sm text-muted-foreground">Instant results for MCQ, True/False, and objective questions.</p>
+                </div>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-lg border bg-background p-2">
+              <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
+                <CheckCircle2 className="h-12 w-12 text-primary" />
+                <div className="space-y-2">
+                  <h3 className="font-bold">Offline Capable</h3>
+                  <p className="text-sm text-muted-foreground">Run exams without internet. Sync when back online.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer className="py-6 md:px-8 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+            Built by the CBT System Team.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </footer>
     </div>
   );
 }
