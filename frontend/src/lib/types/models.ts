@@ -18,6 +18,17 @@ export interface User {
     created_at?: string;
 }
 
+export interface Department {
+    id: number;
+    code: string;
+    name: string;
+    description?: string;
+    is_active: boolean;
+    courses_count?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface Course {
     id: number;
     uuid: string;

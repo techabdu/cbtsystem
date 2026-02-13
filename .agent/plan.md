@@ -190,11 +190,19 @@
 - [x] **API verification: All 7 user management endpoints tested via curl** — 2026-02-13
 - [x] **Build verification: `npx next build` passes with 0 TypeScript errors** — 2026-02-13
 
-### Stage 2.2 — Department Management (Admin)
-- [ ] Controller: `DepartmentController` — CRUD
-- [ ] API Routes: `GET/POST /api/v1/departments`, `GET/PUT/DELETE /api/v1/departments/{id}`
-- [ ] Frontend: Departments management page
-- [ ] Seeder: More realistic department data
+### Stage 2.2 — Department Management (Admin) ✅
+- [x] Service: `DepartmentService` (list/search/filter/paginate, allActive for dropdowns, CRUD, delete-with-active-courses guard, activity logging) — 2026-02-13
+- [x] Controller: `DepartmentController` — 5 actions (index, allActive, show, store, update, destroy) — 2026-02-13
+- [x] Form Requests: `CreateDepartmentRequest`, `UpdateDepartmentRequest` — 2026-02-13
+- [x] API Resource: `DepartmentResource` (includes courses_count) — 2026-02-13
+- [x] API Routes: Admin CRUD + `GET /departments/active` (any auth user) — 6 routes behind `role:admin` — 2026-02-13
+- [x] Frontend: API functions (`src/lib/api/departments.ts`) — getDepartments, getActiveDepartments, getDepartment, createDepartment, updateDepartment, deleteDepartment — 2026-02-13
+- [x] Frontend: Types (`Department` model, `CreateDepartmentData`, `UpdateDepartmentData`, `DepartmentFilters`) — 2026-02-13
+- [x] Frontend: Admin Departments page (`/admin/departments`) — inline create/edit form, search, responsive table with code badges, course counts, status toggles, inline actions — 2026-02-13
+- [x] Frontend: Sidebar link added (Building2 icon) — 2026-02-13
+- [x] Seeder: Already has 6 realistic departments (CS, ENG, MTH, PHY, BIO, BUS) from Phase 1 — verified
+- [x] **API verification: All 6 department endpoints tested via curl** — 2026-02-13
+- [x] **Build verification: `npx next build` passes with 0 TypeScript errors** — 2026-02-13
 
 ### Stage 2.3 — Course Management
 > **Guide Reference:** `03_API_SPECIFICATION.md` (Course Management section)

@@ -98,3 +98,30 @@ export interface UserFilters {
     sort_dir?: 'asc' | 'desc';
     trashed?: 'only' | 'with';
 }
+
+/* ------------------------------------------------------------------ */
+/*  Department Management (Admin)                                      */
+/* ------------------------------------------------------------------ */
+
+export interface CreateDepartmentData {
+    code: string;
+    name: string;
+    description?: string;
+    is_active?: boolean;
+}
+
+export interface UpdateDepartmentData {
+    code?: string;
+    name?: string;
+    description?: string;
+    is_active?: boolean;
+}
+
+export interface DepartmentFilters {
+    search?: string;
+    is_active?: string;
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}

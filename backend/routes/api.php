@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\User\UserController;
+use App\Http\Controllers\Api\V1\Department\DepartmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,20 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
             Route::patch('/{id}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
         });
+
+        /* -------------------------------------------------------------- */
+        /*  Department Management — Admin CRUD                              */
+        /* -------------------------------------------------------------- */
+        Route::prefix('departments')->middleware('role:admin')->group(function () {
+            Route::get('/', [DepartmentController::class, 'index'])->name('departments.index');
+            Route::post('/', [DepartmentController::class, 'store'])->name('departments.store');
+            Route::get('/{id}', [DepartmentController::class, 'show'])->name('departments.show');
+            Route::put('/{id}', [DepartmentController::class, 'update'])->name('departments.update');
+            Route::delete('/{id}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+        });
+
+        /* Active departments list (for dropdowns, any authenticated user) */
+        Route::get('/departments/active', [DepartmentController::class, 'allActive'])->name('departments.active');
 
         // --- Future routes will be added here ---
         // Route::prefix('courses')->group(function () { ... });
