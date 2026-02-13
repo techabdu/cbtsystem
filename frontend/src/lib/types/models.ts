@@ -1,15 +1,20 @@
-
 export interface User {
     id: number;
     uuid: string;
     email: string;
     first_name: string;
     last_name: string;
+    middle_name?: string;
+    full_name: string;
     role: 'admin' | 'lecturer' | 'student';
     student_id?: string;
     staff_id?: string;
+    phone?: string;
     avatar_url?: string;
     is_active: boolean;
+    is_verified: boolean;
+    is_profile_complete: boolean;
+    last_login_at?: string;
     created_at?: string;
 }
 

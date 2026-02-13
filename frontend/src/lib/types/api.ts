@@ -31,3 +31,11 @@ export interface RegisterData {
     password_confirmation: string;
     student_id: string;
 }
+
+export interface UpdateProfileData {
+    first_name?: string;
+    last_name?: string;
+    middle_name?: string;
+    phone?: string;
+    student_id?: string;
+}

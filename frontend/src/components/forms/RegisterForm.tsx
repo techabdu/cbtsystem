@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -17,14 +16,19 @@ import { ROUTES } from '@/lib/constants';
 
 const registerSchema = z.object({
     email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    password_confirmation: z.string().min(8, 'Confirm Password must be at least 8 characters'),
+    password: z.string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number')
+        .regex(/[@$!%*?&]/, 'Password must contain at least one special character (@$!%*?&)'),
+    password_confirmation: z.string().min(1, 'Please confirm your password'),
     first_name: z.string().min(2, 'First name is required'),
     last_name: z.string().min(2, 'Last name is required'),
-    student_id: z.string().min(5, 'Student ID is required'),
+    student_id: z.string().min(3, 'Student ID is required'),
 }).refine((data) => data.password === data.password_confirmation, {
     message: "Passwords don't match",
-    path: ["password_confirmation"],
+    path: ['password_confirmation'],
 });
 
 type RegisterValues = z.infer<typeof registerSchema>;
@@ -33,6 +37,7 @@ export function RegisterForm({ className }: { className?: string }) {
     const router = useRouter();
     const { register: registerUser, isLoading } = useAuthStore();
     const [formError, setFormError] = React.useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
 
     const {
         register,
@@ -44,13 +49,32 @@ export function RegisterForm({ className }: { className?: string }) {
 
     const onSubmit = async (data: RegisterValues) => {
         setFormError(null);
+        setFieldErrors({});
         try {
             await registerUser(data);
-            router.push(ROUTES.DASHBOARD.STUDENT);
+            // After registration, send student to complete their profile
+            router.push('/student/complete-profile');
         } catch (error) {
-            const err = error as AxiosError<{ message: string }>;
-            setFormError(err.response?.data?.message || 'Registration failed.');
+            const err = error as AxiosError<{ message: string; errors?: Record<string, string[]> }>;
+            // Extract field-level errors if present (e.g. "email already exists")
+            const apiErrors = err.response?.data?.errors;
+            if (apiErrors) {
+                const mapped: Record<string, string> = {};
+                for (const [field, messages] of Object.entries(apiErrors)) {
+                    mapped[field] = messages[0];
+                }
+                setFieldErrors(mapped);
+                // Show the first error as the general message
+                setFormError(Object.values(mapped)[0] || 'Registration failed.');
+            } else {
+                setFormError(err.response?.data?.message || 'Registration failed.');
+            }
         }
+    };
+
+    // Helper: get error for a field (from Zod or API)
+    const getFieldError = (field: keyof RegisterValues): string | undefined => {
+        return errors[field]?.message || fieldErrors[field];
     };
 
     return (
@@ -63,7 +87,7 @@ export function RegisterForm({ className }: { className?: string }) {
                             <Input
                                 id="first_name"
                                 disabled={isLoading}
-                                error={errors.first_name?.message}
+                                error={getFieldError('first_name')}
                                 {...register('first_name')}
                             />
                         </div>
@@ -72,7 +96,7 @@ export function RegisterForm({ className }: { className?: string }) {
                             <Input
                                 id="last_name"
                                 disabled={isLoading}
-                                error={errors.last_name?.message}
+                                error={getFieldError('last_name')}
                                 {...register('last_name')}
                             />
                         </div>
@@ -82,8 +106,9 @@ export function RegisterForm({ className }: { className?: string }) {
                         <Input
                             id="email"
                             type="email"
+                            placeholder="student@college.edu"
                             disabled={isLoading}
-                            error={errors.email?.message}
+                            error={getFieldError('email')}
                             {...register('email')}
                         />
                     </div>
@@ -93,7 +118,7 @@ export function RegisterForm({ className }: { className?: string }) {
                             id="student_id"
                             placeholder="202X/XX/XXX"
                             disabled={isLoading}
-                            error={errors.student_id?.message}
+                            error={getFieldError('student_id')}
                             {...register('student_id')}
                         />
                     </div>
@@ -103,9 +128,12 @@ export function RegisterForm({ className }: { className?: string }) {
                             id="password"
                             type="password"
                             disabled={isLoading}
-                            error={errors.password?.message}
+                            error={getFieldError('password')}
                             {...register('password')}
                         />
+                        <p className="text-xs text-muted-foreground">
+                            Min 8 chars, with uppercase, lowercase, number, and special character.
+                        </p>
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="password_confirmation">Confirm Password</Label>
@@ -113,13 +141,13 @@ export function RegisterForm({ className }: { className?: string }) {
                             id="password_confirmation"
                             type="password"
                             disabled={isLoading}
-                            error={errors.password_confirmation?.message}
+                            error={getFieldError('password_confirmation')}
                             {...register('password_confirmation')}
                         />
                     </div>
 
                     {formError && (
-                        <div className="text-sm font-medium text-destructive">
+                        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                             {formError}
                         </div>
                     )}

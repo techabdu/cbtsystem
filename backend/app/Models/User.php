@@ -194,6 +194,26 @@ class User extends Authenticatable
         return implode(' ', $parts);
     }
 
+    /**
+     * Check if the user has completed their profile.
+     * Students must have: phone, student_id.
+     * Lecturers/Admins must have: phone, staff_id.
+     */
+    public function getIsProfileCompleteAttribute(): bool
+    {
+        // Common required fields
+        if (empty($this->phone)) {
+            return false;
+        }
+
+        if ($this->role === 'student') {
+            return ! empty($this->student_id);
+        }
+
+        // Lecturers and admins
+        return ! empty($this->staff_id);
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Helper Methods                                                    */
     /* ------------------------------------------------------------------ */

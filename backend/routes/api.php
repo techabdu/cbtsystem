@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('/logout', LogoutController::class)->name('auth.logout');
             Route::get('/me', [AuthController::class, 'me'])->name('auth.me');
+            Route::put('/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
             Route::post('/refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
         });
 

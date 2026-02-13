@@ -16,6 +16,7 @@ class RegisterController extends Controller
 
     /**
      * Handle student self-registration.
+     * Auto-logs in the user after registration and returns a Sanctum token.
      *
      * POST /api/v1/auth/register
      */
@@ -23,9 +24,19 @@ class RegisterController extends Controller
     {
         $user = $this->authService->register($request->validated());
 
+        // Auto-login: issue a Sanctum token immediately
+        $result = $this->authService->login(
+            $request->validated('email'),
+            $request->validated('password')
+        );
+
         return ResponseHelper::success(
-            data: ['user' => new UserResource($user)],
-            message: 'Registration successful. Please verify your email.',
+            data: [
+                'user'       => new UserResource($result['user']),
+                'token'      => $result['token'],
+                'expires_in' => $result['expires_in'],
+            ],
+            message: 'Registration successful.',
             statusCode: 201
         );
     }

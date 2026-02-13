@@ -29,6 +29,7 @@ class UserResource extends JsonResource
             'avatar_url'      => $this->avatar_url,
             'is_active'       => $this->is_active,
             'is_verified'     => $this->is_verified,
+            'is_profile_complete' => $this->is_profile_complete,
             'last_login_at'   => $this->when(
                 $this->last_login_at,
                 fn () => $this->last_login_at?->toIso8601String()

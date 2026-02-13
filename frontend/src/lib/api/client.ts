@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/constants';
 
@@ -8,33 +7,40 @@ const apiClient = axios.create({
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     },
-    withCredentials: true, // If using Sanctum cookies
+    timeout: 30000,
 });
 
-// Request interceptor to add token if using Bearer token strategy
+// Request interceptor — attach Bearer token from localStorage
 apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
     }
     return config;
 });
 
-// Response interceptor for errors
+// Response interceptor — handle global errors
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Clear storage and redirect
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('auth_user');
+        if (typeof window !== 'undefined') {
+            const status = error.response?.status;
+
+            if (status === 401) {
+                // Clear auth state and redirect to login
                 localStorage.removeItem('auth_token');
-                // Only redirect if not already on login
+                localStorage.removeItem('auth_user_role');
+                document.cookie = 'auth_token=; path=/; max-age=0';
+                document.cookie = 'auth_user_role=; path=/; max-age=0';
+
                 if (!window.location.pathname.startsWith('/login')) {
                     window.location.href = '/login';
                 }
             }
         }
+
         return Promise.reject(error);
     }
 );
