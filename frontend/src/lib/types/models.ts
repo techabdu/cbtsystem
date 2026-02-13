@@ -35,12 +35,37 @@ export interface Course {
     code: string;
     title: string;
     description?: string;
-    credit_hours: number;
-    semester: string;
-    level: string;
-    academic_year: string;
+    credit_hours?: number;
+    semester?: string;
+    level?: string;
+    academic_year?: string;
     department_id: number;
     is_active: boolean;
+
+    // Nested department (from API)
+    department?: {
+        id: number;
+        code: string;
+        name: string;
+    };
+
+    // Relationship counts (from API)
+    students_count?: number;
+    lecturers_count?: number;
+    exams_count?: number;
+    questions_count?: number;
+
+    // Lecturers (when included)
+    lecturers?: Array<{
+        id: number;
+        full_name: string;
+        email: string;
+        staff_id?: string;
+        role: string;
+    }>;
+
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface Exam {

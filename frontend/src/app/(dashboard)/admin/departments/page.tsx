@@ -6,6 +6,7 @@ import {
     createDepartment,
     updateDepartment,
     deleteDepartment,
+    restoreDepartment,
 } from '@/lib/api/departments';
 import type { Department } from '@/lib/types/models';
 import type { DepartmentFilters, CreateDepartmentData, UpdateDepartmentData } from '@/lib/types/api';
@@ -17,6 +18,7 @@ import {
     Plus, Search, ChevronLeft, ChevronRight,
     Pencil, Trash2, X, Building2, BookOpen,
     Loader2, CheckCircle2, AlertCircle, ToggleLeft, ToggleRight,
+    RotateCcw, Archive,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -37,6 +39,7 @@ export default function AdminDepartmentsPage() {
 
     // Filters
     const [search, setSearch] = useState('');
+    const [trashedFilter, setTrashedFilter] = useState<'' | 'only' | 'with'>('');
     const [page, setPage] = useState(1);
 
     // Form state
@@ -57,6 +60,7 @@ export default function AdminDepartmentsPage() {
         try {
             const filters: DepartmentFilters = { per_page: 20, page };
             if (search) filters.search = search;
+            if (trashedFilter) filters.trashed = trashedFilter;
 
             const res = await getDepartments(filters);
             setDepartments(res.data);
@@ -66,7 +70,7 @@ export default function AdminDepartmentsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [search, page]);
+    }, [search, trashedFilter, page]);
 
     useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
 
@@ -180,6 +184,23 @@ export default function AdminDepartmentsPage() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         setPage(1);
+    };
+
+    const handleRestore = async (dept: Department) => {
+        if (!confirm(`Restore "${dept.name}"? This will reactivate the department.`)) return;
+        setActionLoadingId(dept.id);
+        try {
+            await restoreDepartment(dept.id);
+            setSuccessMessage(`"${dept.name}" restored successfully.`);
+            setTimeout(() => setSuccessMessage(''), 3000);
+            await fetchDepartments();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setErrorMessage(error.response?.data?.message || 'Failed to restore department.');
+            setTimeout(() => setErrorMessage(''), 5000);
+        } finally {
+            setActionLoadingId(null);
+        }
     };
 
     const getError = (field: string) => fieldErrors[field]?.[0] || '';
@@ -327,6 +348,18 @@ export default function AdminDepartmentsPage() {
                             <Search className="h-4 w-4" />
                             Search
                         </Button>
+                        <Button
+                            type="button"
+                            variant={trashedFilter === 'only' ? 'destructive' : 'outline'}
+                            className="gap-2"
+                            onClick={() => {
+                                setTrashedFilter(trashedFilter === 'only' ? '' : 'only');
+                                setPage(1);
+                            }}
+                        >
+                            <Archive className="h-4 w-4" />
+                            {trashedFilter === 'only' ? 'Show Active' : 'Show Deleted'}
+                        </Button>
                     </form>
                 </CardContent>
             </Card>
@@ -396,38 +429,58 @@ export default function AdminDepartmentsPage() {
                                             {/* Actions */}
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title={dept.is_active ? 'Deactivate' : 'Activate'}
-                                                        onClick={() => handleToggleActive(dept)}
-                                                        disabled={actionLoadingId === dept.id}
-                                                    >
-                                                        {dept.is_active
-                                                            ? <ToggleRight className="h-4 w-4 text-green-500" />
-                                                            : <ToggleLeft className="h-4 w-4 text-muted-foreground" />
-                                                        }
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title="Edit"
-                                                        onClick={() => openEditForm(dept)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title="Delete"
-                                                        onClick={() => handleDelete(dept)}
-                                                        disabled={actionLoadingId === dept.id}
-                                                    >
-                                                        {actionLoadingId === dept.id
-                                                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                                                            : <Trash2 className="h-4 w-4 text-destructive" />
-                                                        }
-                                                    </Button>
+                                                    {trashedFilter === 'only' ? (
+                                                        /* Deleted department — show Restore */
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            title="Restore"
+                                                            className="gap-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                                                            onClick={() => handleRestore(dept)}
+                                                            disabled={actionLoadingId === dept.id}
+                                                        >
+                                                            {actionLoadingId === dept.id
+                                                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                                                : <><RotateCcw className="h-4 w-4" /> Restore</>
+                                                            }
+                                                        </Button>
+                                                    ) : (
+                                                        /* Active department — show full actions */
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                title={dept.is_active ? 'Deactivate' : 'Activate'}
+                                                                onClick={() => handleToggleActive(dept)}
+                                                                disabled={actionLoadingId === dept.id}
+                                                            >
+                                                                {dept.is_active
+                                                                    ? <ToggleRight className="h-4 w-4 text-green-500" />
+                                                                    : <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                                                                }
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                title="Edit"
+                                                                onClick={() => openEditForm(dept)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                title="Delete"
+                                                                onClick={() => handleDelete(dept)}
+                                                                disabled={actionLoadingId === dept.id}
+                                                            >
+                                                                {actionLoadingId === dept.id
+                                                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    : <Trash2 className="h-4 w-4 text-destructive" />
+                                                                }
+                                                            </Button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

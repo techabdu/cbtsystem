@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\User\UserController;
 use App\Http\Controllers\Api\V1\Department\DepartmentController;
+use App\Http\Controllers\Api\V1\Course\CourseController;
+use App\Http\Controllers\Api\V1\Course\EnrollmentController;
+use App\Http\Controllers\Api\V1\Course\CourseLecturerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,21 +60,58 @@ Route::prefix('v1')->group(function () {
         });
 
         /* -------------------------------------------------------------- */
-        /*  Department Management — Admin CRUD                              */
+        /*  Department Management                                           */
         /* -------------------------------------------------------------- */
+
+        /* Active departments list (for dropdowns, any authenticated user) */
+        Route::get('/departments/active', [DepartmentController::class, 'allActive'])->name('departments.active');
+
+        /* Admin CRUD */
         Route::prefix('departments')->middleware('role:admin')->group(function () {
             Route::get('/', [DepartmentController::class, 'index'])->name('departments.index');
             Route::post('/', [DepartmentController::class, 'store'])->name('departments.store');
             Route::get('/{id}', [DepartmentController::class, 'show'])->name('departments.show');
             Route::put('/{id}', [DepartmentController::class, 'update'])->name('departments.update');
             Route::delete('/{id}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+            Route::post('/{id}/restore', [DepartmentController::class, 'restore'])->name('departments.restore');
         });
 
-        /* Active departments list (for dropdowns, any authenticated user) */
-        Route::get('/departments/active', [DepartmentController::class, 'allActive'])->name('departments.active');
+        /* -------------------------------------------------------------- */
+        /*  Course Management                                              */
+        /* -------------------------------------------------------------- */
+
+        /* Course listing — all roles (role-aware: admin=all, lecturer=assigned, student=enrolled) */
+        Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+        Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
+
+        /* Course CRUD — Admin Only */
+        Route::prefix('courses')->middleware('role:admin')->group(function () {
+            Route::post('/', [CourseController::class, 'store'])->name('courses.store');
+            Route::put('/{id}', [CourseController::class, 'update'])->name('courses.update');
+            Route::delete('/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
+            Route::post('/{id}/restore', [CourseController::class, 'restore'])->name('courses.restore');
+        });
+
+        /* Course sub-resources — Admin & Lecturer */
+        Route::prefix('courses')->middleware('role:admin,lecturer')->group(function () {
+            Route::get('/{id}/students', [CourseController::class, 'students'])->name('courses.students');
+            Route::get('/{id}/lecturers', [CourseController::class, 'lecturers'])->name('courses.lecturers');
+        });
+
+        /* Enrollment management — Admin Only */
+        Route::prefix('courses')->middleware('role:admin')->group(function () {
+            Route::post('/{id}/enroll', [EnrollmentController::class, 'enroll'])->name('courses.enroll');
+            Route::delete('/{id}/enroll/{studentId}', [EnrollmentController::class, 'unenroll'])->name('courses.unenroll');
+            Route::post('/{id}/enroll/bulk', [EnrollmentController::class, 'bulkEnroll'])->name('courses.enroll.bulk');
+        });
+
+        /* Lecturer assignment — Admin Only */
+        Route::prefix('courses')->middleware('role:admin')->group(function () {
+            Route::post('/{id}/lecturers', [CourseLecturerController::class, 'assign'])->name('courses.lecturers.assign');
+            Route::delete('/{id}/lecturers/{lecturerId}', [CourseLecturerController::class, 'unassign'])->name('courses.lecturers.unassign');
+        });
 
         // --- Future routes will be added here ---
-        // Route::prefix('courses')->group(function () { ... });
         // Route::prefix('questions')->group(function () { ... });
         // Route::prefix('exams')->group(function () { ... });
         // Route::prefix('exam-sessions')->group(function () { ... });

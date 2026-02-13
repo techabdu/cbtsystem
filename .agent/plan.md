@@ -109,6 +109,7 @@
 
 ### Stage 1.4 — Authentication System ✅ (Verified 2026-02-13)
 > **Guide Reference:** `03_API_SPECIFICATION.md` (Auth endpoints) + `06_SECURITY_IMPLEMENTATION.md` (JWT, password policy)
+> **⚠️ REFACTOR PENDING:** Self-registration will be replaced with admin-provisioned activation flow. Login will change from email to identifier (matric/file number). See **Stage 2.3.5** and `.agent/auth-enrollment-refactor-plan.md`.
 
 - [x] Install JWT package (e.g., `firebase/php-jwt` or `tymon/jwt-auth`, or use Sanctum tokens) — **Used Sanctum (already installed)**
 - [x] Create `AuthService` (login, register, logout, refresh, token generation) — 2026-02-12
@@ -204,20 +205,73 @@
 - [x] **API verification: All 6 department endpoints tested via curl** — 2026-02-13
 - [x] **Build verification: `npx next build` passes with 0 TypeScript errors** — 2026-02-13
 
-### Stage 2.3 — Course Management
+### Stage 2.3 — Course Management ✅ COMPLETE
 > **Guide Reference:** `03_API_SPECIFICATION.md` (Course Management section)
+> **Completed:** 2026-02-13
 
-- [ ] Controller: `CourseController` — CRUD + students list
-- [ ] Controller: `EnrollmentController` — enroll/unenroll students
-- [ ] Service: `CourseService`
-- [ ] Form Requests: `CreateCourseRequest`, `UpdateCourseRequest`, `EnrollStudentRequest`
-- [ ] API Routes: All course endpoints (list, create, show, update, delete, students, enroll)
-- [ ] API Resource: `CourseResource`
-- [ ] Frontend: Admin Courses page
-- [ ] Frontend: Lecturer Courses page (assigned courses only)
-- [ ] Frontend: Student Courses page (enrolled courses)
-- [ ] Frontend: Course detail page (with students, exams overview)
-- [ ] Frontend: Enrollment management (admin/lecturer enrolls students)
+- [x] Service: `CourseService` — list/filter/paginate (role-aware), CRUD, student enrollment/unenrollment, bulk enrollment, lecturer assignment/unassignment, activity logging — 2026-02-13
+- [x] Controller: `CourseController` — index (admin=all, lecturer=assigned, student=enrolled), show, store, update, destroy, students, lecturers — 2026-02-13
+- [x] Controller: `EnrollmentController` — enroll, unenroll, bulkEnroll — 2026-02-13
+- [x] Controller: `CourseLecturerController` — assign, unassign — 2026-02-13
+- [x] Form Requests: `CreateCourseRequest`, `UpdateCourseRequest` — 2026-02-13
+- [x] API Resource: `CourseResource` — nested department, relationship counts, optional lecturers — 2026-02-13
+- [x] API Routes: 12 course endpoints (CRUD, students, lecturers, enrollment, lecturer assignment) — 2026-02-13
+- [x] Frontend: Types (`Course` model extended, `CreateCourseData`, `UpdateCourseData`, `CourseFilters`, enrollment/lecturer types) — 2026-02-13
+- [x] Frontend: API client (`courses.ts`) — all CRUD, enrollment, and lecturer assignment functions — 2026-02-13
+- [x] Frontend: Admin Courses list page (`/admin/courses`) — stats cards, inline create/edit form, department/level/semester filters, responsive table, pagination — 2026-02-13
+- [x] Frontend: Admin Course detail page (`/admin/courses/[id]`) — stats cards, tabbed students/lecturers, inline enroll/assign forms with user search — 2026-02-13
+- [x] Frontend: Sidebar link already present (BookOpen icon) — verified
+- [x] **Build verification: `npx tsc --noEmit` passes with 0 TypeScript errors** — 2026-02-13
+- [x] **Route verification: All 12 course API routes registered** — 2026-02-13
+- [ ] Frontend: Lecturer Courses page (assigned courses only) — deferred to Phase 3 integration
+- [ ] Frontend: Student Courses page (enrolled courses) — **moved to Stage 2.3.5 (student self-enrollment)**
+
+### Stage 2.3.5 — Auth & Enrollment Refactor ⬅️ NEXT
+> **Detailed Plan:** `.agent/auth-enrollment-refactor-plan.md`
+> **Scope:** Replace self-registration with activation flow + Student self-service course enrollment
+
+**Key Decisions:**
+- ❌ No self-registration — admin pre-creates users without passwords
+- 🔑 Students & lecturers "activate" by entering matric/file number and creating a password
+- 🔐 Login uses matric number (students) / file number (lecturers) — NOT email
+- 🏫 Students & lecturers each belong to one department (`department_id` FK on users)
+- 📚 Students self-enroll in courses from their department
+- 📅 Enrollment window set by admin via `system_settings` (`enrollment_start_date`, `enrollment_end_date`)
+
+**Sprint 1 — Database + Backend Auth:**
+- [ ] Migration: Add `department_id` FK to `users` table
+- [ ] Migration: Make `password` nullable on `users` table
+- [ ] Migration: Add `staff_id` composite index
+- [ ] User Model: Add `department_id` fillable, `department()` relationship, `is_activated` accessor
+- [ ] Delete: `RegisterController.php`, `RegisterRequest.php`
+- [ ] Create: `ActivateAccountController.php`, `ActivateAccountRequest.php`
+- [ ] Modify: `AuthService.php` — remove `register()`, add `activate()`, change `login()` to use identifier
+- [ ] Modify: `LoginRequest.php`, `LoginController.php` — `email` → `identifier`
+- [ ] Modify: `CreateUserRequest.php` — remove password, add `department_id` (required for student/lecturer)
+- [ ] Modify: `UserService::create()` — no password, add `department_id`
+- [ ] Modify: `UserResource.php` — add `department`, `is_activated`
+- [ ] Modify: `routes/api.php` — remove register, add activate
+- [ ] Update tests
+
+**Sprint 2 — Frontend Auth:**
+- [ ] Delete: Register page (`app/(auth)/register/page.tsx`)
+- [ ] Create: Activate Account page (`app/(auth)/activate/page.tsx`)
+- [ ] Modify: Login page — identifier field, activate link
+- [ ] Modify: `lib/api/auth.ts`, `lib/types/api.ts` — remove register, add activate, update login
+- [ ] Modify: Admin Create User page — remove password fields, add department dropdown
+- [ ] Modify: `middleware.ts` — add `/activate` to public routes
+- [ ] Build verification: 0 TypeScript errors
+
+**Sprint 3 — Student Course Enrollment:**
+- [ ] Create: `StudentCourseController.php` — available-courses, my-courses, enroll, unenroll
+- [ ] Add enrollment window check via `system_settings` (`enrollment_start_date`, `enrollment_end_date`)
+- [ ] Seed: `enrollment_start_date` and `enrollment_end_date` in system_settings
+- [ ] Add routes: 4 student enrollment endpoints
+- [ ] Create: `lib/api/student.ts` (frontend API)
+- [ ] Create: Student Courses page (`/student/courses`) — "My Courses" + "Available Courses" tabs
+- [ ] Modify: Sidebar — add student "Courses" link
+- [ ] API test + build verification
+
 
 ### Stage 2.4 — Question Bank
 > **Guide Reference:** `03_API_SPECIFICATION.md` (Question Bank section) + `04_BACKEND_ARCHITECTURE.md`
@@ -550,3 +604,4 @@
 | 2026-02-12 | 1.5 | ✅ Stage 1.5 COMPLETE — Auth pages, dashboard layouts, API client, Zustand store, middleware, UI components. |
 | 2026-02-13 | 1.4-1.5 | Refined: Fixed API response parsing, middleware role protection, profile completion flow, React render errors. All 7 API endpoints + frontend build verified. |
 | 2026-02-13 | 1 | ✅ **PHASE 1 COMPLETE** — All 5 stages verified. 23 tables, 14 models, 7 API routes, 10 frontend routes, 28 tests passing. Ready for Phase 2. |
+| 2026-02-13 | 2.3.5 | 📋 Auth & Enrollment Refactor plan created (`.agent/auth-enrollment-refactor-plan.md`). Decisions: no self-registration, login by matric/file number, admin-provisioned activation, department-based student self-enrollment, enrollment window via system_settings. |

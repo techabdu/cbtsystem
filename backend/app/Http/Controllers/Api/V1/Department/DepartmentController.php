@@ -105,4 +105,17 @@ class DepartmentController extends Controller
 
         return ResponseHelper::success(null, 'Department deleted successfully');
     }
+
+    /* ------------------------------------------------------------------ */
+    /*  Restore                                                            */
+    /* ------------------------------------------------------------------ */
+
+    public function restore(Request $request, int $id): JsonResponse
+    {
+        $department = $this->departmentService->restore($id, $request->user());
+
+        return ResponseHelper::success([
+            'department' => new DepartmentResource($department),
+        ], 'Department restored successfully');
+    }
 }

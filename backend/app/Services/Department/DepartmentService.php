@@ -17,12 +17,19 @@ class DepartmentService
     /**
      * Get a paginated, filterable list of departments.
      *
-     * @param  array  $filters  Accepted keys: search, is_active, per_page, sort_by, sort_dir
+     * @param  array  $filters  Accepted keys: search, is_active, trashed, per_page, sort_by, sort_dir
      * @return LengthAwarePaginator
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
         $query = Department::withCount('courses');
+
+        // --- Include soft-deleted ---
+        if (! empty($filters['trashed']) && $filters['trashed'] === 'only') {
+            $query->onlyTrashed();
+        } elseif (! empty($filters['trashed']) && $filters['trashed'] === 'with') {
+            $query->withTrashed();
+        }
 
         // --- Active status filter ---
         if (isset($filters['is_active'])) {
@@ -170,6 +177,28 @@ class DepartmentService
             'code' => $department->code,
             'name' => $department->name,
         ]);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Restore                                                            */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Restore a soft-deleted department.
+     *
+     * @param  int   $id
+     * @param  User  $admin
+     * @return Department
+     */
+    public function restore(int $id, User $admin): Department
+    {
+        $department = Department::onlyTrashed()->findOrFail($id);
+        $department->restore();
+        $department->update(['is_active' => true]);
+
+        $this->logActivity($admin, 'department_restored', $department->id);
+
+        return $department->fresh()->loadCount('courses');
     }
 
     /* ------------------------------------------------------------------ */

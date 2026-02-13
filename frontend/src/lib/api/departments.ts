@@ -60,3 +60,11 @@ export async function deleteDepartment(id: number): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/departments/${id}`);
     return response.data;
 }
+
+/**
+ * Restore a soft-deleted department.
+ */
+export async function restoreDepartment(id: number): Promise<ApiResponse<{ department: Department }>> {
+    const response = await apiClient.post<ApiResponse<{ department: Department }>>(`/departments/${id}/restore`);
+    return response.data;
+}

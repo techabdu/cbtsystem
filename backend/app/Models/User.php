@@ -100,6 +100,12 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
+    /** Direct enrollment records for this student. */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class, 'student_id');
+    }
+
     /** Courses the lecturer is assigned to. */
     public function taughtCourses(): BelongsToMany
     {

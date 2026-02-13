@@ -120,8 +120,88 @@ export interface UpdateDepartmentData {
 export interface DepartmentFilters {
     search?: string;
     is_active?: string;
+    trashed?: '' | 'only' | 'with';
     per_page?: number;
     page?: number;
     sort_by?: string;
     sort_dir?: 'asc' | 'desc';
+}
+
+/* ------------------------------------------------------------------ */
+/*  Course Management (Admin)                                          */
+/* ------------------------------------------------------------------ */
+
+export interface CreateCourseData {
+    department_id: number;
+    code: string;
+    title: string;
+    description?: string;
+    credit_hours?: number;
+    semester?: string;
+    academic_year?: string;
+    level?: string;
+    is_active?: boolean;
+}
+
+export interface UpdateCourseData {
+    department_id?: number;
+    code?: string;
+    title?: string;
+    description?: string;
+    credit_hours?: number;
+    semester?: string;
+    academic_year?: string;
+    level?: string;
+    is_active?: boolean;
+}
+
+export interface CourseFilters {
+    search?: string;
+    department_id?: number;
+    semester?: string;
+    level?: string;
+    academic_year?: string;
+    is_active?: string;
+    trashed?: '' | 'only' | 'with';
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}
+
+export interface EnrollStudentData {
+    student_id: number;
+}
+
+export interface BulkEnrollData {
+    student_ids: number[];
+}
+
+export interface AssignLecturerData {
+    lecturer_id: number;
+    role?: 'lecturer' | 'coordinator' | 'assistant';
+}
+
+export interface EnrolledStudent {
+    id: number;
+    uuid: string;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+    email: string;
+    student_id?: string;
+    is_active: boolean;
+    enrollments?: Array<{
+        id: number;
+        enrollment_date: string;
+        status: string;
+    }>;
+}
+
+export interface CourseLecturer {
+    id: number;
+    full_name: string;
+    email: string;
+    staff_id?: string;
+    role: 'lecturer' | 'coordinator' | 'assistant';
 }
