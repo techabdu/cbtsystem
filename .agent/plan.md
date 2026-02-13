@@ -173,19 +173,22 @@
 ## PHASE 2: Core Features — Online Platform (Weeks 4–6)
 > **Goal:** User management, course management, question bank
 
-### Stage 2.1 — User Management (Admin)
+### Stage 2.1 — User Management (Admin) ✅
 > **Guide Reference:** `03_API_SPECIFICATION.md` (User Management section)
 
-- [ ] Controller: `UserController` — CRUD operations
-- [ ] Form Requests: `CreateUserRequest`, `UpdateUserRequest`
-- [ ] Service: `UserService` (business logic)
-- [ ] API Routes: `GET/POST /api/v1/users`, `GET/PUT/DELETE /api/v1/users/{id}`
-- [ ] API Resource: `UserResource`, `UserCollection`
-- [ ] Frontend: Admin Users list page (with search, filter by role, pagination)
-- [ ] Frontend: Create User form (admin creates lecturers/admins)
-- [ ] Frontend: Edit User page
-- [ ] Frontend: User detail view
-- [ ] Frontend: Soft delete / deactivate user
+- [x] Service: `UserService` (list with search/filter/paginate, create, show, update, soft-delete, restore, toggleActive, activity logging) — 2026-02-13
+- [x] Controller: `UserController` — 7 actions (index, store, show, update, destroy, restore, toggleActive) — 2026-02-13
+- [x] Form Requests: `CreateUserRequest`, `UpdateUserRequest` (with StrongPassword rule, unique constraints) — 2026-02-13
+- [x] API Routes: `GET/POST /api/v1/users`, `GET/PUT/DELETE /api/v1/users/{id}`, `POST /api/v1/users/{id}/restore`, `PATCH /api/v1/users/{id}/toggle-active` — all behind `role:admin` — 2026-02-13
+- [x] API Resource: `UserResource` (existing, reused), `ResponseHelper::paginated()` enhanced with `$resourceClass` parameter — 2026-02-13
+- [x] Frontend: API functions (`src/lib/api/users.ts`) — getUsers, getUser, createUser, updateUser, deleteUser, restoreUser, toggleUserActive — 2026-02-13
+- [x] Frontend: Types extended (`src/lib/types/api.ts`) — PaginatedResponse, CreateUserData, UpdateUserData, UserFilters — 2026-02-13
+- [x] Frontend: Admin Users list page (`/admin/users`) — stats cards, search/filter bar, responsive table, role/status badges, action dropdowns, pagination — 2026-02-13
+- [x] Frontend: Create User form (`/admin/users/create`) — multi-card layout, role-conditional fields, password visibility toggle, field-level errors — 2026-02-13
+- [x] Frontend: User detail + edit page (`/admin/users/[id]`) — view mode (info + status cards), edit mode (multi-card form), toggle-active, delete — 2026-02-13
+- [x] Frontend: Soft delete / deactivate user — via action dropdown on list page and buttons on detail page — 2026-02-13
+- [x] **API verification: All 7 user management endpoints tested via curl** — 2026-02-13
+- [x] **Build verification: `npx next build` passes with 0 TypeScript errors** — 2026-02-13
 
 ### Stage 2.2 — Department Management (Admin)
 - [ ] Controller: `DepartmentController` — CRUD

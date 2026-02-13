@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Auth\RegisterController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\User\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,8 +42,20 @@ Route::prefix('v1')->group(function () {
             Route::post('/refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
         });
 
+        /* -------------------------------------------------------------- */
+        /*  User Management — Admin Only                                   */
+        /* -------------------------------------------------------------- */
+        Route::prefix('users')->middleware('role:admin')->group(function () {
+            Route::get('/', [UserController::class, 'index'])->name('users.index');
+            Route::post('/', [UserController::class, 'store'])->name('users.store');
+            Route::get('/{id}', [UserController::class, 'show'])->name('users.show');
+            Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
+            Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+            Route::post('/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+            Route::patch('/{id}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+        });
+
         // --- Future routes will be added here ---
-        // Route::prefix('users')->middleware('role:admin')->group(function () { ... });
         // Route::prefix('courses')->group(function () { ... });
         // Route::prefix('questions')->group(function () { ... });
         // Route::prefix('exams')->group(function () { ... });

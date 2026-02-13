@@ -71,18 +71,24 @@ class ResponseHelper
     /**
      * Return a paginated JSON response.
      *
-     * @param  mixed   $paginator  Laravel paginator instance
-     * @param  string  $message
+     * @param  mixed        $paginator      Laravel paginator instance
+     * @param  string       $message
+     * @param  string|null  $resourceClass  Optional API Resource class to transform items (e.g. UserResource::class)
      * @return JsonResponse
      */
     public static function paginated(
         mixed $paginator,
-        string $message = 'Success'
+        string $message = 'Success',
+        ?string $resourceClass = null
     ): JsonResponse {
+        $items = $resourceClass
+            ? $resourceClass::collection($paginator->items())
+            : $paginator->items();
+
         return response()->json([
             'success'    => true,
             'message'    => $message,
-            'data'       => $paginator->items(),
+            'data'       => $items,
             'meta'       => [
                 'timestamp' => now()->toIso8601String(),
                 'version'   => '1.0',
