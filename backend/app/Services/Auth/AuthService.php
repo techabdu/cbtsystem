@@ -5,37 +5,74 @@ namespace App\Services\Auth;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
     /* ------------------------------------------------------------------ */
-    /*  Register                                                           */
+    /*  Activate (First-Time Account Setup)                                */
     /* ------------------------------------------------------------------ */
 
     /**
-     * Register a new student user.
+     * Activate a pre-created account by setting the password.
+     * Admin creates users without passwords. This is the first-time setup.
      *
-     * @param  array  $data  Validated registration data.
-     * @return User
+     * @param  string  $identifier  Student matric number or staff file number.
+     * @param  string  $password    The new password to set.
+     * @return array{user: User, token: string, expires_in: int}
+     *
+     * @throws ValidationException
      */
-    public function register(array $data): User
+    public function activate(string $identifier, string $password): array
     {
-        $user = User::create([
-            'first_name'  => $data['first_name'],
-            'last_name'   => $data['last_name'],
-            'middle_name' => $data['middle_name'] ?? null,
-            'email'       => $data['email'],
-            'password'    => $data['password'], // 'hashed' cast on User handles bcrypt
-            'student_id'  => $data['student_id'] ?? null,
-            'phone'       => $data['phone'] ?? null,
-            'role'        => 'student', // Only students register themselves
-            'is_active'   => true,
-            'is_verified' => false,
+        $user = User::where('student_id', $identifier)
+                    ->orWhere('staff_id', $identifier)
+                    ->orWhere('email', strtolower($identifier))
+                    ->first();
+
+        // Not found
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'identifier' => ['No account found with this ID. Contact your administrator.'],
+            ]);
+        }
+
+        // Already activated (password already set)
+        if ($user->password !== null) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Account already activated. Please log in instead.'],
+            ]);
+        }
+
+        // Account deactivated by admin
+        if (! $user->is_active) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Your account has been deactivated. Contact your administrator.'],
+            ]);
+        }
+
+        // Set password and mark as verified
+        $user->update([
+            'password'            => $password, // 'hashed' cast handles bcrypt
+            'is_verified'         => true,
+            'password_changed_at' => now(),
         ]);
 
-        $this->logActivity($user, 'user_registered');
+        // Auto-login: issue a Sanctum token
+        $expiresInMinutes = (int) config('sanctum.expiration', 1440);
+        $token = $user->createToken(
+            'auth_token',
+            ['*'],
+            $expiresInMinutes ? now()->addMinutes($expiresInMinutes) : null
+        )->plainTextToken;
 
-        return $user;
+        $this->logActivity($user, 'account_activated');
+
+        return [
+            'user'       => $user->fresh(),
+            'token'      => $token,
+            'expires_in' => $expiresInMinutes * 60,
+        ];
     }
 
     /* ------------------------------------------------------------------ */
@@ -43,36 +80,46 @@ class AuthService
     /* ------------------------------------------------------------------ */
 
     /**
-     * Authenticate user and return a Sanctum token.
+     * Authenticate user by matric number (student) or file number (lecturer/admin).
      *
-     * @param  string $email
+     * @param  string $identifier  Matric number or file number.
      * @param  string $password
      * @return array{user: User, token: string, expires_in: int}
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
-    public function login(string $email, string $password): array
+    public function login(string $identifier, string $password): array
     {
-        $user = User::where('email', $email)->first();
+        $user = User::where('student_id', $identifier)
+                    ->orWhere('staff_id', $identifier)
+                    ->orWhere('email', strtolower($identifier))
+                    ->first();
 
         // --- User not found ---
         if (! $user) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+            throw ValidationException::withMessages([
+                'identifier' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // --- Account not yet activated (no password set) ---
+        if ($user->password === null) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Your account has not been activated. Please activate your account first.'],
             ]);
         }
 
         // --- Account locked ---
         if ($user->isLocked()) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'email' => ['Account is locked. Please try again after ' . $user->locked_until->diffForHumans() . '.'],
+            throw ValidationException::withMessages([
+                'identifier' => ['Account is locked. Please try again after ' . $user->locked_until->diffForHumans() . '.'],
             ]);
         }
 
         // --- Account deactivated ---
         if (! $user->is_active) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'email' => ['Your account has been deactivated. Contact an administrator.'],
+            throw ValidationException::withMessages([
+                'identifier' => ['Your account has been deactivated. Contact an administrator.'],
             ]);
         }
 
@@ -80,18 +127,15 @@ class AuthService
         if (! Hash::check($password, $user->password)) {
             $user->recordFailedLogin();
 
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+            throw ValidationException::withMessages([
+                'identifier' => ['The provided credentials are incorrect.'],
             ]);
         }
 
         // --- Success ---
         $user->recordSuccessfulLogin();
 
-        // Revoke previous tokens (single device policy — optional, uncomment if desired)
-        // $user->tokens()->delete();
-
-        $expiresInMinutes = (int) config('sanctum.expiration', 1440); // default 24 hours
+        $expiresInMinutes = (int) config('sanctum.expiration', 1440);
         $token = $user->createToken(
             'auth_token',
             ['*'],
@@ -103,7 +147,7 @@ class AuthService
         return [
             'user'       => $user,
             'token'      => $token,
-            'expires_in' => $expiresInMinutes * 60, // return seconds
+            'expires_in' => $expiresInMinutes * 60,
         ];
     }
 

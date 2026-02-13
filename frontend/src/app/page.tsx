@@ -17,8 +17,8 @@ export default function Home() {
             <Link href="/login">
               <Button variant="ghost">Login</Button>
             </Link>
-            <Link href="/register">
-              <Button>Get Started</Button>
+            <Link href="/activate">
+              <Button>Activate Account</Button>
             </Link>
           </div>
         </div>
@@ -33,9 +33,9 @@ export default function Home() {
               A comprehensive platform for online assessments, offline exams, and automated grading. Built for modern educational institutions.
             </p>
             <div className="space-x-4">
-              <Link href="/register">
+              <Link href="/activate">
                 <Button size="lg" className="h-11 px-8">
-                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                  Activate Account <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/login">

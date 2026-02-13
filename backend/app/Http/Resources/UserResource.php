@@ -25,10 +25,20 @@ class UserResource extends JsonResource
             'role'            => $this->role,
             'student_id'      => $this->when($this->role === 'student', $this->student_id),
             'staff_id'        => $this->when(in_array($this->role, ['lecturer', 'admin']), $this->staff_id),
+            'department_id'   => $this->department_id,
+            'department'      => $this->when(
+                $this->relationLoaded('department') && $this->department,
+                fn () => [
+                    'id'   => $this->department->id,
+                    'name' => $this->department->name,
+                    'code' => $this->department->code,
+                ]
+            ),
             'phone'           => $this->when($this->phone, $this->phone),
             'avatar_url'      => $this->avatar_url,
             'is_active'       => $this->is_active,
             'is_verified'     => $this->is_verified,
+            'is_activated'    => $this->is_activated,
             'is_profile_complete' => $this->is_profile_complete,
             'last_login_at'   => $this->when(
                 $this->last_login_at,

@@ -1,38 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUser } from '@/lib/api/users';
+import { getActiveDepartments } from '@/lib/api/departments';
 import type { CreateUserData } from '@/lib/types/api';
+import type { Department } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 export default function CreateUserPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
     const [generalError, setGeneralError] = useState('');
+    const [departments, setDepartments] = useState<Department[]>([]);
 
     const [form, setForm] = useState<CreateUserData>({
         first_name: '',
         last_name: '',
         middle_name: '',
         email: '',
-        password: '',
-        password_confirmation: '',
-        role: 'lecturer',
+        role: 'student',
+        department_id: undefined,
         staff_id: '',
         student_id: '',
         phone: '',
         is_active: true,
-        is_verified: false,
     });
+
+    // Fetch departments for the dropdown
+    useEffect(() => {
+        getActiveDepartments()
+            .then((res) => setDepartments(res.data.departments))
+            .catch(console.error);
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -42,6 +49,8 @@ export default function CreateUserPage() {
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setForm((prev) => ({ ...prev, [name]: checked }));
+        } else if (name === 'department_id') {
+            setForm((prev) => ({ ...prev, [name]: value ? parseInt(value, 10) : undefined }));
         } else {
             setForm((prev) => ({ ...prev, [name]: value }));
         }
@@ -56,12 +65,12 @@ export default function CreateUserPage() {
 
         try {
             const res = await createUser(form);
-            setSuccessMessage(res.message || 'User created successfully');
+            setSuccessMessage(res.message || 'User created successfully. They can now activate their account.');
             // Reset form
             setForm({
                 first_name: '', last_name: '', middle_name: '', email: '',
-                password: '', password_confirmation: '', role: 'lecturer',
-                staff_id: '', student_id: '', phone: '', is_active: true, is_verified: false,
+                role: 'student', department_id: undefined,
+                staff_id: '', student_id: '', phone: '', is_active: true,
             });
             // Redirect after brief delay so success is visible
             setTimeout(() => router.push('/admin/users'), 1500);
@@ -78,6 +87,10 @@ export default function CreateUserPage() {
 
     const getError = (field: string) => fieldErrors[field]?.[0] || '';
 
+    const showDepartment = form.role === 'student' || form.role === 'lecturer';
+    const showStudentId = form.role === 'student';
+    const showStaffId = form.role === 'lecturer' || form.role === 'admin';
+
     return (
         <div className="space-y-6">
             {/* Page Header */}
@@ -90,6 +103,18 @@ export default function CreateUserPage() {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Create User</h1>
                     <p className="text-muted-foreground">Add a new admin, lecturer, or student account.</p>
+                </div>
+            </div>
+
+            {/* Activation Info Banner */}
+            <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/30 dark:text-blue-300">
+                <Info className="h-5 w-5 shrink-0 mt-0.5" />
+                <div className="text-sm">
+                    <p className="font-medium">No password needed</p>
+                    <p className="text-blue-700 dark:text-blue-400">
+                        The user will create their own password when they first activate their account
+                        using their matric number or file number.
+                    </p>
                 </div>
             </div>
 
@@ -145,11 +170,11 @@ export default function CreateUserPage() {
                     </CardContent>
                 </Card>
 
-                {/* Role & Identification */}
+                {/* Role, Department & Identification */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Role & Identification</CardTitle>
-                        <CardDescription>Assign a role and identification number.</CardDescription>
+                        <CardTitle>Role, Department & Identification</CardTitle>
+                        <CardDescription>Assign a role, department, and identification number.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -163,80 +188,80 @@ export default function CreateUserPage() {
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     required
                                 >
+                                    <option value="student">Student</option>
                                     <option value="lecturer">Lecturer</option>
                                     <option value="admin">Admin</option>
-                                    <option value="student">Student</option>
                                 </select>
                                 {getError('role') && <span className="text-xs text-red-500">{getError('role')}</span>}
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor={form.role === 'student' ? 'student_id' : 'staff_id'}>
-                                    {form.role === 'student' ? 'Student ID' : 'Staff ID'}
-                                </Label>
-                                {form.role === 'student' ? (
-                                    <Input id="student_id" name="student_id" value={form.student_id} onChange={handleChange} placeholder="2024/CS/001" error={getError('student_id')} />
-                                ) : (
-                                    <Input id="staff_id" name="staff_id" value={form.staff_id} onChange={handleChange} placeholder="STAFF/2024/001" error={getError('staff_id')} />
-                                )}
-                            </div>
+                            {showDepartment && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="department_id">
+                                        Department {form.role !== 'admin' ? '*' : ''}
+                                    </Label>
+                                    <select
+                                        id="department_id"
+                                        name="department_id"
+                                        value={form.department_id || ''}
+                                        onChange={handleChange}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        required={form.role === 'student' || form.role === 'lecturer'}
+                                    >
+                                        <option value="">Select department...</option>
+                                        {departments.map((dept) => (
+                                            <option key={dept.id} value={dept.id}>
+                                                {dept.name} ({dept.code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {getError('department_id') && <span className="text-xs text-red-500">{getError('department_id')}</span>}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Flags */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {showStudentId && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="student_id">Matric Number *</Label>
+                                    <Input
+                                        id="student_id"
+                                        name="student_id"
+                                        value={form.student_id}
+                                        onChange={handleChange}
+                                        placeholder="CSC/2024/001"
+                                        error={getError('student_id')}
+                                        required
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        The student will use this to activate their account and log in.
+                                    </p>
+                                </div>
+                            )}
+                            {showStaffId && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="staff_id">File Number *</Label>
+                                    <Input
+                                        id="staff_id"
+                                        name="staff_id"
+                                        value={form.staff_id}
+                                        onChange={handleChange}
+                                        placeholder="STF/2024/001"
+                                        error={getError('staff_id')}
+                                        required
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        The user will use this to activate their account and log in.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Active flag */}
                         <div className="flex flex-wrap gap-6 pt-2">
                             <label className="flex items-center gap-2 text-sm cursor-pointer">
                                 <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} className="h-4 w-4 rounded border-input" />
                                 Account Active
                             </label>
-                            <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                <input type="checkbox" name="is_verified" checked={form.is_verified} onChange={handleChange} className="h-4 w-4 rounded border-input" />
-                                Email Verified
-                            </label>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Password */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Security</CardTitle>
-                        <CardDescription>Set the user&rsquo;s password. Must contain uppercase, lowercase, number, and special character.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password *</Label>
-                                <div className="relative">
-                                    <Input
-                                        id="password"
-                                        name="password"
-                                        type={showPassword ? 'text' : 'password'}
-                                        value={form.password}
-                                        onChange={handleChange}
-                                        placeholder="••••••••"
-                                        error={getError('password')}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
-                                    >
-                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password_confirmation">Confirm Password *</Label>
-                                <Input
-                                    id="password_confirmation"
-                                    name="password_confirmation"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={form.password_confirmation}
-                                    onChange={handleChange}
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
                         </div>
                     </CardContent>
                 </Card>

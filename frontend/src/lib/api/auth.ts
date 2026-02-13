@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { LoginCredentials, RegisterData, UpdateProfileData } from '../types/api';
+import { LoginCredentials, ActivateAccountData, UpdateProfileData } from '../types/api';
 import { User } from '../types/models';
 
 /**
@@ -23,8 +23,8 @@ export const login = async (credentials: LoginCredentials): Promise<AuthLoginRes
     return response.data.data;
 };
 
-export const register = async (data: RegisterData): Promise<AuthLoginResponse> => {
-    const response = await apiClient.post('/auth/register', data);
+export const activateAccount = async (data: ActivateAccountData): Promise<AuthLoginResponse> => {
+    const response = await apiClient.post('/auth/activate', data);
     // response.data = { success, message, data: { user, token, expires_in } }
     return response.data.data;
 };

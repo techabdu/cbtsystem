@@ -6,12 +6,12 @@ import type { NextRequest } from 'next/server';
  *
  * This middleware runs on EVERY matched request and enforces:
  * 1. Unauthenticated users cannot access protected routes (redirected to /login)
- * 2. Authenticated users on auth pages (/login, /register) are redirected to their dashboard
+ * 2. Authenticated users on auth pages (/login, /activate) are redirected to their dashboard
  * 3. Users cannot access routes for roles other than their own
  *    e.g. a student at /admin is redirected to /student
  */
 
-const PUBLIC_PATHS = ['/login', '/register'];
+const PUBLIC_PATHS = ['/login', '/activate'];
 const ROLE_PATHS: Record<string, string> = {
     admin: '/admin',
     lecturer: '/lecturer',

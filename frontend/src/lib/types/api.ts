@@ -33,17 +33,14 @@ export interface AuthResponse {
 }
 
 export interface LoginCredentials {
-    email: string;
+    identifier: string;  // email, matric number, or file number
     password: string;
 }
 
-export interface RegisterData {
-    first_name: string;
-    last_name: string;
-    email: string;
+export interface ActivateAccountData {
+    identifier: string;  // matric number or file number
     password: string;
     password_confirmation: string;
-    student_id: string;
 }
 
 export interface UpdateProfileData {
@@ -63,14 +60,12 @@ export interface CreateUserData {
     last_name: string;
     middle_name?: string;
     email: string;
-    password: string;
-    password_confirmation: string;
     role: 'admin' | 'lecturer' | 'student';
+    department_id?: number;
     staff_id?: string;
     student_id?: string;
     phone?: string;
     is_active?: boolean;
-    is_verified?: boolean;
 }
 
 export interface UpdateUserData {

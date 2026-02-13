@@ -3,7 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\Api\V1\Auth\RegisterController;
+use App\Http\Controllers\Api\V1\Auth\ActivateAccountController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
@@ -29,7 +29,7 @@ Route::prefix('v1')->group(function () {
     /*  Authentication — Public Routes                                     */
     /* ------------------------------------------------------------------ */
     Route::prefix('auth')->group(function () {
-        Route::post('/register', RegisterController::class)->name('auth.register');
+        Route::post('/activate', ActivateAccountController::class)->name('auth.activate');
         Route::post('/login', LoginController::class)->name('auth.login');
     });
 

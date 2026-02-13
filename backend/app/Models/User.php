@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -44,6 +45,7 @@ class User extends Authenticatable
         'middle_name',
         'student_id',
         'staff_id',
+        'department_id',
         'phone',
         'avatar_url',
         'role',
@@ -91,6 +93,12 @@ class User extends Authenticatable
     /* ------------------------------------------------------------------ */
     /*  Relationships                                                     */
     /* ------------------------------------------------------------------ */
+
+    /** Department the user belongs to (required for students & lecturers, optional for admins). */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
 
     /** Courses the student is enrolled in. */
     public function enrolledCourses(): BelongsToMany
@@ -184,9 +192,27 @@ class User extends Authenticatable
         return $query->where('is_verified', true);
     }
 
+    /** Scope: users who have not yet activated (no password set). */
+    public function scopeNotActivated($query)
+    {
+        return $query->whereNull('password');
+    }
+
+    /** Scope: filter by department. */
+    public function scopeInDepartment($query, int $departmentId)
+    {
+        return $query->where('department_id', $departmentId);
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Accessors                                                         */
     /* ------------------------------------------------------------------ */
+
+    /** Check if the user has activated their account (set a password). */
+    public function getIsActivatedAttribute(): bool
+    {
+        return $this->password !== null;
+    }
 
     /** Full name accessor. */
     public function getFullNameAttribute(): string

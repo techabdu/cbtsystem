@@ -10,7 +10,7 @@ export const ROLES = {
 
 export const ROUTES = {
     LOGIN: '/login',
-    REGISTER: '/register',
+    ACTIVATE: '/activate',
     DASHBOARD: {
         STUDENT: '/student',
         LECTURER: '/lecturer',

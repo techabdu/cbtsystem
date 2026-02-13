@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/forms/LoginForm';
 
 export const metadata: Metadata = {
     title: 'Login - CBT System',
-    description: 'Login to your account',
+    description: 'Sign in to your CBT account',
 };
 
 export default function LoginPage() {
@@ -16,16 +16,16 @@ export default function LoginPage() {
                     Welcome back
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                    Enter your email to sign in to your account
+                    Enter your matric number, file number, or email to sign in
                 </p>
             </div>
             <LoginForm />
             <p className="px-8 text-center text-sm text-muted-foreground">
                 <Link
-                    href="/register"
+                    href="/activate"
                     className="hover:text-brand underline underline-offset-4"
                 >
-                    Don&apos;t have an account? Sign Up
+                    First time? Activate your account &rarr;
                 </Link>
             </p>
         </>

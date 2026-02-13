@@ -9,10 +9,17 @@ export interface User {
     role: 'admin' | 'lecturer' | 'student';
     student_id?: string;
     staff_id?: string;
+    department_id?: number;
+    department?: {
+        id: number;
+        name: string;
+        code: string;
+    };
     phone?: string;
     avatar_url?: string;
     is_active: boolean;
     is_verified: boolean;
+    is_activated: boolean;
     is_profile_complete: boolean;
     last_login_at?: string;
     created_at?: string;

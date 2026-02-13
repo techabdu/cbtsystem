@@ -238,31 +238,71 @@
 - 📚 Students self-enroll in courses from their department
 - 📅 Enrollment window set by admin via `system_settings` (`enrollment_start_date`, `enrollment_end_date`)
 
-**Sprint 1 — Database + Backend Auth:**
-- [ ] Migration: Add `department_id` FK to `users` table
-- [ ] Migration: Make `password` nullable on `users` table
-- [ ] Migration: Add `staff_id` composite index
-- [ ] User Model: Add `department_id` fillable, `department()` relationship, `is_activated` accessor
-- [ ] Delete: `RegisterController.php`, `RegisterRequest.php`
-- [ ] Create: `ActivateAccountController.php`, `ActivateAccountRequest.php`
-- [ ] Modify: `AuthService.php` — remove `register()`, add `activate()`, change `login()` to use identifier
-- [ ] Modify: `LoginRequest.php`, `LoginController.php` — `email` → `identifier`
-- [ ] Modify: `CreateUserRequest.php` — remove password, add `department_id` (required for student/lecturer)
-- [ ] Modify: `UserService::create()` — no password, add `department_id`
-- [ ] Modify: `UserResource.php` — add `department`, `is_activated`
-- [ ] Modify: `routes/api.php` — remove register, add activate
-- [ ] Update tests
+**Sprint 1 — Database + Backend Auth: ✅ COMPLETE**
+- [x] Migration: Add `department_id` FK to `users` table — 2026-02-13
+- [x] Migration: Make `password` nullable on `users` table — 2026-02-13
+- [x] Migration: Add `staff_id` composite index — 2026-02-13
+- [x] User Model: Add `department_id` fillable, `department()` relationship, `is_activated` accessor, `notActivated`/`inDepartment` scopes — 2026-02-13
+- [x] Delete: `RegisterController.php`, `RegisterRequest.php` — 2026-02-13
+- [x] Create: `ActivateAccountController.php`, `ActivateAccountRequest.php` — 2026-02-13
+- [x] Modify: `AuthService.php` — remove `register()`, add `activate()`, change `login()` to use identifier — 2026-02-13
+- [x] Modify: `LoginRequest.php`, `LoginController.php` — `email` → `identifier` — 2026-02-13
+- [x] Modify: `CreateUserRequest.php` — remove password, add `department_id` (required for student/lecturer) — 2026-02-13
+- [x] Modify: `UserService::create()` — no password, add `department_id` — 2026-02-13
+- [x] Modify: `UserResource.php` — add `department`, `is_activated` — 2026-02-13
+- [x] Modify: `routes/api.php` — remove register, add activate — 2026-02-13
+- [x] Modify: `AuthController@me` — load department relation — 2026-02-13
+- [x] **API verification:** Admin create user (no password), activate, login by identifier, error cases — all tested — 2026-02-13
+- [ ] Update existing tests (register tests need removal, activate + login tests need updating)
 
-**Sprint 2 — Frontend Auth:**
-- [ ] Delete: Register page (`app/(auth)/register/page.tsx`)
-- [ ] Create: Activate Account page (`app/(auth)/activate/page.tsx`)
-- [ ] Modify: Login page — identifier field, activate link
-- [ ] Modify: `lib/api/auth.ts`, `lib/types/api.ts` — remove register, add activate, update login
-- [ ] Modify: Admin Create User page — remove password fields, add department dropdown
-- [ ] Modify: `middleware.ts` — add `/activate` to public routes
+**Sprint 2 — Frontend Auth: ✅ COMPLETE**
+- [x] Delete: Register page, RegisterForm — 2026-02-13
+- [x] Create: Activate Account page (`app/(auth)/activate/page.tsx`) + `ActivateForm.tsx` — 2026-02-13
+- [x] Modify: Login page — identifier field (matric/file/email), activate link — 2026-02-13
+- [x] Modify: `lib/api/auth.ts` — replaced `register()` with `activateAccount()` — 2026-02-13
+- [x] Modify: `lib/types/api.ts` — `LoginCredentials.identifier`, `ActivateAccountData`, removed pwd from `CreateUserData` — 2026-02-13
+- [x] Modify: `lib/types/models.ts` — added `department_id`, `department`, `is_activated` to User — 2026-02-13
+- [x] Modify: `lib/store/authStore.ts` — replaced `register()` with `activateAccount()` — 2026-02-13
+- [x] Modify: Admin Create User page — removed password fields, added department dropdown, info banner — 2026-02-13
+- [x] Modify: `middleware.ts` — replaced `/register` with `/activate` in public routes — 2026-02-13
+- [x] Modify: `constants.ts` — REGISTER → ACTIVATE — 2026-02-13
+- [x] Modify: `app/page.tsx` — register links → activate links — 2026-02-13
+- [x] **Build verification: 0 TypeScript errors** ✅ — 2026-02-13
+
+**Sprint 3 — Combination Management:** ⬅️ NEXT
+> NCE two-subject combination system: each student studies two departments (first + second major).
+> Some specialized fields use "Double Major" (single dept studied in depth).
+> Lecturers remain single-department. Admins have no department.
+
+**Sprint 3a — Database + Backend:**
+- [ ] Migration: Create `combinations` table (`id`, `code`, `name`, `first_department_id` FK, `second_department_id` FK, `is_double_major` boolean, `is_active`, timestamps, soft deletes)
+- [ ] Migration: Add `combination_id` FK to `users` table (nullable, for students)
+- [ ] Model: Create `Combination` model with relationships (`firstDepartment`, `secondDepartment`, `students`)
+- [ ] Model: Update `User` — add `combination_id` fillable, `combination()` relationship, `departmentIds()` accessor
+- [ ] Service: Create `CombinationService` (CRUD, list with filters)
+- [ ] Controller: Create `CombinationController` (index, store, show, update, destroy, restore)
+- [ ] Requests: `CreateCombinationRequest`, `UpdateCombinationRequest`
+- [ ] Resource: `CombinationResource` (includes nested departments)
+- [ ] Routes: CRUD under `/api/v1/combinations` (admin only) + `GET /api/v1/combinations/active` (public)
+- [ ] Seeder: Seed sample combinations (CS/MTH, ENG/HIS, BIO/CHM, PHE double-major, etc.)
+- [ ] Update `CreateUserRequest` — students require `combination_id` (not `department_id`)
+- [ ] Update `UserService::create()` — set `combination_id` for students
+- [ ] Update `UserResource` — include `combination` with nested departments
+- [ ] API verification
+
+**Sprint 3b — Frontend:**
+- [ ] Types: Add `Combination` to `models.ts`, `CreateCombinationData`/`UpdateCombinationData` to `api.ts`
+- [ ] API: Create `lib/api/combinations.ts`
+- [ ] Page: Admin Combinations list (`/admin/combinations`)
+- [ ] Page: Admin Create Combination (`/admin/combinations/create`)
+- [ ] Page: Admin Edit Combination (`/admin/combinations/[id]`)
+- [ ] Update: Admin Create User — students pick **combination** dropdown, lecturers pick **department** dropdown
+- [ ] Update: `User` model type — add `combination_id`, `combination` fields
+- [ ] Sidebar: Add "Combinations" link under admin nav
 - [ ] Build verification: 0 TypeScript errors
 
-**Sprint 3 — Student Course Enrollment:**
+**Sprint 4 — Student Course Enrollment:**
+> Uses student's `combination_id` → resolves to two department IDs → filters available courses
 - [ ] Create: `StudentCourseController.php` — available-courses, my-courses, enroll, unenroll
 - [ ] Add enrollment window check via `system_settings` (`enrollment_start_date`, `enrollment_end_date`)
 - [ ] Seed: `enrollment_start_date` and `enrollment_end_date` in system_settings

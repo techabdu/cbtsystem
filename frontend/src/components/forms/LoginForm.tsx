@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { ROLES, ROUTES } from '@/lib/constants';
 
 const loginSchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
+    identifier: z.string().min(1, 'Matric number, file number, or email is required'),
     password: z.string().min(1, 'Password is required'),
 });
 
@@ -79,17 +79,17 @@ export function LoginForm({ className }: { className?: string }) {
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="identifier">Matric Number / File Number / Email</Label>
                         <Input
-                            id="email"
-                            placeholder="name@example.com"
-                            type="email"
+                            id="identifier"
+                            placeholder="e.g. CSC/2020/001 or STF/001 or email"
+                            type="text"
                             autoCapitalize="none"
-                            autoComplete="email"
+                            autoComplete="username"
                             autoCorrect="off"
                             disabled={isLoading}
-                            error={errors.email?.message}
-                            {...register('email')}
+                            error={errors.identifier?.message}
+                            {...register('identifier')}
                         />
                     </div>
                     <div className="grid gap-2">

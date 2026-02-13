@@ -87,7 +87,8 @@ class UserService
     /* ------------------------------------------------------------------ */
 
     /**
-     * Admin creates a new user (lecturer or admin).
+     * Admin creates a new user (student, lecturer, or admin).
+     * No password is set — the user will create their own during activation.
      *
      * @param  array  $data  Validated request data.
      * @param  User   $admin The admin performing the action.
@@ -96,17 +97,18 @@ class UserService
     public function create(array $data, User $admin): User
     {
         $user = User::create([
-            'first_name'  => $data['first_name'],
-            'last_name'   => $data['last_name'],
-            'middle_name' => $data['middle_name'] ?? null,
-            'email'       => $data['email'],
-            'password'    => $data['password'], // 'hashed' cast handles bcrypt
-            'role'        => $data['role'],
-            'staff_id'    => $data['staff_id'] ?? null,
-            'student_id'  => $data['student_id'] ?? null,
-            'phone'       => $data['phone'] ?? null,
-            'is_active'   => $data['is_active'] ?? true,
-            'is_verified' => $data['is_verified'] ?? false,
+            'first_name'    => $data['first_name'],
+            'last_name'     => $data['last_name'],
+            'middle_name'   => $data['middle_name'] ?? null,
+            'email'         => $data['email'],
+            // No password — user sets their own during first-time activation
+            'role'          => $data['role'],
+            'department_id' => $data['department_id'] ?? null,
+            'staff_id'      => $data['staff_id'] ?? null,
+            'student_id'    => $data['student_id'] ?? null,
+            'phone'         => $data['phone'] ?? null,
+            'is_active'     => $data['is_active'] ?? true,
+            'is_verified'   => false, // verified when they activate
         ]);
 
         $this->logActivity(

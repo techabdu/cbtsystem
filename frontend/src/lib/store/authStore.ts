@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AxiosError } from 'axios';
 import { User } from '@/lib/types/models';
-import { LoginCredentials, RegisterData, UpdateProfileData } from '@/lib/types/api';
+import { LoginCredentials, ActivateAccountData, UpdateProfileData } from '@/lib/types/api';
 import * as authApi from '@/lib/api/auth';
 
 /**
@@ -29,7 +29,7 @@ interface AuthState {
     error: string | null;
     isHydrated: boolean;
     login: (credentials: LoginCredentials) => Promise<void>;
-    register: (data: RegisterData) => Promise<void>;
+    activateAccount: (data: ActivateAccountData) => Promise<void>;
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
     updateProfile: (data: UpdateProfileData) => Promise<void>;
@@ -71,12 +71,12 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            register: async (data) => {
+            activateAccount: async (data) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const result = await authApi.register(data);
+                    const result = await authApi.activateAccount(data);
 
-                    // Persist token + role for middleware
+                    // Persist token + role for middleware (auto-login after activation)
                     localStorage.setItem('auth_token', result.token);
                     setCookie('auth_token', result.token);
                     setCookie('auth_user_role', result.user.role);
@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
                     });
                 } catch (error) {
                     const err = error as AxiosError<{ message: string; errors?: Record<string, string[]> }>;
-                    const msg = err.response?.data?.message || 'Registration failed.';
+                    const msg = err.response?.data?.message || 'Account activation failed.';
                     set({ error: msg, isLoading: false });
                     throw error;
                 }

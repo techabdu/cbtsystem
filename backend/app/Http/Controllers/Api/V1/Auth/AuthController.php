@@ -22,8 +22,10 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        $user = $request->user()->load('department');
+
         return ResponseHelper::success(
-            data: ['user' => new UserResource($request->user())]
+            data: ['user' => new UserResource($user)]
         );
     }
 

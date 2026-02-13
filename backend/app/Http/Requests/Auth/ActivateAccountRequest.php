@@ -2,14 +2,15 @@
 
 namespace App\Http\Requests\Auth;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\StrongPassword;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class LoginRequest extends FormRequest
+class ActivateAccountRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Anyone can attempt activation (public route).
      */
     public function authorize(): bool
     {
@@ -17,7 +18,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Validation rules for first-time account activation.
      *
      * @return array<string, mixed>
      */
@@ -25,7 +26,7 @@ class LoginRequest extends FormRequest
     {
         return [
             'identifier' => ['required', 'string', 'max:50'],
-            'password'   => ['required', 'string'],
+            'password'   => ['required', 'string', 'min:8', 'confirmed', new StrongPassword()],
         ];
     }
 
@@ -37,8 +38,10 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'identifier.required' => 'Matric number or file number is required.',
-            'password.required'   => 'Password is required.',
+            'identifier.required'       => 'Matric number or file number is required.',
+            'password.required'         => 'Password is required.',
+            'password.min'              => 'Password must be at least 8 characters.',
+            'password.confirmed'        => 'Password confirmation does not match.',
         ];
     }
 
