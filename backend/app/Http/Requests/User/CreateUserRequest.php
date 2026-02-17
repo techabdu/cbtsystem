@@ -31,10 +31,22 @@ class CreateUserRequest extends FormRequest
             'email'         => 'required|email|max:255|unique:users,email',
             'role'          => 'required|string|in:admin,lecturer,student',
             'department_id' => [
-                Rule::requiredIf(in_array($this->input('role'), ['student', 'lecturer'])),
                 'nullable',
                 'integer',
                 'exists:departments,id',
+                // Required for lecturer, forbidden for student if using combination logic strictly?
+                // Actually, let's make it:
+                // Lecturer: required
+                // Student: should be null (they use combination), but old students might have it.
+                // New logic: Student -> combination_id required.
+                Rule::requiredIf(fn() => $this->role === 'lecturer'),
+            ],
+            'combination_id' => [
+                'nullable',
+                'integer',
+                'exists:combinations,id',
+                // Required for student
+                Rule::requiredIf(fn() => $this->role === 'student'),
             ],
             'student_id' => [
                 Rule::requiredIf($this->input('role') === 'student'),
@@ -44,11 +56,11 @@ class CreateUserRequest extends FormRequest
                 'unique:users,student_id',
             ],
             'staff_id' => [
-                Rule::requiredIf(in_array($this->input('role'), ['lecturer', 'admin'])),
                 'nullable',
                 'string',
-                'max:50',
-                'unique:users,staff_id',
+                'max:20',
+                Rule::unique('users', 'staff_id'),
+                Rule::requiredIf(fn() => in_array($this->role, ['admin', 'lecturer'])),
             ],
             'phone'       => 'nullable|string|max:20',
             'is_active'   => 'nullable|boolean',
@@ -69,10 +81,11 @@ class CreateUserRequest extends FormRequest
             'staff_id.unique'         => 'This staff ID is already in use.',
             'student_id.unique'       => 'This student ID is already in use.',
             'role.in'                 => 'Role must be admin, lecturer, or student.',
-            'department_id.required'  => 'Department is required for students and lecturers.',
+            'department_id.required' => 'Department is required for lecturers.',
+            'combination_id.required' => 'Subject combination is required for students.',
+            'staff_id.required' => 'Staff ID (File Number) is required for staff.',
             'department_id.exists'    => 'The selected department does not exist.',
             'student_id.required'     => 'Student ID (matric number) is required for students.',
-            'staff_id.required'       => 'Staff ID (file number) is required for lecturers and admins.',
         ];
     }
 }

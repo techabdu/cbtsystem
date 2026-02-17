@@ -34,6 +34,12 @@ class UserResource extends JsonResource
                     'code' => $this->department->code,
                 ]
             ),
+            'combination_id'  => $this->when($this->role === 'student', $this->combination_id),
+            'combination'     => $this->when(
+                $this->role === 'student' && $this->relationLoaded('combination') && $this->combination,
+                fn () => new CombinationResource($this->combination)
+            ),
+            'department_ids'  => $this->department_ids, // [id] for lecturer, [id1, id2] for student
             'phone'           => $this->when($this->phone, $this->phone),
             'avatar_url'      => $this->avatar_url,
             'is_active'       => $this->is_active,

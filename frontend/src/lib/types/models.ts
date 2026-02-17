@@ -15,6 +15,8 @@ export interface User {
         name: string;
         code: string;
     };
+    combination_id?: number;
+    combination?: Combination;
     phone?: string;
     avatar_url?: string;
     is_active: boolean;
@@ -32,6 +34,21 @@ export interface Department {
     description?: string;
     is_active: boolean;
     courses_count?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface Combination {
+    id: number;
+    code: string;
+    name: string;
+    first_department_id: number;
+    second_department_id: number;
+    first_department?: Department;
+    second_department?: Department;
+    is_double_major: boolean;
+    is_active: boolean;
+    students_count?: number;
     created_at?: string;
     updated_at?: string;
 }

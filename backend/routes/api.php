@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\V1\Department\DepartmentController;
 use App\Http\Controllers\Api\V1\Course\CourseController;
 use App\Http\Controllers\Api\V1\Course\EnrollmentController;
 use App\Http\Controllers\Api\V1\Course\CourseLecturerController;
+use App\Http\Controllers\Api\V1\Combination\CombinationController;
+use App\Http\Controllers\Api\V1\StudentCourseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,6 +79,23 @@ Route::prefix('v1')->group(function () {
         });
 
         /* -------------------------------------------------------------- */
+        /*  Combination Management                                          */
+        /* -------------------------------------------------------------- */
+
+        /* Active combinations list (for dropdowns, any authenticated user) */
+        Route::get('/combinations/active', [CombinationController::class, 'allActive'])->name('combinations.active');
+
+        /* Admin CRUD */
+        Route::prefix('combinations')->middleware('role:admin')->group(function () {
+            Route::get('/', [CombinationController::class, 'index'])->name('combinations.index');
+            Route::post('/', [CombinationController::class, 'store'])->name('combinations.store');
+            Route::get('/{id}', [CombinationController::class, 'show'])->name('combinations.show');
+            Route::put('/{id}', [CombinationController::class, 'update'])->name('combinations.update');
+            Route::delete('/{id}', [CombinationController::class, 'destroy'])->name('combinations.destroy');
+            Route::post('/{id}/restore', [CombinationController::class, 'restore'])->name('combinations.restore');
+        });
+
+        /* -------------------------------------------------------------- */
         /*  Course Management                                              */
         /* -------------------------------------------------------------- */
 
@@ -109,6 +128,16 @@ Route::prefix('v1')->group(function () {
         Route::prefix('courses')->middleware('role:admin')->group(function () {
             Route::post('/{id}/lecturers', [CourseLecturerController::class, 'assign'])->name('courses.lecturers.assign');
             Route::delete('/{id}/lecturers/{lecturerId}', [CourseLecturerController::class, 'unassign'])->name('courses.lecturers.unassign');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Student Course Enrollment                                       */
+        /* -------------------------------------------------------------- */
+        Route::prefix('student/courses')->middleware('role:student')->group(function () {
+            Route::get('/available', [StudentCourseController::class, 'availableCourses'])->name('student.courses.available');
+            Route::get('/enrolled', [StudentCourseController::class, 'myCourses'])->name('student.courses.enrolled');
+            Route::post('/enroll', [StudentCourseController::class, 'enroll'])->name('student.courses.enroll');
+            Route::post('/unenroll', [StudentCourseController::class, 'unenroll'])->name('student.courses.unenroll');
         });
 
         // --- Future routes will be added here ---

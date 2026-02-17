@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUser } from '@/lib/api/users';
 import { getActiveDepartments } from '@/lib/api/departments';
+import { getActiveCombinations } from '@/lib/api/combinations';
 import type { CreateUserData } from '@/lib/types/api';
-import type { Department } from '@/lib/types/models';
+import type { Department, Combination } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,7 @@ export default function CreateUserPage() {
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
     const [generalError, setGeneralError] = useState('');
     const [departments, setDepartments] = useState<Department[]>([]);
+    const [combinations, setCombinations] = useState<Combination[]>([]);
 
     const [form, setForm] = useState<CreateUserData>({
         first_name: '',
@@ -28,17 +30,22 @@ export default function CreateUserPage() {
         email: '',
         role: 'student',
         department_id: undefined,
+        combination_id: undefined,
         staff_id: '',
         student_id: '',
         phone: '',
         is_active: true,
     });
 
-    // Fetch departments for the dropdown
+    // Fetch departments and combinations
     useEffect(() => {
-        getActiveDepartments()
-            .then((res) => setDepartments(res.data.departments))
-            .catch(console.error);
+        Promise.all([
+            getActiveDepartments(),
+            getActiveCombinations()
+        ]).then(([deptRes, comboRes]) => {
+            setDepartments(deptRes.data.departments);
+            setCombinations(comboRes.data.combinations);
+        }).catch(console.error);
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -49,7 +56,7 @@ export default function CreateUserPage() {
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setForm((prev) => ({ ...prev, [name]: checked }));
-        } else if (name === 'department_id') {
+        } else if (name === 'department_id' || name === 'combination_id') {
             setForm((prev) => ({ ...prev, [name]: value ? parseInt(value, 10) : undefined }));
         } else {
             setForm((prev) => ({ ...prev, [name]: value }));
@@ -87,7 +94,9 @@ export default function CreateUserPage() {
 
     const getError = (field: string) => fieldErrors[field]?.[0] || '';
 
-    const showDepartment = form.role === 'student' || form.role === 'lecturer';
+    // Logic: Lecturers -> Department, Students -> Combination
+    const showDepartment = form.role === 'lecturer' || form.role === 'admin';
+    const showCombination = form.role === 'student';
     const showStudentId = form.role === 'student';
     const showStaffId = form.role === 'lecturer' || form.role === 'admin';
 
@@ -215,6 +224,28 @@ export default function CreateUserPage() {
                                         ))}
                                     </select>
                                     {getError('department_id') && <span className="text-xs text-red-500">{getError('department_id')}</span>}
+                                </div>
+                            )}
+
+                            {showCombination && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="combination_id">Subject Combination *</Label>
+                                    <select
+                                        id="combination_id"
+                                        name="combination_id"
+                                        value={form.combination_id || ''}
+                                        onChange={handleChange}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        required
+                                    >
+                                        <option value="">Select combination...</option>
+                                        {combinations.map((combo) => (
+                                            <option key={combo.id} value={combo.id}>
+                                                {combo.code} - {combo.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {getError('combination_id') && <span className="text-xs text-red-500">{getError('combination_id')}</span>}
                                 </div>
                             )}
                         </div>

@@ -14,17 +14,19 @@ class DatabaseSeeder extends Seeder
      *
      * Order matters — seeders must run in dependency order:
      * 1. Admin user (no dependencies)
-     * 2. Sample users (no dependencies)
-     * 3. Departments (no dependencies)
-     * 4. Courses (depends on departments)
-     * 5. System settings (no dependencies)
+     * 2. Departments (no dependencies)
+     * 3. Combinations (depends on departments)
+     * 4. Sample users (depends on departments & combinations)
+     * 5. Courses (depends on departments)
+     * 6. System settings (no dependencies)
      */
     public function run(): void
     {
         $this->call([
             AdminUserSeeder::class,
-            SampleUsersSeeder::class,
             DepartmentSeeder::class,
+            CombinationSeeder::class,
+            SampleUsersSeeder::class,
             CourseSeeder::class,
             SystemSettingsSeeder::class,
         ]);

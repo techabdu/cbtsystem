@@ -269,37 +269,37 @@
 - [x] Modify: `app/page.tsx` — register links → activate links — 2026-02-13
 - [x] **Build verification: 0 TypeScript errors** ✅ — 2026-02-13
 
-**Sprint 3 — Combination Management:** ⬅️ NEXT
+**Sprint 3 — Combination Management:** ✅ COMPLETE
 > NCE two-subject combination system: each student studies two departments (first + second major).
 > Some specialized fields use "Double Major" (single dept studied in depth).
 > Lecturers remain single-department. Admins have no department.
 
 **Sprint 3a — Database + Backend:**
-- [ ] Migration: Create `combinations` table (`id`, `code`, `name`, `first_department_id` FK, `second_department_id` FK, `is_double_major` boolean, `is_active`, timestamps, soft deletes)
-- [ ] Migration: Add `combination_id` FK to `users` table (nullable, for students)
-- [ ] Model: Create `Combination` model with relationships (`firstDepartment`, `secondDepartment`, `students`)
-- [ ] Model: Update `User` — add `combination_id` fillable, `combination()` relationship, `departmentIds()` accessor
-- [ ] Service: Create `CombinationService` (CRUD, list with filters)
-- [ ] Controller: Create `CombinationController` (index, store, show, update, destroy, restore)
-- [ ] Requests: `CreateCombinationRequest`, `UpdateCombinationRequest`
-- [ ] Resource: `CombinationResource` (includes nested departments)
-- [ ] Routes: CRUD under `/api/v1/combinations` (admin only) + `GET /api/v1/combinations/active` (public)
-- [ ] Seeder: Seed sample combinations (CS/MTH, ENG/HIS, BIO/CHM, PHE double-major, etc.)
-- [ ] Update `CreateUserRequest` — students require `combination_id` (not `department_id`)
-- [ ] Update `UserService::create()` — set `combination_id` for students
-- [ ] Update `UserResource` — include `combination` with nested departments
-- [ ] API verification
+- [x] Migration: Create `combinations` table (`id`, `code`, `name`, `first_department_id` FK, `second_department_id` FK, `is_double_major` boolean, `is_active`, timestamps, soft deletes)
+- [x] Migration: Add `combination_id` FK to `users` table (nullable, for students)
+- [x] Model: Create `Combination` model with relationships (`firstDepartment`, `secondDepartment`, `students`)
+- [x] Model: Update `User` — add `combination_id` fillable, `combination()` relationship, `departmentIds()` accessor
+- [x] Service: Create `CombinationService` (CRUD, list with filters)
+- [x] Controller: Create `CombinationController` (index, store, show, update, destroy, restore)
+- [x] Requests: `CreateCombinationRequest`, `UpdateCombinationRequest`
+- [x] Resource: `CombinationResource` (includes nested departments)
+- [x] Routes: CRUD under `/api/v1/combinations` (admin only) + `GET /api/v1/combinations/active` (public)
+- [x] Seeder: Seed sample combinations (CS/MTH, ENG/HIS, BIO/CHM, PHE double-major, etc.)
+- [x] Update `CreateUserRequest` — students require `combination_id` (not `department_id`)
+- [x] Update `UserService::create()` — set `combination_id` for students
+- [x] Update `UserResource` — include `combination` with nested departments
+- [x] API verification
 
 **Sprint 3b — Frontend:**
-- [ ] Types: Add `Combination` to `models.ts`, `CreateCombinationData`/`UpdateCombinationData` to `api.ts`
-- [ ] API: Create `lib/api/combinations.ts`
-- [ ] Page: Admin Combinations list (`/admin/combinations`)
-- [ ] Page: Admin Create Combination (`/admin/combinations/create`)
-- [ ] Page: Admin Edit Combination (`/admin/combinations/[id]`)
-- [ ] Update: Admin Create User — students pick **combination** dropdown, lecturers pick **department** dropdown
-- [ ] Update: `User` model type — add `combination_id`, `combination` fields
-- [ ] Sidebar: Add "Combinations" link under admin nav
-- [ ] Build verification: 0 TypeScript errors
+- [x] Types: Add `Combination` to `models.ts`, `CreateCombinationData`/`UpdateCombinationData` to `api.ts`
+- [x] API: Create `lib/api/combinations.ts`
+- [x] Page: Admin Combinations list (`/admin/combinations`)
+- [x] Page: Admin Create Combination (`/admin/combinations/create`)
+- [x] Page: Admin Edit Combination (`/admin/combinations/[id]`)
+- [x] Update: Admin Create User — students pick **combination** dropdown, lecturers pick **department** dropdown
+- [x] Update: `User` model type — add `combination_id`, `combination` fields
+- [x] Sidebar: Add "Combinations" link under admin nav
+- [x] Build verification: 0 TypeScript errors
 
 **Sprint 4 — Student Course Enrollment:**
 > Uses student's `combination_id` → resolves to two department IDs → filters available courses

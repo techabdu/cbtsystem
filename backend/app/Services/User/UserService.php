@@ -96,28 +96,42 @@ class UserService
      */
     public function create(array $data, User $admin): User
     {
+        $departmentId = null;
+        $combinationId = null;
+
+        if ($data['role'] === 'lecturer') {
+            $departmentId = $data['department_id'] ?? null;
+        } elseif ($data['role'] === 'student') {
+            $combinationId = $data['combination_id'] ?? null;
+        }
+
         $user = User::create([
+            'email'         => strtolower($data['email']),
             'first_name'    => $data['first_name'],
             'last_name'     => $data['last_name'],
             'middle_name'   => $data['middle_name'] ?? null,
-            'email'         => $data['email'],
-            // No password — user sets their own during first-time activation
             'role'          => $data['role'],
-            'department_id' => $data['department_id'] ?? null,
-            'staff_id'      => $data['staff_id'] ?? null,
+            // ID fields
             'student_id'    => $data['student_id'] ?? null,
+            'staff_id'      => $data['staff_id'] ?? null,
+            // Department / Combination assignment
+            'department_id' => $departmentId,
+            'combination_id'=> $combinationId,
+            // Contact
             'phone'         => $data['phone'] ?? null,
+            'avatar_url'    => $data['avatar_url'] ?? null,
+            // Status defaults
             'is_active'     => $data['is_active'] ?? true,
-            'is_verified'   => false, // verified when they activate
+            'is_verified'   => $data['is_verified'] ?? false, // Email verification default false
+            // Password remains null until activation
         ]);
 
-        $this->logActivity(
-            admin: $admin,
-            action: 'user_created',
-            entityId: $user->id,
-            newValues: ['email' => $user->email, 'role' => $user->role],
-        );
-
+        $this->logActivity($admin, 'user_created', $user->id, newValues: [
+            'email' => $user->email,
+            'role' => $user->role,
+            'department_id' => $user->department_id,
+            'combination_id' => $user->combination_id,
+        ]);
         return $user;
     }
 

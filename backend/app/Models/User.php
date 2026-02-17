@@ -46,6 +46,7 @@ class User extends Authenticatable
         'student_id',
         'staff_id',
         'department_id',
+        'combination_id',
         'phone',
         'avatar_url',
         'role',
@@ -94,10 +95,16 @@ class User extends Authenticatable
     /*  Relationships                                                     */
     /* ------------------------------------------------------------------ */
 
-    /** Department the user belongs to (required for students & lecturers, optional for admins). */
+    /** Department the user belongs to (required for lecturers, optional for admins). */
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** Combination the student belongs to (required for students). */
+    public function combination(): BelongsTo
+    {
+        return $this->belongsTo(Combination::class);
     }
 
     /** Courses the student is enrolled in. */
@@ -244,6 +251,31 @@ class User extends Authenticatable
 
         // Lecturers and admins
         return ! empty($this->staff_id);
+    }
+
+    /**
+     * Get the list of department IDs associated with the user.
+     * For students: the two departments in their combination.
+     * For lecturers: their assigned department.
+     *
+     * @return array<int>
+     */
+    public function getDepartmentIdsAttribute(): array
+    {
+        if ($this->isLecturer()) {
+            return $this->department_id ? [$this->department_id] : [];
+        }
+
+        if ($this->isStudent() && $this->combination) {
+            $ids = [
+                $this->combination->first_department_id,
+                $this->combination->second_department_id,
+            ];
+            // Remove duplicates if double major (though usually handled, good to be safe)
+            return array_unique($ids);
+        }
+
+        return [];
     }
 
     /* ------------------------------------------------------------------ */

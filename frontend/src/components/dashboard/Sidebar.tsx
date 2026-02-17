@@ -13,7 +13,8 @@ import {
     FileQuestion,
     Settings,
     GraduationCap,
-    Building2
+    Building2,
+    Layers,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -96,6 +97,12 @@ export function Sidebar({ className }: SidebarProps) {
             href: '/admin/departments',
             label: 'Departments',
             icon: Building2,
+            roles: [ROLES.ADMIN],
+        },
+        {
+            href: '/admin/combinations',
+            label: 'Combinations',
+            icon: Layers,
             roles: [ROLES.ADMIN],
         },
         {

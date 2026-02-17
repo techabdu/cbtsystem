@@ -62,6 +62,7 @@ export interface CreateUserData {
     email: string;
     role: 'admin' | 'lecturer' | 'student';
     department_id?: number;
+    combination_id?: number;
     staff_id?: string;
     student_id?: string;
     phone?: string;
@@ -76,6 +77,8 @@ export interface UpdateUserData {
     password?: string;
     password_confirmation?: string;
     role?: 'admin' | 'lecturer' | 'student';
+    department_id?: number;
+    combination_id?: number;
     staff_id?: string;
     student_id?: string;
     phone?: string;
@@ -200,3 +203,59 @@ export interface CourseLecturer {
     staff_id?: string;
     role: 'lecturer' | 'coordinator' | 'assistant';
 }
+
+/* ------------------------------------------------------------------ */
+/*  Combination Management (Admin)                                     */
+/* ------------------------------------------------------------------ */
+
+export interface CreateCombinationData {
+    code: string;
+    name: string;
+    first_department_id: number;
+    second_department_id: number;
+    is_active?: boolean;
+}
+
+export interface UpdateCombinationData {
+    code?: string;
+    name?: string;
+    first_department_id?: number;
+    second_department_id?: number;
+    is_active?: boolean;
+}
+
+export interface CombinationFilters {
+    search?: string;
+    is_active?: string;
+    trashed?: '' | 'only' | 'with';
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}
+
+/* ------------------------------------------------------------------ */
+/*  Student Courses                                                   */
+/* ------------------------------------------------------------------ */
+
+export interface StudentCourseFilters {
+    semester?: string;
+    level?: string;
+    page?: number;
+    per_page?: number;
+}
+
+export interface EnrollmentWindow {
+    is_open: boolean;
+    start_date: string | null;
+    end_date: string | null;
+}
+
+export interface AvailableCoursesResponse extends Omit<PaginatedResponse<import('./models').Course>, 'meta'> {
+    meta: {
+        enrollment_window: EnrollmentWindow;
+        timestamp?: string;
+        version?: string;
+    };
+}
+
