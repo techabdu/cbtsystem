@@ -42,10 +42,17 @@ class StudentCourseController extends Controller
             $query->where('semester', $request->semester);
         }
         if ($request->has('level')) {
+            // Explicit level filter from request (string-based legacy)
             $query->where('level', $request->level);
+        } elseif ($user->level_id) {
+            // Auto-scope: only show courses matching student's level
+            $query->where(function ($q) use ($user) {
+                $q->where('level_id', $user->level_id)
+                  ->orWhereNull('level_id'); // Include courses without a level (general/common courses)
+            });
         }
 
-        $courses = $query->with('department')->paginate(20);
+        $courses = $query->with(['department', 'levelRelation'])->paginate(20);
 
         return CourseResource::collection($courses)->additional([
             'meta' => [
@@ -74,7 +81,7 @@ class StudentCourseController extends Controller
             $query->where('level', $request->level);
         }
 
-        $courses = $query->with('department')->paginate(20);
+        $courses = $query->with(['department', 'levelRelation'])->paginate(20);
 
         return CourseResource::collection($courses);
     }
@@ -104,6 +111,11 @@ class StudentCourseController extends Controller
         // Verify course is in student's combination
         if (!in_array($course->department_id, $user->department_ids)) {
             return response()->json(['message' => 'This course is not available for your combination.'], 403);
+        }
+
+        // Verify course is in student's level (if both have level_id set)
+        if ($user->level_id && $course->level_id && $user->level_id !== $course->level_id) {
+            return response()->json(['message' => 'This course is not available for your current level.'], 403);
         }
 
         // Check if already enrolled

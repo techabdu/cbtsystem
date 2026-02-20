@@ -24,7 +24,7 @@ class CourseService
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
-        $query = Course::with('department')
+        $query = Course::with(['department', 'levelRelation'])
             ->withCount(['students', 'lecturers', 'exams', 'questions']);
 
         // --- Include soft-deleted ---
@@ -90,7 +90,7 @@ class CourseService
      */
     public function listForLecturer(User $lecturer, array $filters = []): LengthAwarePaginator
     {
-        $query = Course::with('department')
+        $query = Course::with(['department', 'levelRelation'])
             ->withCount(['students', 'lecturers', 'exams', 'questions'])
             ->whereHas('lecturers', function ($q) use ($lecturer) {
                 $q->where('users.id', $lecturer->id);
@@ -131,7 +131,7 @@ class CourseService
      */
     public function listForStudent(User $student, array $filters = []): LengthAwarePaginator
     {
-        $query = Course::with('department')
+        $query = Course::with(['department', 'levelRelation'])
             ->withCount(['students', 'exams'])
             ->whereHas('enrollments', function ($q) use ($student) {
                 $q->where('student_id', $student->id)
@@ -170,7 +170,7 @@ class CourseService
      */
     public function find(int $id): Course
     {
-        return Course::with('department')
+        return Course::with(['department', 'levelRelation'])
             ->withCount(['students', 'lecturers', 'exams', 'questions'])
             ->findOrFail($id);
     }

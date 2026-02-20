@@ -48,6 +48,13 @@ class CreateUserRequest extends FormRequest
                 // Required for student
                 Rule::requiredIf(fn() => $this->role === 'student'),
             ],
+            'level_id' => [
+                'nullable',
+                'integer',
+                'exists:levels,id',
+                // Required for student
+                Rule::requiredIf(fn() => $this->role === 'student'),
+            ],
             'student_id' => [
                 Rule::requiredIf($this->input('role') === 'student'),
                 'nullable',
@@ -83,6 +90,8 @@ class CreateUserRequest extends FormRequest
             'role.in'                 => 'Role must be admin, lecturer, or student.',
             'department_id.required' => 'Department is required for lecturers.',
             'combination_id.required' => 'Subject combination is required for students.',
+            'level_id.required' => 'Level is required for students.',
+            'level_id.exists'   => 'The selected level does not exist.',
             'staff_id.required' => 'Staff ID (File Number) is required for staff.',
             'department_id.exists'    => 'The selected department does not exist.',
             'student_id.required'     => 'Student ID (matric number) is required for students.',

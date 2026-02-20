@@ -25,6 +25,7 @@ class UpdateCourseRequest extends FormRequest
             'semester'      => 'nullable|string|max:20',
             'academic_year' => 'nullable|string|max:20',
             'level'         => 'nullable|string|max:20',
+            'level_id'      => 'nullable|integer|exists:levels,id',
             'is_active'     => 'nullable|boolean',
         ];
     }

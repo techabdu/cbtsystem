@@ -102,12 +102,17 @@ export default function StudentCoursesPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Course Management</h1>
                     <p className="text-muted-foreground">
                         Manage your course enrollments for the semester.
+                        {user?.level && (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                {user.level.code}
+                            </span>
+                        )}
                     </p>
                 </div>
                 {enrollmentWindow && (
                     <div className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm ${enrollmentWindow.is_open
-                            ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-400'
-                            : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-900/20 dark:text-amber-400'
+                        ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-400'
+                        : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-900/20 dark:text-amber-400'
                         }`}>
                         <Clock className="h-4 w-4" />
                         <span>
@@ -123,8 +128,8 @@ export default function StudentCoursesPage() {
                 <button
                     onClick={() => setActiveTab('my_courses')}
                     className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all sm:flex-none ${activeTab === 'my_courses'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
                         }`}
                 >
                     My Courses ({enrolledCourses.length})
@@ -132,8 +137,8 @@ export default function StudentCoursesPage() {
                 <button
                     onClick={() => setActiveTab('available_courses')}
                     className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all sm:flex-none ${activeTab === 'available_courses'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
                         }`}
                 >
                     Available Courses
@@ -250,7 +255,7 @@ function CourseCard({
                 </div>
                 <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 shrink-0" />
-                    <span>Level {course.level} • {course.semester} Semester</span>
+                    <span>Level {course.level_data?.code || course.level || '—'} • {course.semester} Semester</span>
                 </div>
                 {type === 'enrolled' ? (
                     <div className="mt-2 flex items-center gap-2 text-green-600 dark:text-green-400">

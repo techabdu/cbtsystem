@@ -17,6 +17,8 @@ export interface User {
     };
     combination_id?: number;
     combination?: Combination;
+    level_id?: number;
+    level?: Level;
     phone?: string;
     avatar_url?: string;
     is_active: boolean;
@@ -53,6 +55,18 @@ export interface Combination {
     updated_at?: string;
 }
 
+export interface Level {
+    id: number;
+    code: string;
+    name: string;
+    numeric_order: number;
+    is_active: boolean;
+    students_count?: number;
+    courses_count?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface Course {
     id: number;
     uuid: string;
@@ -62,6 +76,12 @@ export interface Course {
     credit_hours?: number;
     semester?: string;
     level?: string;
+    level_id?: number;
+    level_data?: {
+        id: number;
+        code: string;
+        name: string;
+    };
     academic_year?: string;
     department_id: number;
     is_active: boolean;

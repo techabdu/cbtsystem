@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getUser, updateUser, deleteUser, toggleUserActive } from '@/lib/api/users';
-import type { User } from '@/lib/types/models';
+import { getActiveLevels } from '@/lib/api/levels';
+import type { User, Level } from '@/lib/types/models';
 import type { UpdateUserData } from '@/lib/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import {
     ArrowLeft, Pencil, Save, X, Trash2,
     Eye, EyeOff, AlertCircle, CheckCircle2, Loader2,
-    Mail, Phone, Shield, Calendar, UserCheck, UserX, Hash
+    Mail, Phone, Shield, Calendar, UserCheck, UserX, Hash, BarChart3
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -40,6 +41,7 @@ export default function UserDetailPage() {
     const [generalError, setGeneralError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
     const [actionLoading, setActionLoading] = useState(false);
+    const [levels, setLevels] = useState<Level[]>([]);
 
     // Edit form state
     const [form, setForm] = useState<UpdateUserData>({});
@@ -64,6 +66,7 @@ export default function UserDetailPage() {
                 phone: res.data.user.phone || '',
                 is_active: res.data.user.is_active,
                 is_verified: res.data.user.is_verified,
+                level_id: res.data.user.level_id,
             });
         } catch (err) {
             console.error('Failed to fetch user:', err);
@@ -74,6 +77,13 @@ export default function UserDetailPage() {
     }, [userId]);
 
     useEffect(() => { fetchUser(); }, [fetchUser]);
+
+    // Load levels for student editing
+    useEffect(() => {
+        getActiveLevels()
+            .then(res => setLevels(res.data.levels))
+            .catch(console.error);
+    }, []);
 
     /* ------------------------------------------------------------------ */
     /*  Handlers                                                           */
@@ -86,6 +96,8 @@ export default function UserDetailPage() {
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setForm((prev) => ({ ...prev, [name]: checked }));
+        } else if (name === 'level_id' || name === 'department_id' || name === 'combination_id') {
+            setForm((prev) => ({ ...prev, [name]: value ? parseInt(value, 10) : undefined }));
         } else {
             setForm((prev) => ({ ...prev, [name]: value }));
         }
@@ -167,6 +179,7 @@ export default function UserDetailPage() {
                 phone: user.phone || '',
                 is_active: user.is_active,
                 is_verified: user.is_verified,
+                level_id: user.level_id,
             });
         }
     };
@@ -339,6 +352,23 @@ export default function UserDetailPage() {
                                     )}
                                 </div>
                             </div>
+                            {form.role === 'student' && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="level_id">Level</Label>
+                                        <select id="level_id" name="level_id" value={form.level_id || ''} onChange={handleChange}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <option value="">Select level...</option>
+                                            {levels.map((level) => (
+                                                <option key={level.id} value={level.id}>
+                                                    {level.code} — {level.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
                             <div className="flex flex-wrap gap-6 pt-2">
                                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                                     <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} className="h-4 w-4 rounded border-input" />
@@ -410,6 +440,23 @@ export default function UserDetailPage() {
                                 <InfoRow icon={<Calendar className="h-4 w-4" />} label="Last Login"
                                     value={user!.last_login_at ? new Date(user!.last_login_at).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never'}
                                 />
+                                {user!.role === 'student' && (
+                                    <InfoRow icon={<BarChart3 className="h-4 w-4" />} label="Level"
+                                        value={user!.level
+                                            ? <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                {user!.level.code} — {user!.level.name}
+                                            </span>
+                                            : '—'
+                                        }
+                                    />
+                                )}
+                                {user!.combination && (
+                                    <InfoRow icon={<Hash className="h-4 w-4" />} label="Combination"
+                                        value={<span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                            {user!.combination.code} — {user!.combination.name}
+                                        </span>}
+                                    />
+                                )}
                             </dl>
                         </CardContent>
                     </Card>
@@ -465,8 +512,8 @@ function StatusItem({ label, active }: { label: string; active: boolean }) {
         <div className="flex items-center justify-between">
             <span className="text-sm">{label}</span>
             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${active
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                 }`}>
                 {active ? <CheckCircle2 className="h-3 w-3" /> : <X className="h-3 w-3" />}
                 {active ? 'Yes' : 'No'}

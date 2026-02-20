@@ -44,6 +44,7 @@ class Course extends Model
         'semester',
         'academic_year',
         'level',
+        'level_id',
         'is_active',
     ];
 
@@ -68,6 +69,12 @@ class Course extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** Level this course belongs to. */
+    public function levelRelation(): BelongsTo
+    {
+        return $this->belongsTo(Level::class, 'level_id');
     }
 
     /** Students enrolled in this course. */

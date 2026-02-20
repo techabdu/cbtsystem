@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\LevelResource;
 
 class UserResource extends JsonResource
 {
@@ -38,6 +39,11 @@ class UserResource extends JsonResource
             'combination'     => $this->when(
                 $this->role === 'student' && $this->relationLoaded('combination') && $this->combination,
                 fn () => new CombinationResource($this->combination)
+            ),
+            'level_id'        => $this->when($this->role === 'student', $this->level_id),
+            'level'           => $this->when(
+                $this->role === 'student' && $this->relationLoaded('level') && $this->level,
+                fn () => new LevelResource($this->level)
             ),
             'department_ids'  => $this->department_ids, // [id] for lecturer, [id1, id2] for student
             'phone'           => $this->when($this->phone, $this->phone),

@@ -24,6 +24,14 @@ class CourseResource extends JsonResource
             'semester'        => $this->semester,
             'academic_year'   => $this->academic_year,
             'level'           => $this->level,
+            'level_id'        => $this->level_id,
+            'level_data'      => $this->when($this->relationLoaded('levelRelation'), function () {
+                return $this->levelRelation ? [
+                    'id'   => $this->levelRelation->id,
+                    'code' => $this->levelRelation->code,
+                    'name' => $this->levelRelation->name,
+                ] : null;
+            }),
             'is_active'       => (bool) $this->is_active,
             'department_id'   => $this->department_id,
 

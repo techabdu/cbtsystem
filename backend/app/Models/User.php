@@ -47,6 +47,7 @@ class User extends Authenticatable
         'staff_id',
         'department_id',
         'combination_id',
+        'level_id',
         'phone',
         'avatar_url',
         'role',
@@ -105,6 +106,12 @@ class User extends Authenticatable
     public function combination(): BelongsTo
     {
         return $this->belongsTo(Combination::class);
+    }
+
+    /** Level the student is currently in. */
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(Level::class);
     }
 
     /** Courses the student is enrolled in. */

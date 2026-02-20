@@ -21,7 +21,7 @@ class UserService
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
-        $query = User::query();
+        $query = User::query()->with(['department', 'combination', 'level']);
 
         // --- Role filter ---
         if (! empty($filters['role'])) {
@@ -79,7 +79,9 @@ class UserService
      */
     public function find(int $id): User
     {
-        return User::withTrashed()->findOrFail($id);
+        return User::withTrashed()
+            ->with(['department', 'combination', 'level'])
+            ->findOrFail($id);
     }
 
     /* ------------------------------------------------------------------ */
@@ -98,11 +100,13 @@ class UserService
     {
         $departmentId = null;
         $combinationId = null;
+        $levelId = null;
 
         if ($data['role'] === 'lecturer') {
             $departmentId = $data['department_id'] ?? null;
         } elseif ($data['role'] === 'student') {
             $combinationId = $data['combination_id'] ?? null;
+            $levelId = $data['level_id'] ?? null;
         }
 
         $user = User::create([
@@ -114,9 +118,10 @@ class UserService
             // ID fields
             'student_id'    => $data['student_id'] ?? null,
             'staff_id'      => $data['staff_id'] ?? null,
-            // Department / Combination assignment
+            // Department / Combination / Level assignment
             'department_id' => $departmentId,
             'combination_id'=> $combinationId,
+            'level_id'      => $levelId,
             // Contact
             'phone'         => $data['phone'] ?? null,
             'avatar_url'    => $data['avatar_url'] ?? null,

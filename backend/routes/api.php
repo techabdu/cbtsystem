@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Course\CourseController;
 use App\Http\Controllers\Api\V1\Course\EnrollmentController;
 use App\Http\Controllers\Api\V1\Course\CourseLecturerController;
 use App\Http\Controllers\Api\V1\Combination\CombinationController;
+use App\Http\Controllers\Api\V1\Level\LevelController;
 use App\Http\Controllers\Api\V1\StudentCourseController;
 
 /*
@@ -93,6 +94,23 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}', [CombinationController::class, 'update'])->name('combinations.update');
             Route::delete('/{id}', [CombinationController::class, 'destroy'])->name('combinations.destroy');
             Route::post('/{id}/restore', [CombinationController::class, 'restore'])->name('combinations.restore');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Level Management                                                */
+        /* -------------------------------------------------------------- */
+
+        /* Active levels list (for dropdowns, any authenticated user) */
+        Route::get('/levels/active', [LevelController::class, 'allActive'])->name('levels.active');
+
+        /* Admin CRUD */
+        Route::prefix('levels')->middleware('role:admin')->group(function () {
+            Route::get('/', [LevelController::class, 'index'])->name('levels.index');
+            Route::post('/', [LevelController::class, 'store'])->name('levels.store');
+            Route::get('/{id}', [LevelController::class, 'show'])->name('levels.show');
+            Route::put('/{id}', [LevelController::class, 'update'])->name('levels.update');
+            Route::delete('/{id}', [LevelController::class, 'destroy'])->name('levels.destroy');
+            Route::post('/{id}/restore', [LevelController::class, 'restore'])->name('levels.restore');
         });
 
         /* -------------------------------------------------------------- */

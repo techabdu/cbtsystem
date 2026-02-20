@@ -15,6 +15,7 @@ import {
     GraduationCap,
     Building2,
     Layers,
+    BarChart3,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -103,6 +104,12 @@ export function Sidebar({ className }: SidebarProps) {
             href: '/admin/combinations',
             label: 'Combinations',
             icon: Layers,
+            roles: [ROLES.ADMIN],
+        },
+        {
+            href: '/admin/levels',
+            label: 'Levels',
+            icon: BarChart3,
             roles: [ROLES.ADMIN],
         },
         {

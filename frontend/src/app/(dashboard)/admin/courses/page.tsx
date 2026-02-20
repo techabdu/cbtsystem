@@ -10,8 +10,9 @@ import {
     restoreCourse,
 } from '@/lib/api/courses';
 import { getActiveDepartments } from '@/lib/api/departments';
+import { getActiveLevels } from '@/lib/api/levels';
 import type { Course } from '@/lib/types/models';
-import type { Department } from '@/lib/types/models';
+import type { Department, Level } from '@/lib/types/models';
 import type { CourseFilters, CreateCourseData, UpdateCourseData } from '@/lib/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +35,6 @@ type FormMode = 'closed' | 'create' | 'edit';
 /*  Level / Semester Options                                           */
 /* ------------------------------------------------------------------ */
 
-const LEVEL_OPTIONS = ['100L', '200L', '300L', '400L', '500L', '600L'];
 const SEMESTER_OPTIONS = ['First', 'Second'];
 
 /* ------------------------------------------------------------------ */
@@ -45,6 +45,7 @@ export default function AdminCoursesPage() {
     const router = useRouter();
     const [courses, setCourses] = useState<Course[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
+    const [levelOptions, setLevelOptions] = useState<Level[]>([]);
     const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, per_page: 20, total: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
@@ -77,14 +78,18 @@ export default function AdminCoursesPage() {
     const [errorMessage, setErrorMessage] = useState('');
 
     /* ------------------------------------------------------------------ */
-    /*  Fetch departments for dropdowns                                    */
+    /*  Fetch departments & levels for dropdowns                            */
     /* ------------------------------------------------------------------ */
 
     useEffect(() => {
         (async () => {
             try {
-                const res = await getActiveDepartments();
-                setDepartments(res.data.departments);
+                const [deptRes, levelRes] = await Promise.all([
+                    getActiveDepartments(),
+                    getActiveLevels(),
+                ]);
+                setDepartments(deptRes.data.departments);
+                setLevelOptions(levelRes.data.levels);
             } catch (err) {
                 console.error('Failed to fetch departments:', err);
             }
@@ -446,8 +451,8 @@ export default function AdminCoursesPage() {
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <option value="">Select Level</option>
-                                        {LEVEL_OPTIONS.map((l) => (
-                                            <option key={l} value={l}>{l}</option>
+                                        {levelOptions.map((l) => (
+                                            <option key={l.id} value={l.code}>{l.code} — {l.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -554,8 +559,8 @@ export default function AdminCoursesPage() {
                             className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <option value="">All Levels</option>
-                            {LEVEL_OPTIONS.map((l) => (
-                                <option key={l} value={l}>{l}</option>
+                            {levelOptions.map((l) => (
+                                <option key={l.id} value={l.code}>{l.code}</option>
                             ))}
                         </select>
                         <select

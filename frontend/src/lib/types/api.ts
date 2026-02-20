@@ -63,6 +63,7 @@ export interface CreateUserData {
     role: 'admin' | 'lecturer' | 'student';
     department_id?: number;
     combination_id?: number;
+    level_id?: number;
     staff_id?: string;
     student_id?: string;
     phone?: string;
@@ -79,6 +80,7 @@ export interface UpdateUserData {
     role?: 'admin' | 'lecturer' | 'student';
     department_id?: number;
     combination_id?: number;
+    level_id?: number;
     staff_id?: string;
     student_id?: string;
     phone?: string;
@@ -138,6 +140,7 @@ export interface CreateCourseData {
     semester?: string;
     academic_year?: string;
     level?: string;
+    level_id?: number;
     is_active?: boolean;
 }
 
@@ -150,6 +153,7 @@ export interface UpdateCourseData {
     semester?: string;
     academic_year?: string;
     level?: string;
+    level_id?: number;
     is_active?: boolean;
 }
 
@@ -225,6 +229,34 @@ export interface UpdateCombinationData {
 }
 
 export interface CombinationFilters {
+    search?: string;
+    is_active?: string;
+    trashed?: '' | 'only' | 'with';
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}
+
+/* ------------------------------------------------------------------ */
+/*  Level Management (Admin)                                           */
+/* ------------------------------------------------------------------ */
+
+export interface CreateLevelData {
+    code: string;
+    name: string;
+    numeric_order: number;
+    is_active?: boolean;
+}
+
+export interface UpdateLevelData {
+    code?: string;
+    name?: string;
+    numeric_order?: number;
+    is_active?: boolean;
+}
+
+export interface LevelFilters {
     search?: string;
     is_active?: string;
     trashed?: '' | 'only' | 'with';

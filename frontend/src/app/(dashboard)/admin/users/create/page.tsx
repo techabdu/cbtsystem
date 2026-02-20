@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { createUser } from '@/lib/api/users';
 import { getActiveDepartments } from '@/lib/api/departments';
 import { getActiveCombinations } from '@/lib/api/combinations';
+import { getActiveLevels } from '@/lib/api/levels';
 import type { CreateUserData } from '@/lib/types/api';
-import type { Department, Combination } from '@/lib/types/models';
+import type { Department, Combination, Level } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ export default function CreateUserPage() {
     const [generalError, setGeneralError] = useState('');
     const [departments, setDepartments] = useState<Department[]>([]);
     const [combinations, setCombinations] = useState<Combination[]>([]);
+    const [levels, setLevels] = useState<Level[]>([]);
 
     const [form, setForm] = useState<CreateUserData>({
         first_name: '',
@@ -35,16 +37,19 @@ export default function CreateUserPage() {
         student_id: '',
         phone: '',
         is_active: true,
+        level_id: undefined,
     });
 
     // Fetch departments and combinations
     useEffect(() => {
         Promise.all([
             getActiveDepartments(),
-            getActiveCombinations()
-        ]).then(([deptRes, comboRes]) => {
+            getActiveCombinations(),
+            getActiveLevels(),
+        ]).then(([deptRes, comboRes, levelRes]) => {
             setDepartments(deptRes.data.departments);
             setCombinations(comboRes.data.combinations);
+            setLevels(levelRes.data.levels);
         }).catch(console.error);
     }, []);
 
@@ -56,7 +61,7 @@ export default function CreateUserPage() {
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setForm((prev) => ({ ...prev, [name]: checked }));
-        } else if (name === 'department_id' || name === 'combination_id') {
+        } else if (name === 'department_id' || name === 'combination_id' || name === 'level_id') {
             setForm((prev) => ({ ...prev, [name]: value ? parseInt(value, 10) : undefined }));
         } else {
             setForm((prev) => ({ ...prev, [name]: value }));
@@ -249,6 +254,31 @@ export default function CreateUserPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Level selector for students */}
+                        {showCombination && (
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="level_id">Level *</Label>
+                                    <select
+                                        id="level_id"
+                                        name="level_id"
+                                        value={form.level_id || ''}
+                                        onChange={handleChange}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        required
+                                    >
+                                        <option value="">Select level...</option>
+                                        {levels.map((level) => (
+                                            <option key={level.id} value={level.id}>
+                                                {level.code} — {level.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {getError('level_id') && <span className="text-xs text-red-500">{getError('level_id')}</span>}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             {showStudentId && (
