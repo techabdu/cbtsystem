@@ -66,6 +66,7 @@ export default function UserDetailPage() {
                 phone: res.data.user.phone || '',
                 is_active: res.data.user.is_active,
                 is_verified: res.data.user.is_verified,
+                is_hod: res.data.user.is_hod || false,
                 level_id: res.data.user.level_id,
             });
         } catch (err) {
@@ -179,6 +180,7 @@ export default function UserDetailPage() {
                 phone: user.phone || '',
                 is_active: user.is_active,
                 is_verified: user.is_verified,
+                is_hod: user.is_hod || false,
                 level_id: user.level_id,
             });
         }
@@ -236,6 +238,11 @@ export default function UserDetailPage() {
                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleBadge[user!.role]?.classes}`}>
                                 {roleBadge[user!.role]?.label}
                             </span>
+                            {user!.is_hod && (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                    HOD
+                                </span>
+                            )}
                         </div>
                         <p className="text-muted-foreground">{user!.email}</p>
                     </div>
@@ -378,7 +385,18 @@ export default function UserDetailPage() {
                                     <input type="checkbox" name="is_verified" checked={form.is_verified} onChange={handleChange} className="h-4 w-4 rounded border-input" />
                                     Email Verified
                                 </label>
+                                {form.role === 'lecturer' && (
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" name="is_hod" checked={form.is_hod || false} onChange={handleChange} className="h-4 w-4 rounded border-input" />
+                                        Head of Department (HOD)
+                                    </label>
+                                )}
                             </div>
+                            {form.role === 'lecturer' && form.is_hod && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                    Only one HOD per department. Setting this will remove HOD from any other lecturer in the same department.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -470,6 +488,9 @@ export default function UserDetailPage() {
                             <StatusItem label="Active" active={user!.is_active} />
                             <StatusItem label="Email Verified" active={user!.is_verified} />
                             <StatusItem label="Profile Complete" active={user!.is_profile_complete} />
+                            {user!.role === 'lecturer' && (
+                                <StatusItem label="Head of Department" active={user!.is_hod || false} />
+                            )}
                         </CardContent>
                         <CardFooter className="flex-col gap-2">
                             <Button

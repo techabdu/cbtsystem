@@ -128,8 +128,17 @@ class UserService
             // Status defaults
             'is_active'     => $data['is_active'] ?? true,
             'is_verified'   => $data['is_verified'] ?? false, // Email verification default false
+            'is_hod'        => ($data['role'] === 'lecturer') ? ($data['is_hod'] ?? false) : false,
             // Password remains null until activation
         ]);
+
+        // Enforce one-HOD-per-department: if this new user is HOD, remove HOD from others
+        if ($user->is_hod && $user->department_id) {
+            User::where('department_id', $user->department_id)
+                ->where('is_hod', true)
+                ->where('id', '!=', $user->id)
+                ->update(['is_hod' => false]);
+        }
 
         $this->logActivity($admin, 'user_created', $user->id, newValues: [
             'email' => $user->email,
@@ -163,7 +172,20 @@ class UserService
             unset($data['password']);
         }
 
+        // Only lecturers can be HOD — clear is_hod if role changes away from lecturer
+        if (isset($data['role']) && $data['role'] !== 'lecturer') {
+            $data['is_hod'] = false;
+        }
+
         $user->update($data);
+
+        // Enforce one-HOD-per-department: if this user is now HOD, remove HOD from others
+        if ($user->is_hod && $user->department_id) {
+            User::where('department_id', $user->department_id)
+                ->where('is_hod', true)
+                ->where('id', '!=', $user->id)
+                ->update(['is_hod' => false]);
+        }
 
         $this->logActivity(
             admin: $admin,

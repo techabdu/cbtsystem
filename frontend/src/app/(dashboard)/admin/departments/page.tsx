@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     getDepartments,
     createDepartment,
@@ -51,6 +51,9 @@ export default function AdminDepartmentsPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Ref for scroll-to-form
+    const formRef = useRef<HTMLDivElement>(null);
+
     /* ------------------------------------------------------------------ */
     /*  Fetch departments                                                  */
     /* ------------------------------------------------------------------ */
@@ -84,6 +87,11 @@ export default function AdminDepartmentsPage() {
         setFormData({ code: '', name: '', description: '', is_active: true });
         setFieldErrors({});
         setErrorMessage('');
+        // Scroll to form after state update
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        }, 100);
     };
 
     const openEditForm = (dept: Department) => {
@@ -97,6 +105,11 @@ export default function AdminDepartmentsPage() {
         });
         setFieldErrors({});
         setErrorMessage('');
+        // Scroll to form after state update
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        }, 100);
     };
 
     const closeForm = () => {
@@ -241,7 +254,7 @@ export default function AdminDepartmentsPage() {
 
             {/* Create / Edit Form (inline card) */}
             {formMode !== 'closed' && (
-                <Card className="border-primary/30 shadow-md">
+                <Card ref={formRef} className="border-primary/30 shadow-md">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>

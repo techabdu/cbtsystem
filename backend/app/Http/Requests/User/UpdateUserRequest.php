@@ -37,6 +37,7 @@ class UpdateUserRequest extends FormRequest
             'phone'       => 'nullable|string|max:20',
             'is_active'   => 'sometimes|boolean',
             'is_verified' => 'sometimes|boolean',
+            'is_hod'      => 'sometimes|boolean',
             'level_id'    => 'nullable|integer|exists:levels,id',
         ];
     }

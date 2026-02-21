@@ -7,6 +7,7 @@ export interface User {
     middle_name?: string;
     full_name: string;
     role: 'admin' | 'lecturer' | 'student';
+    is_hod?: boolean;
     student_id?: string;
     staff_id?: string;
     department_id?: number;
@@ -129,3 +130,63 @@ export interface Exam {
     total_questions: number;
     is_practice: boolean;
 }
+
+export interface QuestionOption {
+    key: string;
+    value: string;
+}
+
+export interface Question {
+    id: number;
+    uuid: string;
+    course_id: number;
+    created_by: number;
+    question_text: string;
+    question_type: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
+    options?: QuestionOption[];
+    correct_answer?: string | string[] | null;
+    has_correct_answer?: boolean;
+
+    // Media
+    has_image: boolean;
+    image_url?: string;
+    has_audio: boolean;
+    audio_url?: string;
+
+    // Configuration
+    points: number;
+    difficulty_level?: 'easy' | 'medium' | 'hard';
+
+    // Categorization
+    topic?: string;
+    tags?: string[];
+
+    // Analytics
+    times_used: number;
+    average_score?: number;
+
+    // Status
+    is_active: boolean;
+    is_verified: boolean;
+    verified_at?: string;
+
+    // Nested (from API)
+    course?: {
+        id: number;
+        code: string;
+        title: string;
+    };
+    creator?: {
+        id: number;
+        full_name: string;
+        email: string;
+    };
+    verifier?: {
+        id: number;
+        full_name: string;
+    };
+
+    created_at?: string;
+    updated_at?: string;
+}
+

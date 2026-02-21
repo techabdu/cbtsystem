@@ -51,6 +51,7 @@ class User extends Authenticatable
         'phone',
         'avatar_url',
         'role',
+        'is_hod',
         'is_active',
         'is_verified',
         'email_verified_at',
@@ -88,6 +89,7 @@ class User extends Authenticatable
             'password'           => 'hashed',
             'is_active'          => 'boolean',
             'is_verified'        => 'boolean',
+            'is_hod'             => 'boolean',
             'metadata'           => 'array',
         ];
     }
@@ -200,6 +202,12 @@ class User extends Authenticatable
         return $query->where('role', 'admin');
     }
 
+    /** Scope: only HODs. */
+    public function scopeHod($query)
+    {
+        return $query->where('is_hod', true);
+    }
+
     /** Scope: verified users. */
     public function scopeVerified($query)
     {
@@ -299,6 +307,12 @@ class User extends Authenticatable
     public function isLecturer(): bool
     {
         return $this->role === 'lecturer';
+    }
+
+    /** Check if user is a Head of Department. */
+    public function isHod(): bool
+    {
+        return $this->role === 'lecturer' && $this->is_hod === true;
     }
 
     /** Check if user is a student. */

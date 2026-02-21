@@ -1,6 +1,6 @@
 # CBT System — Master Project Plan
 
-> **Last Updated:** 2026-02-13
+> **Last Updated:** 2026-02-20
 > **Status:** Phase 1 — ✅ COMPLETE (Verified 2026-02-13)
 > **Reference Guides:** `/guides/01–08` (Architecture, DB Schema, API Spec, Backend, Frontend, Security, Deployment, Coding Standards)
 
@@ -226,7 +226,7 @@
 - [ ] Frontend: Lecturer Courses page (assigned courses only) — deferred to Phase 3 integration
 - [ ] Frontend: Student Courses page (enrolled courses) — **moved to Stage 2.3.5 (student self-enrollment)**
 
-### Stage 2.3.5 — Auth & Enrollment Refactor ⬅️ NEXT
+### Stage 2.3.5 — Auth & Enrollment Refactor ✅ COMPLETE
 > **Detailed Plan:** `.agent/auth-enrollment-refactor-plan.md`
 > **Scope:** Replace self-registration with activation flow + Student self-service course enrollment
 
@@ -301,35 +301,59 @@
 - [x] Sidebar: Add "Combinations" link under admin nav
 - [x] Build verification: 0 TypeScript errors
 
-**Sprint 4 — Student Course Enrollment:**
+**Sprint 4 — Student Course Enrollment:** ✅ COMPLETE
 > Uses student's `combination_id` → resolves to two department IDs → filters available courses
-- [ ] Create: `StudentCourseController.php` — available-courses, my-courses, enroll, unenroll
-- [ ] Add enrollment window check via `system_settings` (`enrollment_start_date`, `enrollment_end_date`)
-- [ ] Seed: `enrollment_start_date` and `enrollment_end_date` in system_settings
-- [ ] Add routes: 4 student enrollment endpoints
-- [ ] Create: `lib/api/student.ts` (frontend API)
-- [ ] Create: Student Courses page (`/student/courses`) — "My Courses" + "Available Courses" tabs
-- [ ] Modify: Sidebar — add student "Courses" link
-- [ ] API test + build verification
+- [x] Create: `StudentCourseController.php` — available-courses, my-courses, enroll, unenroll — 2026-02-14
+- [x] Add enrollment window check via `system_settings` (`enrollment_start_date`, `enrollment_end_date`) — 2026-02-14
+- [x] Seed: `enrollment_start_date` and `enrollment_end_date` in system_settings (`EnrollmentSettingsSeeder.php`) — 2026-02-14
+- [x] Add routes: 4 student enrollment endpoints (`GET /available`, `GET /enrolled`, `POST /enroll`, `POST /unenroll` under `student/courses` with `role:student`) — 2026-02-14
+- [x] Create: `lib/api/student.ts` (frontend API — `getAvailableCourses`, `getEnrolledCourses`, `enrollInCourse`, `unenrollFromCourse`) — 2026-02-14
+- [x] Create: Student Courses page (`/student/courses`) — "My Courses" + "Available Courses" tabs with `CourseCard` component (300 lines) — 2026-02-14
+- [x] Modify: Sidebar — add student "My Courses" link — 2026-02-14
+- [x] API test + build verification — **Verified 2026-02-20**: 4 routes registered, TypeScript 0 errors, enrollment settings seeded in DB
 
 
-### Stage 2.4 — Question Bank
+### Stage 2.4 — Question Bank ✅ COMPLETE
 > **Guide Reference:** `03_API_SPECIFICATION.md` (Question Bank section) + `04_BACKEND_ARCHITECTURE.md`
 
-- [ ] Controller: `QuestionController` — CRUD + bulk upload
-- [ ] Service: `QuestionService`
-- [ ] Service: `BulkUploadService` (Excel/CSV/JSON parsing)
-- [ ] Form Requests: `CreateQuestionRequest`, `UpdateQuestionRequest`, `BulkUploadRequest`
-- [ ] API Routes: All question endpoints
-- [ ] API Resource: `QuestionResource`
-- [ ] Frontend: Questions list page (Lecturer — filterable by course, type, difficulty)
-- [ ] Frontend: Create Question form (supports all types: MCQ, True/False, Fill-in-blank, Essay)
-- [ ] Frontend: Edit Question page
-- [ ] Frontend: Question preview component
-- [ ] Frontend: Bulk upload page (Excel/CSV upload with progress + error report)
-- [ ] Frontend: Question categorization (tags, difficulty level assignment)
-- [ ] Frontend: Image upload for question media
-- [ ] Search and filter functionality for questions
+- [x] Service: `QuestionService` — list (role-aware), CRUD, verify, bulk upload (JSON), stats, activity logging — 2026-02-20
+- [x] Controller: `QuestionController` — index, show, store, update, destroy, restore, verify, bulkUpload, stats — 2026-02-20
+- [x] Form Requests: `CreateQuestionRequest`, `UpdateQuestionRequest` (conditional validation for MCQ options, correct_answer) — 2026-02-20
+- [x] API Resource: `QuestionResource` (conditional correct_answer exposure — admin/creator only) — 2026-02-20
+- [x] API Routes: 9 endpoints (`GET/POST /questions`, `GET/PUT/DELETE /questions/{id}`, `POST /questions/bulk-upload`, `GET /questions/stats`, `POST /questions/{id}/restore`, `PATCH /questions/{id}/verify`) — 2026-02-20
+- [x] Frontend Types: `Question` model + `CreateQuestionData`, `UpdateQuestionData`, `QuestionFilters`, `BulkUploadData`, `BulkUploadResult`, `QuestionStats` — 2026-02-20
+- [x] Frontend API: `lib/api/questions.ts` — all CRUD + stats + verify + bulk upload — 2026-02-20
+- [x] Frontend Page: Lecturer Questions page (`/lecturer/questions`) — stats cards, inline create/edit form with MCQ option builder, T/F/Fill-in/Essay support, course/type/difficulty filters, preview toggle, verify action, pagination — 2026-02-20
+- [x] UX Fix: Scroll-to-form behavior on Departments, Combinations, Levels, Courses, and Questions pages — auto-scroll + auto-focus on create/edit — 2026-02-20
+- [x] Build verification: 0 TypeScript errors, 9 backend routes registered — 2026-02-20
+- [ ] Frontend: Bulk upload page (JSON upload with progress + error report) — deferred
+- [ ] Frontend: Image upload for question media — deferred
+
+### Stage 2.5 — HOD Course Assignment ✅ COMPLETE
+> **Feature:** Head of Department can assign courses to lecturers in their department.
+> Lecturers see their assigned courses and set questions per course.
+> **Design:** `is_hod` boolean flag on users table (not a separate role).
+
+**Sprint 1 — Backend:**
+- [x] Migration: Add `is_hod` boolean to `users` table (default false, composite index) — 2026-02-20
+- [x] User Model: Add `is_hod` to fillable + casts, `isHod()` helper, `scopeHod()` scope — 2026-02-20
+- [x] UserResource: Expose `is_hod` (for lecturers only) — 2026-02-20
+- [x] CreateUserRequest / UpdateUserRequest: Allow `is_hod` field — 2026-02-20
+- [x] UserService: Enforce one-HOD-per-department on create/update (auto-demote previous HOD) — 2026-02-20
+- [x] Controller: `HodController` — 5 actions (departmentLecturers, departmentCourses, assignments, assignCourse, unassignCourse) — 2026-02-20
+- [x] Controller: `LecturerCourseController` — myCourses (lecturer's assigned courses) — 2026-02-20
+- [x] API Routes: 5 HOD routes + 1 lecturer route (all behind `role:lecturer`, HOD checks `is_hod` internally) — 2026-02-20
+- [x] Security: All HOD actions scoped to own department only, activity logging — 2026-02-20
+
+**Sprint 2 — Frontend:**
+- [x] Types: Add `is_hod` to `User` model + `CreateUserData` + `UpdateUserData` + `HodAssignment` + `HodAssignCourseData` — 2026-02-20
+- [x] API client: `lib/api/hod.ts` — getHodLecturers, getHodCourses, getHodAssignments, hodAssignCourse, hodUnassignCourse, getLecturerMyCourses — 2026-02-20
+- [x] Admin Create User page: HOD checkbox toggle (appears for lecturer role, with warning about one-per-dept) — 2026-02-20
+- [x] Admin User Detail page: HOD badge in view mode, HOD toggle in edit mode, HOD status in status card — 2026-02-20
+- [x] Sidebar: HOD-only "Course Assignments" link (uses `hodOnly` flag + `user.is_hod` check) — 2026-02-20
+- [x] Page: Lecturer Course Assignments (`/lecturer/course-assignments`) — HOD dashboard with stats, collapsible course-lecturer table, assign/unassign workflow — 2026-02-20
+- [x] Page: Lecturer My Courses (`/lecturer/courses`) — course cards with student/question/exam counts, direct link to question bank — 2026-02-20
+- [x] Build verification: 0 TypeScript errors, 6 new backend routes — 2026-02-20
 
 ---
 
@@ -645,3 +669,4 @@
 | 2026-02-13 | 1.4-1.5 | Refined: Fixed API response parsing, middleware role protection, profile completion flow, React render errors. All 7 API endpoints + frontend build verified. |
 | 2026-02-13 | 1 | ✅ **PHASE 1 COMPLETE** — All 5 stages verified. 23 tables, 14 models, 7 API routes, 10 frontend routes, 28 tests passing. Ready for Phase 2. |
 | 2026-02-13 | 2.3.5 | 📋 Auth & Enrollment Refactor plan created (`.agent/auth-enrollment-refactor-plan.md`). Decisions: no self-registration, login by matric/file number, admin-provisioned activation, department-based student self-enrollment, enrollment window via system_settings. |
+| 2026-02-20 | 2.3.5 | ✅ **Sprint 4 (Student Course Enrollment) COMPLETE** — Verified: `StudentCourseController` (4 actions + enrollment window), `EnrollmentSettingsSeeder`, 4 API routes, `lib/api/student.ts`, Student Courses page with tabs, sidebar link. 0 TypeScript errors. |

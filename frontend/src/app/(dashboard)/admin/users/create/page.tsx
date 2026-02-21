@@ -317,13 +317,30 @@ export default function CreateUserPage() {
                             )}
                         </div>
 
-                        {/* Active flag */}
+                        {/* Active flag & HOD toggle */}
                         <div className="flex flex-wrap gap-6 pt-2">
                             <label className="flex items-center gap-2 text-sm cursor-pointer">
                                 <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} className="h-4 w-4 rounded border-input" />
                                 Account Active
                             </label>
+                            {form.role === 'lecturer' && (
+                                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="is_hod"
+                                        checked={form.is_hod || false}
+                                        onChange={handleChange}
+                                        className="h-4 w-4 rounded border-input"
+                                    />
+                                    <span>Head of Department (HOD)</span>
+                                </label>
+                            )}
                         </div>
+                        {form.role === 'lecturer' && form.is_hod && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Only one HOD per department. If another lecturer is currently HOD in this department, they will be replaced.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 

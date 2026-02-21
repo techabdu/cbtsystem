@@ -68,6 +68,7 @@ export interface CreateUserData {
     student_id?: string;
     phone?: string;
     is_active?: boolean;
+    is_hod?: boolean;
 }
 
 export interface UpdateUserData {
@@ -86,6 +87,7 @@ export interface UpdateUserData {
     phone?: string;
     is_active?: boolean;
     is_verified?: boolean;
+    is_hod?: boolean;
 }
 
 export interface UserFilters {
@@ -291,3 +293,115 @@ export interface AvailableCoursesResponse extends Omit<PaginatedResponse<import(
     };
 }
 
+/* ------------------------------------------------------------------ */
+/*  Question Bank (Lecturer & Admin)                                   */
+/* ------------------------------------------------------------------ */
+
+export interface CreateQuestionData {
+    course_id: number;
+    question_text: string;
+    question_type: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
+    options?: Array<{ key: string; value: string }>;
+    correct_answer?: string | string[];
+    points?: number;
+    difficulty_level?: 'easy' | 'medium' | 'hard';
+    topic?: string;
+    tags?: string[];
+    image_url?: string;
+    is_active?: boolean;
+}
+
+export interface UpdateQuestionData {
+    course_id?: number;
+    question_text?: string;
+    question_type?: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
+    options?: Array<{ key: string; value: string }>;
+    correct_answer?: string | string[];
+    points?: number;
+    difficulty_level?: 'easy' | 'medium' | 'hard';
+    topic?: string;
+    tags?: string[];
+    image_url?: string;
+    is_active?: boolean;
+}
+
+export interface QuestionFilters {
+    search?: string;
+    course_id?: number;
+    question_type?: string;
+    difficulty_level?: string;
+    topic?: string;
+    is_active?: string;
+    is_verified?: string;
+    trashed?: '' | 'only' | 'with';
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}
+
+export interface BulkUploadData {
+    course_id: number;
+    questions: Array<{
+        question_text: string;
+        question_type: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
+        options?: Array<{ key: string; value: string }>;
+        correct_answer?: string | string[];
+        points?: number;
+        difficulty_level?: 'easy' | 'medium' | 'hard';
+        topic?: string;
+        tags?: string[];
+    }>;
+}
+
+export interface BulkUploadResult {
+    total_processed: number;
+    successful: number;
+    failed: number;
+    errors: Array<{ row: number; error: string }>;
+}
+
+export interface QuestionStats {
+    total: number;
+    active: number;
+    verified: number;
+    by_type: {
+        multiple_choice: number;
+        true_false: number;
+        fill_in_blank: number;
+        essay: number;
+    };
+    by_difficulty: {
+        easy: number;
+        medium: number;
+        hard: number;
+    };
+}
+
+/* ------------------------------------------------------------------ */
+/*  HOD Course Assignment                                              */
+/* ------------------------------------------------------------------ */
+
+export interface HodAssignCourseData {
+    lecturer_id: number;
+    course_id: number;
+    role?: 'lecturer' | 'coordinator' | 'assistant';
+}
+
+export interface HodAssignment {
+    id: number;
+    code: string;
+    title: string;
+    credit_hours?: number;
+    semester?: string;
+    students_count: number;
+    questions_count: number;
+    lecturers: Array<{
+        id: number;
+        full_name: string;
+        email: string;
+        staff_id?: string;
+        is_hod: boolean;
+        pivot_role: string;
+    }>;
+}

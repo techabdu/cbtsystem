@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     getLevels,
     createLevel,
@@ -56,6 +56,9 @@ export default function AdminLevelsPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Ref for scroll-to-form
+    const formRef = useRef<HTMLDivElement>(null);
+
     /* ------------------------------------------------------------------ */
     /*  Fetch Data                                                         */
     /* ------------------------------------------------------------------ */
@@ -105,6 +108,10 @@ export default function AdminLevelsPage() {
         });
         setFieldErrors({});
         setErrorMessage('');
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        }, 100);
     };
 
     const openEditForm = (level: Level) => {
@@ -118,6 +125,10 @@ export default function AdminLevelsPage() {
         });
         setFieldErrors({});
         setErrorMessage('');
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        }, 100);
     };
 
     const closeForm = () => {
@@ -321,7 +332,7 @@ export default function AdminLevelsPage() {
 
             {/* Create / Edit Form */}
             {formMode !== 'closed' && (
-                <Card className="border-primary/30 shadow-md">
+                <Card ref={formRef} className="border-primary/30 shadow-md">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>

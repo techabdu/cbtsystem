@@ -24,6 +24,7 @@ class UserResource extends JsonResource
             'middle_name'     => $this->when($this->middle_name, $this->middle_name),
             'full_name'       => $this->full_name,
             'role'            => $this->role,
+            'is_hod'          => $this->when($this->role === 'lecturer', (bool) $this->is_hod),
             'student_id'      => $this->when($this->role === 'student', $this->student_id),
             'staff_id'        => $this->when(in_array($this->role, ['lecturer', 'admin']), $this->staff_id),
             'department_id'   => $this->department_id,

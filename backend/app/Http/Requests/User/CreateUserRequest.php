@@ -72,6 +72,7 @@ class CreateUserRequest extends FormRequest
             'phone'       => 'nullable|string|max:20',
             'is_active'   => 'nullable|boolean',
             'is_verified' => 'nullable|boolean',
+            'is_hod'      => 'nullable|boolean',
             // No password field — users create their own on activation
         ];
     }

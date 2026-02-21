@@ -15,6 +15,9 @@ use App\Http\Controllers\Api\V1\Course\CourseLecturerController;
 use App\Http\Controllers\Api\V1\Combination\CombinationController;
 use App\Http\Controllers\Api\V1\Level\LevelController;
 use App\Http\Controllers\Api\V1\StudentCourseController;
+use App\Http\Controllers\Api\V1\Question\QuestionController;
+use App\Http\Controllers\Api\V1\Hod\HodController;
+use App\Http\Controllers\Api\V1\Lecturer\LecturerCourseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -156,6 +159,39 @@ Route::prefix('v1')->group(function () {
             Route::get('/enrolled', [StudentCourseController::class, 'myCourses'])->name('student.courses.enrolled');
             Route::post('/enroll', [StudentCourseController::class, 'enroll'])->name('student.courses.enroll');
             Route::post('/unenroll', [StudentCourseController::class, 'unenroll'])->name('student.courses.unenroll');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Question Bank — Admin & Lecturer                               */
+        /* -------------------------------------------------------------- */
+        Route::prefix('questions')->middleware('role:admin,lecturer')->group(function () {
+            Route::get('/', [QuestionController::class, 'index'])->name('questions.index');
+            Route::get('/stats', [QuestionController::class, 'stats'])->name('questions.stats');
+            Route::post('/', [QuestionController::class, 'store'])->name('questions.store');
+            Route::post('/bulk-upload', [QuestionController::class, 'bulkUpload'])->name('questions.bulk-upload');
+            Route::get('/{id}', [QuestionController::class, 'show'])->name('questions.show');
+            Route::put('/{id}', [QuestionController::class, 'update'])->name('questions.update');
+            Route::delete('/{id}', [QuestionController::class, 'destroy'])->name('questions.destroy');
+            Route::post('/{id}/restore', [QuestionController::class, 'restore'])->name('questions.restore');
+            Route::patch('/{id}/verify', [QuestionController::class, 'verify'])->name('questions.verify');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  HOD Course Assignment — Lecturer with is_hod flag              */
+        /* -------------------------------------------------------------- */
+        Route::prefix('hod')->middleware('role:lecturer')->group(function () {
+            Route::get('/department-lecturers', [HodController::class, 'departmentLecturers'])->name('hod.lecturers');
+            Route::get('/department-courses', [HodController::class, 'departmentCourses'])->name('hod.courses');
+            Route::get('/assignments', [HodController::class, 'assignments'])->name('hod.assignments');
+            Route::post('/assign-course', [HodController::class, 'assignCourse'])->name('hod.assign');
+            Route::delete('/unassign-course/{lecturerId}/{courseId}', [HodController::class, 'unassignCourse'])->name('hod.unassign');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Lecturer — Own Course Management                               */
+        /* -------------------------------------------------------------- */
+        Route::prefix('lecturer')->middleware('role:lecturer')->group(function () {
+            Route::get('/my-courses', [LecturerCourseController::class, 'myCourses'])->name('lecturer.my-courses');
         });
 
         // --- Future routes will be added here ---

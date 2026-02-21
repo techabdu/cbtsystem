@@ -16,6 +16,7 @@ import {
     Building2,
     Layers,
     BarChart3,
+    ClipboardList,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -26,6 +27,7 @@ interface SidebarLink {
     label: string;
     icon: React.ElementType;
     roles: User['role'][];
+    hodOnly?: boolean;
 }
 
 export function Sidebar({ className }: SidebarProps) {
@@ -64,7 +66,7 @@ export function Sidebar({ className }: SidebarProps) {
         },
         {
             href: '/lecturer/courses',
-            label: 'Courses',
+            label: 'My Courses',
             icon: BookOpen,
             roles: [ROLES.LECTURER],
         },
@@ -79,6 +81,13 @@ export function Sidebar({ className }: SidebarProps) {
             label: 'Exams',
             icon: FileQuestion, // Should be Exam icon
             roles: [ROLES.LECTURER],
+        },
+        {
+            href: '/lecturer/course-assignments',
+            label: 'Course Assignments',
+            icon: ClipboardList,
+            roles: [ROLES.LECTURER],
+            hodOnly: true,
         },
 
         // Admin Links
@@ -126,7 +135,11 @@ export function Sidebar({ className }: SidebarProps) {
         },
     ];
 
-    const filteredLinks = links.filter((link) => role && link.roles.includes(role));
+    const filteredLinks = links.filter((link) => {
+        if (!role || !link.roles.includes(role)) return false;
+        if (link.hodOnly && !user?.is_hod) return false;
+        return true;
+    });
 
     return (
         <div className={cn('pb-12', className)}>

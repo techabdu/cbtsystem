@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     getCourses,
@@ -77,6 +77,9 @@ export default function AdminCoursesPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Ref for scroll-to-form
+    const formRef = useRef<HTMLDivElement>(null);
+
     /* ------------------------------------------------------------------ */
     /*  Fetch departments & levels for dropdowns                            */
     /* ------------------------------------------------------------------ */
@@ -142,6 +145,10 @@ export default function AdminCoursesPage() {
         });
         setFieldErrors({});
         setErrorMessage('');
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        }, 100);
     };
 
     const openEditForm = (course: Course) => {
@@ -160,6 +167,10 @@ export default function AdminCoursesPage() {
         });
         setFieldErrors({});
         setErrorMessage('');
+        setTimeout(() => {
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+        }, 100);
     };
 
     const closeForm = () => {
@@ -348,7 +359,7 @@ export default function AdminCoursesPage() {
 
             {/* Create / Edit Form (inline card) */}
             {formMode !== 'closed' && (
-                <Card className="border-primary/30 shadow-md">
+                <Card ref={formRef} className="border-primary/30 shadow-md">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
