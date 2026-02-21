@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             CombinationSeeder::class,
             LevelSeeder::class,
             SampleUsersSeeder::class,
+            LecturerSeeder::class,
             CourseSeeder::class,
             SystemSettingsSeeder::class,
         ]);
