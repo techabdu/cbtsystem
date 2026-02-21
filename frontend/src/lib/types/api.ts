@@ -405,3 +405,80 @@ export interface HodAssignment {
         pivot_role: string;
     }>;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Exam Management (Lecturer & Admin)                                  */
+/* ------------------------------------------------------------------ */
+
+export interface CreateExamData {
+    course_id: number;
+    title: string;
+    description?: string;
+    instructions?: string;
+    exam_type: 'midterm' | 'final' | 'quiz' | 'practice' | 'makeup';
+    start_time: string;  // ISO datetime string
+    end_time: string;    // ISO datetime string
+    duration_minutes: number;
+    total_marks: number;
+    passing_marks: number;
+    randomize_questions?: boolean;
+    randomize_options?: boolean;
+    questions_per_page?: number;
+    allow_backtrack?: boolean;
+    show_results_immediately?: boolean;
+    show_correct_answers?: boolean;
+    requires_password?: boolean;
+    exam_password?: string;
+    is_practice?: boolean;
+    enable_proctoring?: boolean;
+}
+
+export interface UpdateExamData {
+    title?: string;
+    description?: string;
+    instructions?: string;
+    exam_type?: 'midterm' | 'final' | 'quiz' | 'practice' | 'makeup';
+    start_time?: string;
+    end_time?: string;
+    duration_minutes?: number;
+    total_marks?: number;
+    passing_marks?: number;
+    randomize_questions?: boolean;
+    randomize_options?: boolean;
+    questions_per_page?: number;
+    allow_backtrack?: boolean;
+    show_results_immediately?: boolean;
+    show_correct_answers?: boolean;
+    requires_password?: boolean;
+    exam_password?: string;
+    is_practice?: boolean;
+    enable_proctoring?: boolean;
+}
+
+export interface ExamFilters {
+    search?: string;
+    course_id?: number;
+    exam_type?: string;
+    status?: string;
+    is_practice?: string;
+    trashed?: '' | 'only' | 'with';
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}
+
+export interface AddExamQuestionsData {
+    questions: Array<{
+        question_id: number;
+        points: number;
+        order?: number;
+    }>;
+}
+
+export interface PracticeAnswerData {
+    answers: Array<{
+        question_id: number;
+        answer: string | null;
+    }>;
+}

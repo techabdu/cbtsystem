@@ -1,6 +1,6 @@
 # CBT System — Master Project Plan
 
-> **Last Updated:** 2026-02-20
+> **Last Updated:** 2026-02-21
 > **Status:** Phase 1 — ✅ COMPLETE (Verified 2026-02-13)
 > **Reference Guides:** `/guides/01–08` (Architecture, DB Schema, API Spec, Backend, Frontend, Security, Deployment, Coding Standards)
 
@@ -360,28 +360,41 @@
 ## PHASE 3: Exam Management (Weeks 7–9)
 > **Goal:** Exam creation, configuration, practice exams, notifications
 
-### Stage 3.1 — Exam Creation & Configuration
+### Stage 3.1 — Exam Creation & Configuration ✅ COMPLETE
 > **Guide Reference:** `03_API_SPECIFICATION.md` (Exam Management section)
+> **Completed:** 2026-02-21
 
-- [ ] Controller: `ExamController` — CRUD + publish + results
-- [ ] Service: `ExamService`
-- [ ] Form Requests: `CreateExamRequest`, `UpdateExamRequest`, `AddExamQuestionsRequest`
-- [ ] API Routes: All exam endpoints (list, create, show, update, delete, add questions, publish, results)
-- [ ] API Resource: `ExamResource`
-- [ ] Frontend: Exam creation wizard (multi-step form: details → question selection → review → save)
-- [ ] Frontend: Question selection UI (search/filter questions, add to exam, set order/points)
-- [ ] Frontend: Exam scheduling (date/time pickers, duration config)
-- [ ] Frontend: Exam configuration (rules: backtracking, randomization, password, etc.)
-- [ ] Frontend: Exam preview for lecturers
-- [ ] Frontend: Exam publish workflow (draft → published)
-- [ ] Frontend: Exam list page (with status filtering)
+- [x] Service: `ExamService` — list (role-aware paginated, withCount), find, create, update (blocks restricted fields on published), delete, restore, addQuestions (DB::upsert + recalc marks), removeQuestion, publish (validates draft + min 1 question), getResults, getStats — 2026-02-21
+- [x] Controller: `ExamController` — index, show, store, update, destroy, restore, addQuestions, removeQuestion, publish, results, stats (with ownership checks for lecturers) — 2026-02-21
+- [x] Controller: `StudentExamController` — index (published non-practice exams for enrolled courses), show (hides correct_answer + password) — 2026-02-21
+- [x] Form Requests: `CreateExamRequest`, `UpdateExamRequest`, `AddExamQuestionsRequest` — 2026-02-21
+- [x] API Resource: `ExamResource` (conditional correct_answer exposure, whenLoaded relationships) — 2026-02-21
+- [x] API Routes: 16 routes total — exam CRUD + publish + results + stats + student/exams + student/practice-exams — 2026-02-21
+- [x] Frontend Types: Extended `Exam`, `ExamQuestion`, `ExamStats`, `ExamResults`, `PracticeSubmitResult` in `models.ts` + 5 API types in `api.ts` — 2026-02-21
+- [x] Frontend API: `lib/api/exams.ts` — 15 functions (lecturer/admin CRUD + student + practice) — 2026-02-21
+- [x] Frontend: Exam list page (`/lecturer/exams`) — stats cards, filter bar, exam table with badges, pagination, publish/results/delete actions — 2026-02-21
+- [x] Frontend: 3-step exam creation wizard (`/lecturer/exams/create`) — basic info → schedule/config → review — 2026-02-21
+- [x] Frontend: Exam detail page (`/lecturer/exams/[id]`) — Overview/Questions/Results tabs, inline edit, add-from-question-bank, publish dialog — 2026-02-21
+- [x] Frontend: Student exam list (`/student/exams`) — Available Now / Upcoming / Past sections — 2026-02-21
+- [x] Build verification: 0 PHP syntax errors, 16 routes registered, 0 TypeScript errors — 2026-02-21
 
-### Stage 3.2 — Practice Exam System
-- [ ] Backend: Practice exam flag handling (`is_practice` field)
-- [ ] Backend: Immediate result display for practice exams
-- [ ] Frontend: Student practice exam list
-- [ ] Frontend: Practice exam taking interface (reuse exam components)
-- [ ] Frontend: Practice exam results display (with correct answers shown)
+### Stage 3.2 — Practice Exam System ✅ COMPLETE
+> **Completed:** 2026-02-21
+
+- [x] Backend: `PracticeExamController` — index, show, submit (one-shot grading: MCQ/T-F exact match, fill-in-blank similar_text ≥80%, essay=0pts; returns results WITH correct_answer) — 2026-02-21
+- [x] Backend: Creates `ExamSession` (status='submitted') + all `StudentAnswer` records (is_final=true) on submit — simplified vs full Stage 4 session management — 2026-02-21
+- [x] Frontend: Practice exam list (`/student/practice`) — grid of cards, teal color scheme, course badge, stats — 2026-02-21
+- [x] Frontend: Practice exam interface (`/student/practice/[id]`) — one-at-a-time questions, progress bar, numbered dot grid, MCQ/T-F/fill-in-blank/essay input components, submit confirmation dialog — 2026-02-21
+- [x] Frontend: Practice results page (`/student/practice/[id]/results`) — score summary card (pass/fail), per-question breakdown with correct answers — via sessionStorage — 2026-02-21
+- [x] Sidebar: Student "My Exams" + "Practice" links added — 2026-02-21
+- [x] Build verification: 0 TypeScript errors, 3 practice routes registered — 2026-02-21
+
+### Stage 3.2.1 — Correction: Strict Exam Publishing Workflow
+> **Note:** As discussed, the system must enforce a strict chain of custody for college exams.
+- [ ] Update Permissions: Only **Admins** have the ability to explicitly `Publish` an exam.
+- [ ] Workflow: Lecturers create exam `Drafts` and add verified questions.
+- [ ] Workflow: HODs verify questions and exam configurations.
+- [ ] Workflow: Admins review the verified drafts and execute the `Publish` action to make them available for the offline server sync.
 
 ### Stage 3.3 — Notifications System
 - [ ] Service: `NotificationService`
@@ -670,3 +683,5 @@
 | 2026-02-13 | 1 | ✅ **PHASE 1 COMPLETE** — All 5 stages verified. 23 tables, 14 models, 7 API routes, 10 frontend routes, 28 tests passing. Ready for Phase 2. |
 | 2026-02-13 | 2.3.5 | 📋 Auth & Enrollment Refactor plan created (`.agent/auth-enrollment-refactor-plan.md`). Decisions: no self-registration, login by matric/file number, admin-provisioned activation, department-based student self-enrollment, enrollment window via system_settings. |
 | 2026-02-20 | 2.3.5 | ✅ **Sprint 4 (Student Course Enrollment) COMPLETE** — Verified: `StudentCourseController` (4 actions + enrollment window), `EnrollmentSettingsSeeder`, 4 API routes, `lib/api/student.ts`, Student Courses page with tabs, sidebar link. 0 TypeScript errors. |
+| 2026-02-21 | 3.1 | ✅ **Stage 3.1 (Exam Creation & Configuration) COMPLETE** — ExamService, ExamController, StudentExamController, 3 Form Requests, ExamResource, 13 API routes. Frontend: types, `exams.ts` API client, lecturer exam list + 3-step create wizard + detail page (tabs: overview/questions/results), student exam list. 0 PHP syntax errors, 0 TypeScript errors. |
+| 2026-02-21 | 3.2 | ✅ **Stage 3.2 (Practice Exam System) COMPLETE** — PracticeExamController (one-shot grading), 3 API routes. Frontend: practice list + exam interface (one-at-a-time, 4 question types) + results page (sessionStorage). Sidebar updated. 0 TypeScript errors. |

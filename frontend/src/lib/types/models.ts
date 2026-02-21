@@ -117,18 +117,107 @@ export interface Exam {
     id: number;
     uuid: string;
     course_id: number;
+    created_by?: number;
     title: string;
     description?: string;
     instructions?: string;
-    exam_type: 'quiz' | 'midterm' | 'final' | 'makeup';
-    status: 'draft' | 'published' | 'completed';
+    exam_type: 'quiz' | 'midterm' | 'final' | 'makeup' | 'practice';
+    status: 'draft' | 'published' | 'ongoing' | 'completed' | 'archived';
     start_time: string;
     end_time: string;
     duration_minutes: number;
     total_marks: number;
     passing_marks: number;
     total_questions: number;
+    randomize_questions: boolean;
+    randomize_options: boolean;
+    questions_per_page: number;
+    allow_backtrack: boolean;
+    show_results_immediately: boolean;
+    show_correct_answers: boolean;
+    requires_password: boolean;
     is_practice: boolean;
+    enable_proctoring: boolean;
+
+    // Nested
+    course?: { id: number; code: string; title: string; };
+    creator?: { id: number; full_name: string; email: string; };
+    questions?: ExamQuestion[];
+
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface ExamQuestion {
+    id: number;
+    question_id: number;
+    question_order: number;
+    points: number;
+    is_required: boolean;
+    question?: {
+        id: number;
+        question_text: string;
+        question_type: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
+        options?: Array<{ key: string; value: string }>;
+        correct_answer?: string | string[] | null;
+        difficulty_level?: 'easy' | 'medium' | 'hard';
+        topic?: string;
+    };
+}
+
+export interface ExamStats {
+    total: number;
+    draft: number;
+    published: number;
+    completed: number;
+    practice: number;
+    by_type: {
+        quiz: number;
+        midterm: number;
+        final: number;
+        makeup: number;
+        practice: number;
+    };
+}
+
+export interface ExamResults {
+    exam: { id: number; title: string; };
+    statistics: {
+        total_students: number;
+        completed: number;
+        in_progress: number;
+        not_started: number;
+        average_score: number;
+        highest_score: number;
+        lowest_score: number;
+        pass_rate: number;
+    };
+    results: Array<{
+        student: { id: number; student_id?: string; full_name: string; };
+        score: number;
+        percentage: number;
+        status: string;
+        submitted_at?: string;
+    }>;
+}
+
+export interface PracticeSubmitResult {
+    score: number;
+    total_marks: number;
+    percentage: number;
+    passed: boolean;
+    correct_count: number;
+    total_questions: number;
+    results: Array<{
+        question_id: number;
+        question_text: string;
+        question_type: string;
+        your_answer: string | null;
+        correct_answer: string | null;
+        is_correct: boolean;
+        points_awarded: number;
+        points_possible: number;
+    }>;
 }
 
 export interface QuestionOption {

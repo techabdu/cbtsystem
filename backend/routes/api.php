@@ -18,6 +18,9 @@ use App\Http\Controllers\Api\V1\StudentCourseController;
 use App\Http\Controllers\Api\V1\Question\QuestionController;
 use App\Http\Controllers\Api\V1\Hod\HodController;
 use App\Http\Controllers\Api\V1\Lecturer\LecturerCourseController;
+use App\Http\Controllers\Api\V1\Exam\ExamController;
+use App\Http\Controllers\Api\V1\Exam\StudentExamController;
+use App\Http\Controllers\Api\V1\Exam\PracticeExamController;
 
 /*
 |--------------------------------------------------------------------------
@@ -194,9 +197,41 @@ Route::prefix('v1')->group(function () {
             Route::get('/my-courses', [LecturerCourseController::class, 'myCourses'])->name('lecturer.my-courses');
         });
 
+        /* -------------------------------------------------------------- */
+        /*  Exam Management — Admin & Lecturer                             */
+        /* -------------------------------------------------------------- */
+        Route::prefix('exams')->middleware('role:admin,lecturer')->group(function () {
+            Route::get('/', [ExamController::class, 'index'])->name('exams.index');
+            Route::get('/stats', [ExamController::class, 'stats'])->name('exams.stats');
+            Route::post('/', [ExamController::class, 'store'])->name('exams.store');
+            Route::get('/{id}', [ExamController::class, 'show'])->name('exams.show');
+            Route::put('/{id}', [ExamController::class, 'update'])->name('exams.update');
+            Route::delete('/{id}', [ExamController::class, 'destroy'])->name('exams.destroy');
+            Route::post('/{id}/restore', [ExamController::class, 'restore'])->name('exams.restore');
+            Route::post('/{id}/questions', [ExamController::class, 'addQuestions'])->name('exams.questions.add');
+            Route::delete('/{id}/questions/{questionId}', [ExamController::class, 'removeQuestion'])->name('exams.questions.remove');
+            Route::post('/{id}/publish', [ExamController::class, 'publish'])->name('exams.publish');
+            Route::get('/{id}/results', [ExamController::class, 'results'])->name('exams.results');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Student Exam Viewing                                           */
+        /* -------------------------------------------------------------- */
+        Route::prefix('student/exams')->middleware('role:student')->group(function () {
+            Route::get('/', [StudentExamController::class, 'index'])->name('student.exams.index');
+            Route::get('/{id}', [StudentExamController::class, 'show'])->name('student.exams.show');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Student Practice Exams                                         */
+        /* -------------------------------------------------------------- */
+        Route::prefix('student/practice-exams')->middleware('role:student')->group(function () {
+            Route::get('/', [PracticeExamController::class, 'index'])->name('student.practice.index');
+            Route::get('/{id}', [PracticeExamController::class, 'show'])->name('student.practice.show');
+            Route::post('/{id}/submit', [PracticeExamController::class, 'submit'])->name('student.practice.submit');
+        });
+
         // --- Future routes will be added here ---
-        // Route::prefix('questions')->group(function () { ... });
-        // Route::prefix('exams')->group(function () { ... });
         // Route::prefix('exam-sessions')->group(function () { ... });
     });
 });

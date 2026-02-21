@@ -17,6 +17,7 @@ import {
     Layers,
     BarChart3,
     ClipboardList,
+    ClipboardCheck,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -51,6 +52,18 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.STUDENT],
         },
         {
+            href: '/student/exams',
+            label: 'My Exams',
+            icon: ClipboardCheck,
+            roles: [ROLES.STUDENT],
+        },
+        {
+            href: '/student/practice',
+            label: 'Practice',
+            icon: BookOpen,
+            roles: [ROLES.STUDENT],
+        },
+        {
             href: '/student/results',
             label: 'Results',
             icon: GraduationCap,
@@ -79,7 +92,7 @@ export function Sidebar({ className }: SidebarProps) {
         {
             href: '/lecturer/exams',
             label: 'Exams',
-            icon: FileQuestion, // Should be Exam icon
+            icon: ClipboardList,
             roles: [ROLES.LECTURER],
         },
         {
