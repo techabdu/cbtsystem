@@ -420,7 +420,23 @@
 ## PHASE 4: Exam Taking System (Weeks 10–12) — ⚠️ CRITICAL
 > **Goal:** Robust exam interface, auto-save, session recovery, grading
 
-### Stage 4.1 — Exam Session Backend
+### Stage 4.1.1 — Offline Exam Entry Refactor 
+> **Goal:** Streamline the exam entry process for the offline lab architecture, allowing students to start exams directly using their Matric Number and an Exam Access Code.
+
+- [ ] Backend: Migration `2026_02_23_000001_add_access_code_to_exams_table` — `access_code` (string 32, unique, nullable) added to `exams` table — 2026-02-23
+- [ ] Backend: `Exam` model — `access_code` added to `$fillable` — 2026-02-23
+- [ ] Backend: `OfflineEntryRequest` form request (`matric_number` + `access_code` validation) — 2026-02-23
+- [ ] Backend: `OfflineEntryController@start` — finds student by matric, finds exam by access_code, validates published + time window + active account, calls `SessionService::startSession()`, issues short-lived Sanctum token, logs activity — 2026-02-23
+- [ ] Backend: Route `POST /api/v1/offline-exams/start` registered outside `auth:sanctum` middleware (public) — 2026-02-23
+- [ ] Frontend: `OfflineEntryData` + `OfflineEntryResult` types added to `api.ts` — 2026-02-23
+- [ ] Frontend: `startOfflineExam()` added to `lib/api/sessions.ts` (raw axios, no auth header) — 2026-02-23
+- [ ] Frontend: `app/(offline)/layout.tsx` — bare passthrough layout — 2026-02-23
+- [ ] Frontend: `app/(offline)/exams/page.tsx` — full-screen kiosk entry page (dark slate theme, matric + access code form, sets auth cookies, redirects to `/exam/{sessionId}`) — 2026-02-23
+- [ ] Frontend: `middleware.ts` — `/exams` added to `PUBLIC_PATHS` — 2026-02-23
+- [ ] Frontend: `/student/exams` page — "Start Exam" button removed for real exams, replaced with "Report to the exam lab" notice; dialog + dead state removed — 2026-02-23
+- [ ] **Verification: 0 PHP syntax errors, route registered, 0 TypeScript errors** — 2026-02-23
+
+### Stage 4.1.2 — Exam Session Backend
 > **Guide Reference:** `04_BACKEND_ARCHITECTURE.md` (SessionService, RecoveryService, GradingService)
 
 - [ ] Service: `SessionService` (start session, save answer, submit, recover)
