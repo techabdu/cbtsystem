@@ -416,8 +416,8 @@ export interface CreateExamData {
     description?: string;
     instructions?: string;
     exam_type: 'midterm' | 'final' | 'quiz' | 'practice' | 'makeup';
-    start_time: string;  // ISO datetime string
-    end_time: string;    // ISO datetime string
+    start_time?: string;  // ISO datetime string — optional; admin sets for real exams, optional for practice
+    end_time?: string;    // ISO datetime string — optional; admin sets for real exams, optional for practice
     duration_minutes: number;
     total_marks: number;
     passing_marks: number;

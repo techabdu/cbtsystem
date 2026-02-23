@@ -5,11 +5,14 @@ namespace App\Services\Exam;
 use App\Models\ActivityLog;
 use App\Models\Exam;
 use App\Models\User;
+use App\Services\Notification\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class ExamService
 {
+    public function __construct(private NotificationService $notifications) {}
+
     /* ------------------------------------------------------------------ */
     /*  List / Search / Filter (role-aware)                                */
     /* ------------------------------------------------------------------ */
@@ -31,8 +34,11 @@ class ExamService
 
         // --- Role-based scoping ---
         if ($user && $user->role === 'lecturer') {
-            // Lecturers see only exams they created
-            $query->where('created_by', $user->id);
+            if (! $user->is_hod) {
+                // Regular lecturers see only exams they created
+                $query->where('created_by', $user->id);
+            }
+            // HODs see all exams to facilitate department-wide review
         }
 
         // --- Include soft-deleted ---
@@ -285,17 +291,25 @@ class ExamService
             ->where('exam_id', $exam->id)
             ->count();
 
-        $exam->update(['total_marks' => $totalMarks]);
+        // If exam was under review, reset to draft — lecturer must re-submit
+        $statusReset = in_array($exam->status, ['pending_review', 'verified'], true);
+        $updateData  = ['total_marks' => $totalMarks];
+        if ($statusReset) {
+            $updateData['status'] = 'draft';
+        }
+        $exam->update($updateData);
 
         $this->logActivity($user, 'exam_questions_updated', $exam->id, newValues: [
             'questions_added'  => count($questions),
             'total_questions'  => $totalQuestions,
             'total_marks'      => (float) $totalMarks,
+            'status_reset'     => $statusReset,
         ]);
 
         return [
             'total_questions' => (int) $totalQuestions,
             'total_marks'     => (float) $totalMarks,
+            'status_reset'    => $statusReset,
         ];
     }
 
@@ -311,7 +325,7 @@ class ExamService
      * @param  User  $user
      * @return void
      */
-    public function removeQuestion(Exam $exam, int $questionId, User $user): void
+    public function removeQuestion(Exam $exam, int $questionId, User $user): array
     {
         DB::table('exam_questions')
             ->where('exam_id', $exam->id)
@@ -323,11 +337,19 @@ class ExamService
             ->where('exam_id', $exam->id)
             ->sum('points');
 
-        $exam->update(['total_marks' => $totalMarks]);
+        // If exam was under review, reset to draft — lecturer must re-submit
+        $statusReset = in_array($exam->status, ['pending_review', 'verified'], true);
+        $updateData  = ['total_marks' => $totalMarks];
+        if ($statusReset) {
+            $updateData['status'] = 'draft';
+        }
+        $exam->update($updateData);
 
         $this->logActivity($user, 'exam_question_removed', $exam->id, oldValues: [
             'question_id' => $questionId,
-        ]);
+        ], newValues: ['status_reset' => $statusReset]);
+
+        return ['status_reset' => $statusReset];
     }
 
     /* ------------------------------------------------------------------ */
@@ -345,9 +367,17 @@ class ExamService
      */
     public function publish(Exam $exam, User $user): Exam
     {
-        if ($exam->status !== 'draft') {
+        // Practice exams bypass the HOD/admin workflow — publishable from draft directly
+        if ($exam->is_practice) {
+            if (! in_array($exam->status, ['draft', 'verified'], true)) {
+                throw new \RuntimeException(
+                    "Practice exam cannot be published from '{$exam->status}' status."
+                );
+            }
+        } elseif ($exam->status !== 'verified') {
             throw new \RuntimeException(
-                "Only draft exams can be published. This exam is currently '{$exam->status}'."
+                "Only verified exams can be published. This exam is currently '{$exam->status}'. " .
+                "It must be submitted for review and verified by an HOD first."
             );
         }
 
@@ -361,7 +391,6 @@ class ExamService
             );
         }
 
-        // Non-practice exams require valid time window
         if (! $exam->is_practice) {
             if (is_null($exam->start_time) || is_null($exam->end_time)) {
                 throw new \RuntimeException(
@@ -373,10 +402,219 @@ class ExamService
         $exam->update(['status' => 'published']);
 
         $this->logActivity($user, 'exam_published', $exam->id, newValues: [
-            'title'      => $exam->title,
-            'exam_type'  => $exam->exam_type,
-            'is_practice'=> $exam->is_practice,
+            'title'       => $exam->title,
+            'exam_type'   => $exam->exam_type,
+            'is_practice' => $exam->is_practice,
         ]);
+
+        // Notify creator and enrolled students (non-critical — never breaks the workflow)
+        try {
+            if ($exam->creator) {
+                $this->notifications->notify(
+                    $exam->creator,
+                    'exam_published',
+                    'Exam Published',
+                    "Your exam \"{$exam->title}\" has been published and is now available to students.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+
+            $courseCode = $exam->course->code ?? 'your course';
+            $examLabel  = $exam->is_practice ? 'practice exam' : 'exam';
+            $notifType  = $exam->is_practice ? 'practice_exam_available' : 'exam_available';
+            $notifTitle = $exam->is_practice ? 'New Practice Exam Available' : 'New Exam Published';
+
+            $enrolledStudents = User::join('course_enrollments', 'users.id', '=', 'course_enrollments.student_id')
+                ->where('course_enrollments.course_id', $exam->course_id)
+                ->where('course_enrollments.status', 'active')
+                ->select('users.*')
+                ->get();
+
+            foreach ($enrolledStudents as $student) {
+                $this->notifications->notify(
+                    $student,
+                    $notifType,
+                    $notifTitle,
+                    "A new {$examLabel} \"{$exam->title}\" is now available for {$courseCode}.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+        } catch (\Exception $e) {
+            // Notification failure must not block the publish action
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Submit for Review                                                   */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Lecturer submits a draft exam for HOD review.
+     *
+     * @param  Exam  $exam
+     * @param  User  $user
+     * @return Exam
+     *
+     * @throws \RuntimeException If not in draft status or has no questions.
+     */
+    public function submitForReview(Exam $exam, User $user): Exam
+    {
+        if ($exam->is_practice) {
+            throw new \RuntimeException(
+                'Practice exams do not require HOD review. You can publish them directly.'
+            );
+        }
+
+        if ($exam->status !== 'draft') {
+            throw new \RuntimeException(
+                "Only draft exams can be submitted for review. This exam is currently '{$exam->status}'."
+            );
+        }
+
+        $questionCount = DB::table('exam_questions')
+            ->where('exam_id', $exam->id)
+            ->count();
+
+        if ($questionCount < 1) {
+            throw new \RuntimeException(
+                'Cannot submit for review: exam has no questions. Add at least one question first.'
+            );
+        }
+
+        $exam->update(['status' => 'pending_review']);
+
+        $this->logActivity($user, 'exam_submitted_for_review', $exam->id, newValues: [
+            'title'  => $exam->title,
+            'status' => 'pending_review',
+        ]);
+
+        // Notify HODs in the course's department (non-critical — never breaks the workflow)
+        try {
+            if ($exam->course) {
+                $hods = User::where('role', 'lecturer')
+                    ->where('is_hod', true)
+                    ->where('department_id', $exam->course->department_id)
+                    ->get();
+                foreach ($hods as $hod) {
+                    $this->notifications->notify(
+                        $hod,
+                        'exam_review_requested',
+                        'Exam Submitted for Review',
+                        "{$user->full_name} has submitted \"{$exam->title}\" ({$exam->course->code}) for HOD review.",
+                        ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            // Notification failure must not block the submit-for-review action
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Verify (HOD Approval)                                              */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * HOD verifies a pending_review exam, making it ready for admin to publish.
+     *
+     * @param  Exam  $exam
+     * @param  User  $user
+     * @return Exam
+     *
+     * @throws \RuntimeException If not in pending_review status.
+     */
+    public function verifyExam(Exam $exam, User $user): Exam
+    {
+        if ($exam->status !== 'pending_review') {
+            throw new \RuntimeException(
+                "Only pending_review exams can be verified. This exam is currently '{$exam->status}'."
+            );
+        }
+
+        $exam->update(['status' => 'verified']);
+
+        $this->logActivity($user, 'exam_verified', $exam->id, newValues: [
+            'title'  => $exam->title,
+            'status' => 'verified',
+        ]);
+
+        // Notify creator and admins (non-critical — never breaks the workflow)
+        try {
+            if ($exam->creator) {
+                $this->notifications->notify(
+                    $exam->creator,
+                    'exam_verified',
+                    'Exam Verified',
+                    "Your exam \"{$exam->title}\" has been verified by the HOD and is now awaiting admin scheduling and publishing.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $this->notifications->notify(
+                    $admin,
+                    'exam_ready_to_publish',
+                    'Exam Ready to Publish',
+                    "\"{$exam->title}\" has been verified by an HOD and is ready to be scheduled and published.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+        } catch (\Exception $e) {
+            // Notification failure must not block the verify action
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Reject (HOD or Admin sends back to draft)                          */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Reject a pending_review or verified exam back to draft.
+     *
+     * @param  Exam    $exam
+     * @param  User    $user
+     * @param  string  $reason  Optional rejection reason.
+     * @return Exam
+     *
+     * @throws \RuntimeException If exam is not in a rejectable status.
+     */
+    public function rejectExam(Exam $exam, User $user, string $reason = ''): Exam
+    {
+        if (! in_array($exam->status, ['pending_review', 'verified'], true)) {
+            throw new \RuntimeException(
+                "Only pending_review or verified exams can be rejected. This exam is currently '{$exam->status}'."
+            );
+        }
+
+        $oldStatus = $exam->status;
+        $exam->update(['status' => 'draft']);
+
+        $this->logActivity($user, 'exam_rejected', $exam->id,
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => 'draft', 'reason' => $reason],
+        );
+
+        // Notify the exam creator (non-critical — never breaks the workflow)
+        try {
+            if ($exam->creator) {
+                $this->notifications->notify(
+                    $exam->creator,
+                    'exam_rejected',
+                    'Exam Rejected — Needs Revision',
+                    "Your exam \"{$exam->title}\" was rejected and returned to draft. Reason: {$reason}",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+        } catch (\Exception $e) {
+            // Notification failure must not block the reject action
+        }
 
         return $exam->fresh()->load(['course', 'creator']);
     }
@@ -455,12 +693,14 @@ class ExamService
         }
 
         return [
-            'total'     => (clone $query)->count(),
-            'draft'     => (clone $query)->where('status', 'draft')->count(),
-            'published' => (clone $query)->where('status', 'published')->count(),
-            'completed' => (clone $query)->where('status', 'completed')->count(),
-            'archived'  => (clone $query)->where('status', 'archived')->count(),
-            'practice'  => (clone $query)->where('is_practice', true)->count(),
+            'total'          => (clone $query)->count(),
+            'draft'          => (clone $query)->where('status', 'draft')->count(),
+            'pending_review' => (clone $query)->where('status', 'pending_review')->count(),
+            'verified'       => (clone $query)->where('status', 'verified')->count(),
+            'published'      => (clone $query)->where('status', 'published')->count(),
+            'completed'      => (clone $query)->where('status', 'completed')->count(),
+            'archived'       => (clone $query)->where('status', 'archived')->count(),
+            'practice'       => (clone $query)->where('is_practice', true)->count(),
             'by_type'   => [
                 'quiz'     => (clone $query)->where('exam_type', 'quiz')->count(),
                 'midterm'  => (clone $query)->where('exam_type', 'midterm')->count(),

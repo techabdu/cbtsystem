@@ -49,8 +49,6 @@ const defaultData: CreateExamData = {
     description: '',
     instructions: '',
     exam_type: 'midterm',
-    start_time: '',
-    end_time: '',
     duration_minutes: 60,
     total_marks: 100,
     passing_marks: 50,
@@ -129,10 +127,14 @@ export default function CreateExamPage() {
 
     const validateStep2 = (): boolean => {
         const errs: Record<string, string[]> = {};
-        if (!formData.start_time) errs.start_time = ['Start time is required.'];
-        if (!formData.end_time) errs.end_time = ['End time is required.'];
-        if (formData.start_time && formData.end_time && formData.end_time <= formData.start_time) {
-            errs.end_time = ['End time must be after start time.'];
+        // Dates are optional for practice exams; non-practice exams have no date fields (admin schedules)
+        if (formData.is_practice) {
+            if (formData.start_time && formData.end_time && formData.end_time <= formData.start_time) {
+                errs.end_time = ['End time must be after start time.'];
+            }
+            if (formData.start_time && !formData.end_time) {
+                errs.end_time = ['End time is required when start time is set.'];
+            }
         }
         if (!formData.duration_minutes || formData.duration_minutes < 1) {
             errs.duration_minutes = ['Duration must be at least 1 minute.'];
@@ -169,9 +171,9 @@ export default function CreateExamPage() {
         try {
             const submitData: CreateExamData = {
                 ...formData,
-                // Convert datetime-local to ISO if not already
-                start_time: formData.start_time ? new Date(formData.start_time).toISOString() : formData.start_time,
-                end_time: formData.end_time ? new Date(formData.end_time).toISOString() : formData.end_time,
+                // Only include dates for practice exams (admin schedules real exams at publish time)
+                start_time: (formData.is_practice && formData.start_time) ? new Date(formData.start_time).toISOString() : undefined,
+                end_time: (formData.is_practice && formData.end_time) ? new Date(formData.end_time).toISOString() : undefined,
             };
             if (!submitData.requires_password) {
                 delete submitData.exam_password;
@@ -383,31 +385,37 @@ export default function CreateExamPage() {
                         <CardDescription>Set timing, marks, and exam behavior.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Start & End Time */}
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="start_time">Start Time *</Label>
-                                <Input
-                                    id="start_time"
-                                    type="datetime-local"
-                                    value={toDatetimeLocal(formData.start_time)}
-                                    onChange={(e) => set('start_time', e.target.value)}
-                                    required
-                                />
-                                {getError('start_time') && <p className="text-xs text-destructive">{getError('start_time')}</p>}
+                        {/* Start & End Time — practice exams only (optional); admin schedules real exams */}
+                        {formData.is_practice ? (
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="start_time">Start Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                    <Input
+                                        id="start_time"
+                                        type="datetime-local"
+                                        value={toDatetimeLocal(formData.start_time || '')}
+                                        onChange={(e) => set('start_time', e.target.value)}
+                                    />
+                                    {getError('start_time') && <p className="text-xs text-destructive">{getError('start_time')}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="end_time">End Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                    <Input
+                                        id="end_time"
+                                        type="datetime-local"
+                                        value={toDatetimeLocal(formData.end_time || '')}
+                                        onChange={(e) => set('end_time', e.target.value)}
+                                    />
+                                    {getError('end_time') && <p className="text-xs text-destructive">{getError('end_time')}</p>}
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="end_time">End Time *</Label>
-                                <Input
-                                    id="end_time"
-                                    type="datetime-local"
-                                    value={toDatetimeLocal(formData.end_time)}
-                                    onChange={(e) => set('end_time', e.target.value)}
-                                    required
-                                />
-                                {getError('end_time') && <p className="text-xs text-destructive">{getError('end_time')}</p>}
+                        ) : (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-950/30">
+                                <p className="text-sm text-blue-800 dark:text-blue-300">
+                                    <span className="font-medium">Scheduling handled by Admin.</span> The admin will set the start and end times when publishing this exam.
+                                </p>
                             </div>
-                        </div>
+                        )}
 
                         {/* Duration, Total Marks, Passing Marks */}
                         <div className="grid gap-4 sm:grid-cols-3">
@@ -550,8 +558,14 @@ export default function CreateExamPage() {
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Schedule</p>
                             <dl className="space-y-2">
-                                <ReviewRow label="Start Time" value={formData.start_time ? new Date(formData.start_time).toLocaleString() : '—'} />
-                                <ReviewRow label="End Time" value={formData.end_time ? new Date(formData.end_time).toLocaleString() : '—'} />
+                                {formData.is_practice ? (
+                                    <>
+                                        <ReviewRow label="Start Time" value={formData.start_time ? new Date(formData.start_time).toLocaleString() : '—'} />
+                                        <ReviewRow label="End Time" value={formData.end_time ? new Date(formData.end_time).toLocaleString() : '—'} />
+                                    </>
+                                ) : (
+                                    <ReviewRow label="Scheduling" value="Set by Admin at publish time" />
+                                )}
                                 <ReviewRow label="Duration" value={`${formData.duration_minutes} minutes`} />
                                 <ReviewRow label="Total Marks" value={String(formData.total_marks)} />
                                 <ReviewRow label="Passing Marks" value={String(formData.passing_marks)} />

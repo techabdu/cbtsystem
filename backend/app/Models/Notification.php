@@ -13,16 +13,15 @@ class Notification extends Model
     protected $fillable = [
         'user_id', 'type', 'title', 'message',
         'related_entity_type', 'related_entity_id',
-        'is_read', 'read_at', 'channels', 'metadata',
+        'is_read', 'read_at', 'sent_via',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_read'   => 'boolean',
-            'read_at'   => 'datetime',
-            'channels'  => 'array',
-            'metadata'  => 'array',
+            'is_read'  => 'boolean',
+            'read_at'  => 'datetime',
+            'sent_via' => 'array',
         ];
     }
 

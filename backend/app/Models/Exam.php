@@ -169,6 +169,18 @@ class Exam extends Model
         return $query->where('status', 'draft');
     }
 
+    /** Scope: pending review exams. */
+    public function scopePendingReview($query)
+    {
+        return $query->where('status', 'pending_review');
+    }
+
+    /** Scope: verified exams (approved by HOD, awaiting admin publish). */
+    public function scopeVerified($query)
+    {
+        return $query->where('status', 'verified');
+    }
+
     /** Scope: practice exams only. */
     public function scopePractice($query)
     {
@@ -213,6 +225,18 @@ class Exam extends Model
     public function isDraft(): bool
     {
         return $this->status === 'draft';
+    }
+
+    /** Check if exam is pending HOD review. */
+    public function isPendingReview(): bool
+    {
+        return $this->status === 'pending_review';
+    }
+
+    /** Check if exam is verified by HOD (awaiting admin publish). */
+    public function isVerified(): bool
+    {
+        return $this->status === 'verified';
     }
 
     /** Check if the exam has ended. */

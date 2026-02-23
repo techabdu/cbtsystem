@@ -43,8 +43,8 @@ class ExamController extends Controller
         $exam = $this->examService->find($id);
         $user = $request->user();
 
-        // Lecturers can only view their own exams
-        if ($user->role === 'lecturer' && $exam->created_by !== $user->id) {
+        // Lecturers can only view their own exams (HODs can view any exam for review)
+        if ($user->role === 'lecturer' && ! $user->is_hod && $exam->created_by !== $user->id) {
             return ResponseHelper::error('You do not have access to this exam.', 403);
         }
 
@@ -165,7 +165,11 @@ class ExamController extends Controller
 
         $result = $this->examService->addQuestions($exam, $request->validated()['questions'], $user);
 
-        return ResponseHelper::success($result, 'Questions added to exam successfully');
+        $message = ($result['status_reset'] ?? false)
+            ? 'Questions added. Exam has been reset to draft — please re-submit for review.'
+            : 'Questions added to exam successfully';
+
+        return ResponseHelper::success($result, $message);
     }
 
     /* ------------------------------------------------------------------ */
@@ -182,23 +186,120 @@ class ExamController extends Controller
             return ResponseHelper::error('You can only modify your own exams.', 403);
         }
 
-        $this->examService->removeQuestion($exam, $questionId, $user);
+        $result = $this->examService->removeQuestion($exam, $questionId, $user);
 
-        return ResponseHelper::success(null, 'Question removed from exam successfully');
+        $message = $result['status_reset']
+            ? 'Question removed. Exam has been reset to draft — please re-submit for review.'
+            : 'Question removed from exam successfully';
+
+        return ResponseHelper::success($result, $message);
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Publish — Publish a draft exam                                     */
+    /*  Submit for Review — Lecturer sends draft to HOD                   */
     /* ------------------------------------------------------------------ */
 
-    public function publish(int $id, Request $request): JsonResponse
+    public function submitForReview(int $id, Request $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
 
-        // Lecturers can only publish their own exams
-        if ($user->role === 'lecturer' && $exam->created_by !== $user->id) {
-            return ResponseHelper::error('You can only publish your own exams.', 403);
+        if ($exam->created_by !== $user->id && $user->role !== 'admin') {
+            return ResponseHelper::error('You can only submit your own exams for review.', 403);
+        }
+
+        try {
+            $updated = $this->examService->submitForReview($exam, $user);
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Exam submitted for review successfully'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Verify Exam — HOD approves for admin publish                       */
+    /* ------------------------------------------------------------------ */
+
+    public function verifyExam(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'admin' && ! $user->is_hod) {
+            return ResponseHelper::error('Only HODs or administrators can verify exams.', 403);
+        }
+
+        $exam = $this->examService->find($id);
+
+        try {
+            $updated = $this->examService->verifyExam($exam, $user);
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Exam verified successfully'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Reject Exam — HOD or Admin sends back to draft                     */
+    /* ------------------------------------------------------------------ */
+
+    public function rejectExam(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'admin' && ! $user->is_hod) {
+            return ResponseHelper::error('Only HODs or administrators can reject exams.', 403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string',
+        ]);
+
+        $exam = $this->examService->find($id);
+
+        try {
+            $updated = $this->examService->rejectExam(
+                $exam,
+                $user,
+                $request->input('reason')
+            );
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Exam rejected and returned to draft'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Publish — Admin publishes verified exams; lecturers publish their  */
+    /*            own practice exams directly (no HOD/admin step needed)   */
+    /* ------------------------------------------------------------------ */
+
+    public function publish(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $exam = $this->examService->find($id);
+
+        // Practice exams: the creator (lecturer) can publish directly
+        // Non-practice exams: only admins can publish (after HOD verification)
+        if ($exam->is_practice) {
+            if ($user->role !== 'admin' && $exam->created_by !== $user->id) {
+                return ResponseHelper::error('You can only publish your own practice exams.', 403);
+            }
+        } else {
+            if ($user->role !== 'admin') {
+                return ResponseHelper::error('Only administrators can publish non-practice exams.', 403);
+            }
         }
 
         try {
@@ -222,8 +323,8 @@ class ExamController extends Controller
         $exam = $this->examService->find($id);
         $user = $request->user();
 
-        // Lecturers can only view results for their own exams
-        if ($user->role === 'lecturer' && $exam->created_by !== $user->id) {
+        // Lecturers can only view results for their own exams (HODs can view any)
+        if ($user->role === 'lecturer' && ! $user->is_hod && $exam->created_by !== $user->id) {
             return ResponseHelper::error('You can only view results for your own exams.', 403);
         }
 

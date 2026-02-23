@@ -4,6 +4,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { LogOut, MonitorCheck, User } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export function Header() {
     const { user, logout } = useAuthStore();
@@ -38,6 +39,9 @@ export function Header() {
                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${roleBadgeColor}`}>
                                 {user.role}
                             </span>
+
+                            {/* Notification Bell */}
+                            <NotificationBell />
 
                             {/* User Name */}
                             <div className="flex items-center gap-2">

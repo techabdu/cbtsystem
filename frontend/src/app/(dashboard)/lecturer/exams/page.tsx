@@ -7,6 +7,7 @@ import {
     getExams,
     deleteExam,
     publishExam,
+    submitExamForReview,
     getExamStats,
 } from '@/lib/api/exams';
 import { getLecturerMyCourses } from '@/lib/api/hod';
@@ -39,9 +40,11 @@ import type { Course } from '@/lib/types/models';
 
 const STATUS_BADGES: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+    pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    verified: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
     published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    ongoing: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    ongoing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    completed: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
     archived: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
@@ -151,8 +154,21 @@ export default function LecturerExamsPage() {
     /*  Actions                                                             */
     /* ------------------------------------------------------------------ */
 
+    const getDeleteConfirmMessage = (exam: Exam): string => {
+        if (exam.status === 'pending_review') {
+            return `"${exam.title}" is currently under HOD review. Deleting it will cancel the review process. Continue?`;
+        }
+        if (exam.status === 'verified') {
+            return `"${exam.title}" has been verified by HOD and is awaiting admin publishing. Deleting it will remove it from the publish queue. Continue?`;
+        }
+        if (exam.status === 'published' && exam.is_practice) {
+            return `"${exam.title}" is published and currently accessible to students. Deleting it will immediately remove student access. Continue?`;
+        }
+        return `Delete exam "${exam.title}"? This action cannot be undone.`;
+    };
+
     const handleDelete = async (exam: Exam) => {
-        if (!confirm(`Delete exam "${exam.title}"? This action cannot be undone.`)) return;
+        if (!confirm(getDeleteConfirmMessage(exam))) return;
         setActionLoadingId(exam.id);
         try {
             await deleteExam(exam.id);
@@ -170,17 +186,35 @@ export default function LecturerExamsPage() {
     };
 
     const handlePublish = async (exam: Exam) => {
-        if (!confirm(`Publish "${exam.title}"? Students will be able to see this exam once published.`)) return;
+        if (!confirm(`Publish "${exam.title}" as a practice exam? Students will be able to access it immediately.`)) return;
         setActionLoadingId(exam.id);
         try {
             await publishExam(exam.id);
-            setSuccessMessage('Exam published successfully.');
+            setSuccessMessage('Practice exam published successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchExams();
             await refreshStats();
         } catch (err: unknown) {
             const error = err as { response?: { data?: { message?: string } } };
             setErrorMessage(error.response?.data?.message || 'Failed to publish exam.');
+            setTimeout(() => setErrorMessage(''), 5000);
+        } finally {
+            setActionLoadingId(null);
+        }
+    };
+
+    const handleSubmitReview = async (exam: Exam) => {
+        if (!confirm(`Submit "${exam.title}" for HOD review? The exam will be locked from editing until reviewed.`)) return;
+        setActionLoadingId(exam.id);
+        try {
+            await submitExamForReview(exam.id);
+            setSuccessMessage('Exam submitted for HOD review successfully.');
+            setTimeout(() => setSuccessMessage(''), 3000);
+            await fetchExams();
+            await refreshStats();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setErrorMessage(error.response?.data?.message || 'Failed to submit exam for review.');
             setTimeout(() => setErrorMessage(''), 5000);
         } finally {
             setActionLoadingId(null);
@@ -412,7 +446,7 @@ export default function LecturerExamsPage() {
                                             {/* Start Time */}
                                             <td className="px-4 py-3 hidden lg:table-cell">
                                                 <span className="text-xs text-muted-foreground font-mono">
-                                                    {format(new Date(exam.start_time), 'MMM dd, yyyy HH:mm')}
+                                                    {exam.start_time ? format(new Date(exam.start_time), 'MMM dd, yyyy HH:mm') : '—'}
                                                 </span>
                                             </td>
                                             {/* Duration */}
@@ -428,18 +462,32 @@ export default function LecturerExamsPage() {
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    {/* Publish (only for draft) */}
-                                                    {exam.status === 'draft' && (
+                                                    {/* Practice: publish directly; Non-practice: submit for review */}
+                                                    {exam.status === 'draft' && exam.is_practice && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            title="Publish"
+                                                            title="Publish Practice Exam"
                                                             onClick={() => handlePublish(exam)}
                                                             disabled={actionLoadingId === exam.id}
                                                         >
                                                             {actionLoadingId === exam.id
                                                                 ? <Loader2 className="h-4 w-4 animate-spin" />
-                                                                : <Send className="h-4 w-4 text-emerald-600" />
+                                                                : <Send className="h-4 w-4 text-teal-600" />
+                                                            }
+                                                        </Button>
+                                                    )}
+                                                    {exam.status === 'draft' && !exam.is_practice && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            title="Submit for HOD Review"
+                                                            onClick={() => handleSubmitReview(exam)}
+                                                            disabled={actionLoadingId === exam.id}
+                                                        >
+                                                            {actionLoadingId === exam.id
+                                                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                                                : <Send className="h-4 w-4 text-amber-600" />
                                                             }
                                                         </Button>
                                                     )}
@@ -457,8 +505,11 @@ export default function LecturerExamsPage() {
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    {/* Delete */}
-                                                    {exam.status === 'draft' && (
+                                                    {/* Delete — draft, pending review, verified, or published practice */}
+                                                    {(exam.status === 'draft' ||
+                                                        exam.status === 'pending_review' ||
+                                                        exam.status === 'verified' ||
+                                                        (exam.status === 'published' && exam.is_practice)) && (
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"

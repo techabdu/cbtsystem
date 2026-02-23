@@ -6,11 +6,15 @@ import { format } from 'date-fns';
 import {
     getExam,
     updateExam,
+    submitExamForReview,
+    verifyExam,
+    rejectExam,
     publishExam,
     addExamQuestions,
     removeExamQuestion,
     getExamResults,
 } from '@/lib/api/exams';
+import { useAuthStore } from '@/lib/store/authStore';
 import { getQuestions } from '@/lib/api/questions';
 import type { Exam, ExamQuestion, ExamResults, Question } from '@/lib/types/models';
 import type { UpdateExamData } from '@/lib/types/api';
@@ -40,9 +44,11 @@ import Link from 'next/link';
 
 const STATUS_BADGES: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
+    pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    verified: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
     published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    ongoing: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    ongoing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    completed: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
     archived: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
@@ -84,6 +90,7 @@ export default function ExamDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const examId = Number(params.id);
+    const currentUser = useAuthStore(s => s.user);
 
     const initialTab = (searchParams.get('tab') as TabType) || 'overview';
 
@@ -100,8 +107,13 @@ export default function ExamDetailPage() {
     const [saveSuccess, setSaveSuccess] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-    // Publish state
+    // Workflow action state
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
 
     // Questions tab state
     const [questionSearch, setQuestionSearch] = useState('');
@@ -241,8 +253,14 @@ export default function ExamDetailPage() {
         setSaveSuccess('');
         try {
             const submitData = { ...editData };
-            if (submitData.start_time) submitData.start_time = new Date(submitData.start_time).toISOString();
-            if (submitData.end_time) submitData.end_time = new Date(submitData.end_time).toISOString();
+            // Only include dates for practice exams; clear them for non-practice (admin schedules)
+            if (submitData.is_practice) {
+                if (submitData.start_time) submitData.start_time = new Date(submitData.start_time).toISOString();
+                if (submitData.end_time) submitData.end_time = new Date(submitData.end_time).toISOString();
+            } else {
+                delete submitData.start_time;
+                delete submitData.end_time;
+            }
             const res = await updateExam(examId, submitData);
             setExam(res.data);
             setSaveSuccess('Exam updated successfully.');
@@ -258,17 +276,73 @@ export default function ExamDetailPage() {
     };
 
     /* ------------------------------------------------------------------ */
-    /*  Publish                                                             */
+    /*  Workflow Actions                                                    */
     /* ------------------------------------------------------------------ */
 
-    const handlePublish = async () => {
+    const handleSubmitForReview = async () => {
         if (!exam) return;
         if (exam.total_questions === 0) {
-            alert('Please add questions before publishing the exam.');
+            setSaveError('Please add questions before submitting for review.');
             setActiveTab('questions');
             return;
         }
-        if (!confirm(`Publish "${exam.title}"? Students will be able to see this exam once published.`)) return;
+        setIsSubmittingReview(true);
+        try {
+            const res = await submitExamForReview(examId);
+            setExam(res.data);
+            setSaveSuccess('Exam submitted for HOD review.');
+            setTimeout(() => setSaveSuccess(''), 4000);
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setSaveError(e.response?.data?.message || 'Failed to submit for review.');
+            setTimeout(() => setSaveError(''), 5000);
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
+    const handleVerify = async () => {
+        if (!exam) return;
+        setIsVerifying(true);
+        try {
+            const res = await verifyExam(examId);
+            setExam(res.data);
+            setSaveSuccess('Exam verified and ready for admin publishing.');
+            setTimeout(() => setSaveSuccess(''), 4000);
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setSaveError(e.response?.data?.message || 'Failed to verify exam.');
+            setTimeout(() => setSaveError(''), 5000);
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!exam) return;
+        if (!rejectReason.trim()) {
+            setSaveError('A reason for rejection is required.');
+            return;
+        }
+        setIsRejecting(true);
+        setShowRejectDialog(false);
+        try {
+            const res = await rejectExam(examId, rejectReason);
+            setExam(res.data);
+            setRejectReason('');
+            setSaveSuccess('Exam rejected and returned to draft.');
+            setTimeout(() => setSaveSuccess(''), 4000);
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setSaveError(e.response?.data?.message || 'Failed to reject exam.');
+            setTimeout(() => setSaveError(''), 5000);
+        } finally {
+            setIsRejecting(false);
+        }
+    };
+
+    const handlePublish = async () => {
+        if (!exam) return;
         setIsPublishing(true);
         try {
             const res = await publishExam(examId);
@@ -312,10 +386,13 @@ export default function ExamDetailPage() {
                 points: questionPoints[qId] ?? 1,
                 order: (exam?.total_questions || 0) + idx + 1,
             }));
-            await addExamQuestions(examId, { questions });
+            const res = await addExamQuestions(examId, { questions });
             setSelectedQuestionIds(new Set());
-            setQuestionActionMsg(`Added ${questions.length} question(s) to the exam.`);
-            setTimeout(() => setQuestionActionMsg(''), 3000);
+            const msg = (res.data as { status_reset?: boolean }).status_reset
+                ? `Added ${questions.length} question(s). Exam reset to draft — re-submit for review.`
+                : `Added ${questions.length} question(s) to the exam.`;
+            setQuestionActionMsg(msg);
+            setTimeout(() => setQuestionActionMsg(''), 5000);
             await fetchExam();
             await searchAvailableQuestions();
         } catch (err: unknown) {
@@ -328,14 +405,20 @@ export default function ExamDetailPage() {
     };
 
     const handleRemoveQuestion = async (examQuestion: ExamQuestion) => {
-        if (!confirm('Remove this question from the exam?')) return;
+        const confirmMsg = isUnderReview
+            ? 'Removing this question will reset the exam to Draft status and require re-submission for review. Continue?'
+            : 'Remove this question from the exam?';
+        if (!confirm(confirmMsg)) return;
         setRemovingId(examQuestion.id);
         setQuestionActionMsg('');
         setQuestionActionError('');
         try {
-            await removeExamQuestion(examId, examQuestion.question_id);
-            setQuestionActionMsg('Question removed from exam.');
-            setTimeout(() => setQuestionActionMsg(''), 3000);
+            const res = await removeExamQuestion(examId, examQuestion.question_id);
+            const msg = (res.data as { status_reset?: boolean } | null)?.status_reset
+                ? 'Question removed. Exam reset to draft — please re-submit for HOD review.'
+                : 'Question removed from exam.';
+            setQuestionActionMsg(msg);
+            setTimeout(() => setQuestionActionMsg(''), 5000);
             await fetchExam();
             await searchAvailableQuestions();
         } catch (err: unknown) {
@@ -376,8 +459,22 @@ export default function ExamDetailPage() {
         );
     }
 
-    const canPublish = exam.status === 'draft';
+    const isOwner = exam.created_by === currentUser?.id;
+    const isHod = currentUser?.is_hod === true;
+    const isAdmin = currentUser?.role === 'admin';
     const hasResults = ['published', 'completed', 'ongoing'].includes(exam.status);
+    const isLocked = ['published', 'ongoing', 'completed', 'archived'].includes(exam.status);
+    // Questions can be edited unless the exam is fully live/completed
+    const canEditQuestions = !isLocked && (isOwner || isAdmin);
+    // True when exam is under review — warn lecturer before modifying
+    const isUnderReview = ['pending_review', 'verified'].includes(exam.status);
+
+    // Workflow action visibility
+    // Practice exams: no HOD review, lecturer publishes directly
+    const showPracticePublish = exam.is_practice && exam.status === 'draft' && (isOwner || isAdmin);
+    const showSubmitReview = !exam.is_practice && exam.status === 'draft' && (isOwner || isAdmin);
+    const showVerifyReject = !exam.is_practice && exam.status === 'pending_review' && (isHod || isAdmin);
+    const showAdminPublish = !exam.is_practice && exam.status === 'verified' && isAdmin;
 
     /* ------------------------------------------------------------------ */
     /*  Render                                                              */
@@ -408,16 +505,64 @@ export default function ExamDetailPage() {
                         </p>
                     </div>
                 </div>
-                {canPublish && (
-                    <Button
-                        onClick={handlePublish}
-                        isLoading={isPublishing}
-                        className="gap-2 shrink-0"
-                    >
-                        <Send className="h-4 w-4" />
-                        Publish Exam
-                    </Button>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                    {/* Practice exam: lecturer publishes directly */}
+                    {showPracticePublish && (
+                        <Button
+                            onClick={handlePublish}
+                            isLoading={isPublishing}
+                            className="gap-2 bg-teal-600 hover:bg-teal-700"
+                        >
+                            <Send className="h-4 w-4" />
+                            Publish Practice
+                        </Button>
+                    )}
+                    {/* Non-practice: lecturer submits for HOD review */}
+                    {showSubmitReview && (
+                        <Button
+                            onClick={handleSubmitForReview}
+                            isLoading={isSubmittingReview}
+                            className="gap-2 bg-amber-600 hover:bg-amber-700"
+                        >
+                            <Send className="h-4 w-4" />
+                            Submit for Review
+                        </Button>
+                    )}
+                    {/* HOD: verify or reject */}
+                    {showVerifyReject && (
+                        <>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowRejectDialog(true)}
+                                disabled={isRejecting || isVerifying}
+                                className="gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+                            >
+                                <X className="h-4 w-4" />
+                                Reject
+                            </Button>
+                            <Button
+                                onClick={handleVerify}
+                                isLoading={isVerifying}
+                                disabled={isRejecting}
+                                className="gap-2 bg-violet-600 hover:bg-violet-700"
+                            >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Verify
+                            </Button>
+                        </>
+                    )}
+                    {/* Admin: publish verified exam */}
+                    {showAdminPublish && (
+                        <Button
+                            onClick={handlePublish}
+                            isLoading={isPublishing}
+                            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        >
+                            <Send className="h-4 w-4" />
+                            Publish Exam
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Global messages */}
@@ -460,11 +605,23 @@ export default function ExamDetailPage() {
                                 <CardTitle>Exam Details</CardTitle>
                                 <CardDescription>View and edit exam configuration.</CardDescription>
                             </div>
-                            {!isEditing && exam.status === 'draft' && (
+                            {!isEditing && (exam.status === 'draft') && (
                                 <Button variant="outline" onClick={openEdit} className="gap-2">
                                     <Pencil className="h-4 w-4" />
                                     Edit
                                 </Button>
+                            )}
+                            {exam.status === 'pending_review' && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Awaiting HOD review
+                                </span>
+                            )}
+                            {exam.status === 'verified' && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Verified — awaiting publish
+                                </span>
                             )}
                         </div>
                     </CardHeader>
@@ -529,27 +686,35 @@ export default function ExamDetailPage() {
                                     />
                                 </div>
 
-                                {/* Start/End Time */}
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="edit_start">Start Time</Label>
-                                        <Input
-                                            id="edit_start"
-                                            type="datetime-local"
-                                            value={toDatetimeLocal(editData.start_time || '')}
-                                            onChange={(e) => setEditData(prev => ({ ...prev, start_time: e.target.value }))}
-                                        />
+                                {/* Start/End Time — practice exams only (optional); admin schedules real exams */}
+                                {editData.is_practice ? (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit_start">Start Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                            <Input
+                                                id="edit_start"
+                                                type="datetime-local"
+                                                value={toDatetimeLocal(editData.start_time || '')}
+                                                onChange={(e) => setEditData(prev => ({ ...prev, start_time: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit_end">End Time <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                            <Input
+                                                id="edit_end"
+                                                type="datetime-local"
+                                                value={toDatetimeLocal(editData.end_time || '')}
+                                                onChange={(e) => setEditData(prev => ({ ...prev, end_time: e.target.value }))}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="edit_end">End Time</Label>
-                                        <Input
-                                            id="edit_end"
-                                            type="datetime-local"
-                                            value={toDatetimeLocal(editData.end_time || '')}
-                                            onChange={(e) => setEditData(prev => ({ ...prev, end_time: e.target.value }))}
-                                        />
+                                ) : (
+                                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-950/30">
+                                        <p className="text-sm text-blue-800 dark:text-blue-300">
+                                            <span className="font-medium">Scheduling handled by Admin.</span> The admin will set start and end times when publishing.
+                                        </p>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Duration, Total Marks, Passing Marks */}
                                 <div className="grid gap-4 sm:grid-cols-3">
@@ -600,8 +765,8 @@ export default function ExamDetailPage() {
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <DetailRow label="Course" value={exam.course ? `${exam.course.code} — ${exam.course.title}` : `#${exam.course_id}`} />
                                     <DetailRow label="Exam Type" value={exam.exam_type} />
-                                    <DetailRow label="Start Time" value={format(new Date(exam.start_time), 'MMM dd, yyyy HH:mm')} />
-                                    <DetailRow label="End Time" value={format(new Date(exam.end_time), 'MMM dd, yyyy HH:mm')} />
+                                    <DetailRow label="Start Time" value={exam.start_time ? format(new Date(exam.start_time), 'MMM dd, yyyy HH:mm') : 'TBD (Admin schedules)'} />
+                                    <DetailRow label="End Time" value={exam.end_time ? format(new Date(exam.end_time), 'MMM dd, yyyy HH:mm') : 'TBD (Admin schedules)'} />
                                     <DetailRow label="Duration" value={`${exam.duration_minutes} minutes`} />
                                     <DetailRow label="Total Marks" value={String(exam.total_marks)} />
                                     <DetailRow label="Passing Marks" value={String(exam.passing_marks)} />
@@ -659,6 +824,28 @@ export default function ExamDetailPage() {
                         </div>
                     )}
 
+                    {/* Warning: modifying a reviewed exam resets it to draft */}
+                    {isUnderReview && canEditQuestions && (
+                        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300">
+                            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-semibold">Exam is currently under review</p>
+                                <p className="text-sm mt-0.5">
+                                    Adding or removing questions will automatically reset the exam back to <strong>Draft</strong> status.
+                                    You will need to re-submit it for HOD review after making changes.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Locked — can only view questions */}
+                    {isLocked && (
+                        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/30 dark:text-blue-300">
+                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                            <p className="text-sm">Questions cannot be modified once the exam is published or completed.</p>
+                        </div>
+                    )}
+
                     {/* Current exam questions */}
                     <Card>
                         <CardHeader>
@@ -669,7 +856,9 @@ export default function ExamDetailPage() {
                             {!exam.questions || exam.questions.length === 0 ? (
                                 <div className="py-12 text-center">
                                     <p className="text-sm text-muted-foreground">No questions added yet.</p>
-                                    <p className="text-xs text-muted-foreground">Search and add questions from your question bank below.</p>
+                                    {canEditQuestions && (
+                                        <p className="text-xs text-muted-foreground">Search and add questions from your question bank below.</p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="divide-y">
@@ -696,7 +885,7 @@ export default function ExamDetailPage() {
                                                     <span className="text-xs text-muted-foreground">{eq.points} pt{eq.points !== 1 ? 's' : ''}</span>
                                                 </div>
                                             </div>
-                                            {exam.status === 'draft' && (
+                                            {canEditQuestions && (
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -717,8 +906,8 @@ export default function ExamDetailPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Add questions (only if draft) */}
-                    {exam.status === 'draft' && (
+                    {/* Add questions (all editable statuses) */}
+                    {canEditQuestions && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Add Questions from Bank</CardTitle>
@@ -825,6 +1014,45 @@ export default function ExamDetailPage() {
                 </div>
             )}
 
+            {/* Reject Dialog */}
+            {showRejectDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <Card className="w-full max-w-md shadow-lg">
+                        <CardHeader>
+                            <CardTitle>Reject Exam</CardTitle>
+                            <CardDescription>
+                                The exam will be returned to draft. You must provide a reason so the lecturer knows what to fix.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium">Reason for rejection <span className="text-destructive">*</span></label>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    placeholder="Explain what needs to be corrected..."
+                                    rows={3}
+                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleReject}
+                                    isLoading={isRejecting}
+                                    className="gap-2 bg-red-600 hover:bg-red-700"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Confirm Reject
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             {/* ==================== RESULTS TAB ==================== */}
             {activeTab === 'results' && (
                 <div className="space-y-4">
@@ -843,10 +1071,10 @@ export default function ExamDetailPage() {
                         <>
                             {/* Stats */}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <StatCard label="Total Students" value={results.statistics.total_students} color="blue" />
-                                <StatCard label="Completed" value={results.statistics.completed} color="emerald" />
-                                <StatCard label="Average Score" value={`${results.statistics.average_score?.toFixed(1)}%`} color="amber" />
-                                <StatCard label="Pass Rate" value={`${results.statistics.pass_rate?.toFixed(1)}%`} color="primary" />
+                                <StatCard label="Total Students" value={results.total_students} color="blue" />
+                                <StatCard label="Completed" value={results.completed} color="emerald" />
+                                <StatCard label="Average Score" value={results.avg_score != null ? `${results.avg_score.toFixed(1)}%` : '—'} color="amber" />
+                                <StatCard label="Pass Rate" value={results.pass_rate != null ? `${results.pass_rate.toFixed(1)}%` : '—'} color="primary" />
                             </div>
 
                             {/* Results table */}
@@ -862,7 +1090,7 @@ export default function ExamDetailPage() {
                                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Student</th>
                                                     <th className="px-4 py-3 text-center font-medium text-muted-foreground">Score</th>
                                                     <th className="px-4 py-3 text-center font-medium text-muted-foreground">Percentage</th>
-                                                    <th className="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
+                                                    <th className="px-4 py-3 text-center font-medium text-muted-foreground">Result</th>
                                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Submitted</th>
                                                 </tr>
                                             </thead>
@@ -877,19 +1105,25 @@ export default function ExamDetailPage() {
                                                     results.results.map((r, idx) => (
                                                         <tr key={idx} className="border-b hover:bg-muted/50">
                                                             <td className="px-4 py-3">
-                                                                <p className="font-medium">{r.student.full_name}</p>
-                                                                {r.student.student_id && (
-                                                                    <p className="text-xs text-muted-foreground font-mono">{r.student.student_id}</p>
+                                                                <p className="font-medium">{r.student_name ?? '—'}</p>
+                                                                {r.student_email && (
+                                                                    <p className="text-xs text-muted-foreground">{r.student_email}</p>
                                                                 )}
                                                             </td>
-                                                            <td className="px-4 py-3 text-center font-medium">{r.score}</td>
-                                                            <td className="px-4 py-3 text-center">{r.percentage?.toFixed(1)}%</td>
+                                                            <td className="px-4 py-3 text-center font-medium">
+                                                                {r.total_score != null ? r.total_score : '—'}
+                                                            </td>
                                                             <td className="px-4 py-3 text-center">
-                                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${r.status === 'passed'
+                                                                {r.percentage != null ? `${r.percentage.toFixed(1)}%` : '—'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${r.passed === true
                                                                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                                                    : r.passed === false
+                                                                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                                                        : 'bg-muted text-muted-foreground'
                                                                     }`}>
-                                                                    {r.status}
+                                                                    {r.passed === true ? 'Passed' : r.passed === false ? 'Failed' : r.status}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-3 text-xs text-muted-foreground hidden sm:table-cell">

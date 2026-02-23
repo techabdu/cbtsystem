@@ -18,6 +18,8 @@ import {
     BarChart3,
     ClipboardList,
     ClipboardCheck,
+    Bell,
+    FileText,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -102,6 +104,19 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.LECTURER],
             hodOnly: true,
         },
+        {
+            href: '/lecturer/exam-reviews',
+            label: 'Exam Reviews',
+            icon: ClipboardCheck,
+            roles: [ROLES.LECTURER],
+            hodOnly: true,
+        },
+        {
+            href: '/notifications',
+            label: 'Notifications',
+            icon: Bell,
+            roles: [ROLES.LECTURER, ROLES.STUDENT],
+        },
 
         // Admin Links
         {
@@ -141,9 +156,21 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.ADMIN],
         },
         {
+            href: '/admin/exams',
+            label: 'Exams',
+            icon: FileText,
+            roles: [ROLES.ADMIN],
+        },
+        {
             href: '/admin/settings',
             label: 'Settings',
             icon: Settings,
+            roles: [ROLES.ADMIN],
+        },
+        {
+            href: '/notifications',
+            label: 'Notifications',
+            icon: Bell,
             roles: [ROLES.ADMIN],
         },
     ];

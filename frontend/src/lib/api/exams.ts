@@ -76,8 +76,8 @@ export async function restoreExam(id: number): Promise<ApiResponse<Exam>> {
 export async function addExamQuestions(
     id: number,
     data: AddExamQuestionsData
-): Promise<ApiResponse<{ total_questions: number; total_marks: number }>> {
-    const response = await apiClient.post<ApiResponse<{ total_questions: number; total_marks: number }>>(
+): Promise<ApiResponse<{ total_questions: number; total_marks: number; status_reset: boolean }>> {
+    const response = await apiClient.post<ApiResponse<{ total_questions: number; total_marks: number; status_reset: boolean }>>(
         `/exams/${id}/questions`,
         data
     );
@@ -87,13 +87,42 @@ export async function addExamQuestions(
 /**
  * Remove a question from an exam.
  */
-export async function removeExamQuestion(examId: number, questionId: number): Promise<ApiResponse<null>> {
-    const response = await apiClient.delete<ApiResponse<null>>(`/exams/${examId}/questions/${questionId}`);
+export async function removeExamQuestion(
+    examId: number,
+    questionId: number
+): Promise<ApiResponse<{ status_reset: boolean } | null>> {
+    const response = await apiClient.delete<ApiResponse<{ status_reset: boolean } | null>>(
+        `/exams/${examId}/questions/${questionId}`
+    );
     return response.data;
 }
 
 /**
- * Publish an exam (changes status from draft to published).
+ * Submit a draft exam for HOD review.
+ */
+export async function submitExamForReview(id: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/submit-for-review`);
+    return response.data;
+}
+
+/**
+ * Verify an exam (HOD or admin approves for publishing).
+ */
+export async function verifyExam(id: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/verify`);
+    return response.data;
+}
+
+/**
+ * Reject an exam (HOD or admin sends back to draft).
+ */
+export async function rejectExam(id: number, reason?: string): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/reject`, { reason });
+    return response.data;
+}
+
+/**
+ * Publish an exam (admin only — exam must be in verified status).
  */
 export async function publishExam(id: number): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/publish`);

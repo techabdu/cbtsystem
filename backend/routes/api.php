@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\Lecturer\LecturerCourseController;
 use App\Http\Controllers\Api\V1\Exam\ExamController;
 use App\Http\Controllers\Api\V1\Exam\StudentExamController;
 use App\Http\Controllers\Api\V1\Exam\PracticeExamController;
+use App\Http\Controllers\Api\V1\Notification\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -210,6 +211,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/restore', [ExamController::class, 'restore'])->name('exams.restore');
             Route::post('/{id}/questions', [ExamController::class, 'addQuestions'])->name('exams.questions.add');
             Route::delete('/{id}/questions/{questionId}', [ExamController::class, 'removeQuestion'])->name('exams.questions.remove');
+            Route::post('/{id}/submit-for-review', [ExamController::class, 'submitForReview'])->name('exams.submit-for-review');
+            Route::post('/{id}/verify', [ExamController::class, 'verifyExam'])->name('exams.verify');
+            Route::post('/{id}/reject', [ExamController::class, 'rejectExam'])->name('exams.reject');
             Route::post('/{id}/publish', [ExamController::class, 'publish'])->name('exams.publish');
             Route::get('/{id}/results', [ExamController::class, 'results'])->name('exams.results');
         });
@@ -229,6 +233,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [PracticeExamController::class, 'index'])->name('student.practice.index');
             Route::get('/{id}', [PracticeExamController::class, 'show'])->name('student.practice.show');
             Route::post('/{id}/submit', [PracticeExamController::class, 'submit'])->name('student.practice.submit');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Notifications — All authenticated users                        */
+        /* -------------------------------------------------------------- */
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+            Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+            Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+            Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+            Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
         });
 
         // --- Future routes will be added here ---

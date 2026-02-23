@@ -122,7 +122,7 @@ export interface Exam {
     description?: string;
     instructions?: string;
     exam_type: 'quiz' | 'midterm' | 'final' | 'makeup' | 'practice';
-    status: 'draft' | 'published' | 'ongoing' | 'completed' | 'archived';
+    status: 'draft' | 'pending_review' | 'verified' | 'published' | 'ongoing' | 'completed' | 'archived';
     start_time: string;
     end_time: string;
     duration_minutes: number;
@@ -168,8 +168,11 @@ export interface ExamQuestion {
 export interface ExamStats {
     total: number;
     draft: number;
+    pending_review: number;
+    verified: number;
     published: number;
     completed: number;
+    archived: number;
     practice: number;
     by_type: {
         quiz: number;
@@ -180,24 +183,41 @@ export interface ExamStats {
     };
 }
 
+export interface Notification {
+    id: number;
+    user_id: number;
+    type: string;
+    title: string;
+    message: string;
+    related_entity_type?: string | null;
+    related_entity_id?: number | null;
+    is_read: boolean;
+    read_at?: string | null;
+    sent_via?: string[];
+    created_at?: string;
+}
+
 export interface ExamResults {
-    exam: { id: number; title: string; };
-    statistics: {
-        total_students: number;
-        completed: number;
-        in_progress: number;
-        not_started: number;
-        average_score: number;
-        highest_score: number;
-        lowest_score: number;
-        pass_rate: number;
-    };
+    exam_id: number;
+    exam_title: string;
+    total_students: number;
+    completed: number;
+    in_progress: number;
+    avg_score: number | null;
+    highest_score: number | null;
+    lowest_score: number | null;
+    pass_rate: number | null;
     results: Array<{
-        student: { id: number; student_id?: string; full_name: string; };
-        score: number;
-        percentage: number;
+        session_id: number;
+        student_id: number;
+        student_name: string | null;
+        student_email: string | null;
         status: string;
-        submitted_at?: string;
+        total_score: number | null;
+        percentage: number | null;
+        passed: boolean | null;
+        started_at?: string | null;
+        submitted_at?: string | null;
     }>;
 }
 
@@ -206,8 +226,8 @@ export interface PracticeSubmitResult {
     total_marks: number;
     percentage: number;
     passed: boolean;
-    correct_count: number;
-    total_questions: number;
+    correct_count?: number;   // may be absent in old sessionStorage data
+    total_questions?: number; // may be absent in old sessionStorage data
     results: Array<{
         question_id: number;
         question_text: string;
@@ -216,7 +236,7 @@ export interface PracticeSubmitResult {
         correct_answer: string | null;
         is_correct: boolean;
         points_awarded: number;
-        points_possible: number;
+        points_possible?: number; // renamed from max_points in older responses
     }>;
 }
 

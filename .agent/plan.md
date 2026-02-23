@@ -389,21 +389,31 @@
 - [x] Sidebar: Student "My Exams" + "Practice" links added — 2026-02-21
 - [x] Build verification: 0 TypeScript errors, 3 practice routes registered — 2026-02-21
 
-### Stage 3.2.1 — Correction: Strict Exam Publishing Workflow
+### Stage 3.2.1 — Correction: Strict Exam Publishing Workflow ✅ 2026-02-22
 > **Note:** As discussed, the system must enforce a strict chain of custody for college exams.
-- [ ] Update Permissions: Only **Admins** have the ability to explicitly `Publish` an exam.
-- [ ] Workflow: Lecturers create exam `Drafts` and add verified questions.
-- [ ] Workflow: HODs verify questions and exam configurations.
-- [ ] Workflow: Admins review the verified drafts and execute the `Publish` action to make them available for the offline server sync.
+- [x] Migration: Extend exams ENUM with `pending_review` and `verified` statuses
+- [x] Exam model: Added `isPendingReview()`, `isVerified()`, `scopePendingReview()`, `scopeVerified()`
+- [x] ExamService: `submitForReview()`, `verifyExam()`, `rejectExam()`; `publish()` restricted to verified-only; `getStats()` includes new status counts
+- [x] ExamController: `submitForReview`, `verifyExam`, `rejectExam` actions; `publish` restricted to admin-only
+- [x] Routes: Added `submit-for-review`, `verify`, `reject` routes
+- [x] Frontend: `models.ts` status union updated; `ExamStats` updated; `exams.ts` API client has all workflow functions
+- [x] Frontend: `lecturer/exams/[id]/page.tsx` — workflow-aware action buttons (Submit for Review / Verify / Reject / Publish); reject dialog
+- [x] Frontend: `lecturer/exam-reviews/page.tsx` — HOD-only review queue page
+- [x] Frontend: `admin/exams/page.tsx` — Admin exam management with publish action for verified exams
+- [x] Frontend: Sidebar updated with "Exam Reviews" (HOD) and "Exams" (admin) links
 
-### Stage 3.3 — Notifications System
-- [ ] Service: `NotificationService`
-- [ ] Job: `SendBulkNotifications`
-- [ ] Backend: In-app notification CRUD (`GET /api/v1/notifications`, mark as read)
-- [ ] Backend: Email notification for exam reminders (via queue)
-- [ ] Frontend: Notification bell/dropdown in dashboard header
-- [ ] Frontend: Notifications list page
-- [ ] Frontend: Mark as read functionality
+### Stage 3.3 — Notifications System ✅ 2026-02-22
+- [x] Service: `NotificationService` (`notify`, `notifyMany`, `listForUser`, `unreadCount`, `markAsRead`, `markAllAsRead`, `delete`)
+- [x] Job: `SendBulkNotifications` (queueable, ShouldQueue)
+- [x] Backend: In-app notification CRUD (`GET /api/v1/notifications`, mark as read, mark all read, delete)
+- [x] Notification model: Fixed fillable (`sent_via` not `channels`/`metadata`)
+- [x] NotificationController: index, unreadCount, markAsRead, markAllAsRead, destroy
+- [x] Routes: Full notification CRUD routes registered
+- [x] Frontend: `notifications.ts` API client (getNotifications, getUnreadCount, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification)
+- [x] Frontend: `Notification` interface added to models.ts
+- [x] Frontend: `NotificationBell` dropdown component in dashboard header (auto-refreshes every 60s)
+- [x] Frontend: `/notifications` page — paginated list with mark-read, delete, unread filter
+- [x] Frontend: Sidebar updated with "Notifications" link (all roles)
 
 ---
 

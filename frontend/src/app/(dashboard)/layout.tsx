@@ -35,6 +35,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isHydrated]);
 
+    // Paths accessible to all authenticated roles (not role-prefixed)
+    const SHARED_PATHS = ['/notifications'];
+    const isSharedPath = SHARED_PATHS.some(p => pathname.startsWith(p));
+
     // Handle redirects in useEffect (not during render)
     useEffect(() => {
         if (!isReady || isLoading) return;
@@ -44,6 +48,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             router.replace('/login');
             return;
         }
+
+        // Shared paths are accessible to all roles — skip role guard
+        if (isSharedPath) return;
 
         // Role-based guard: verify user is on the correct role route
         const rolePrefix = `/${user.role}`;
@@ -55,7 +62,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     : ROUTES.DASHBOARD.STUDENT;
             router.replace(correctDashboard);
         }
-    }, [isReady, isLoading, isAuthenticated, user, pathname, router]);
+    }, [isReady, isLoading, isAuthenticated, user, pathname, router, isSharedPath]);
 
     // Show spinner while loading/checking auth
     if (!isHydrated || !isReady || isLoading) {
@@ -76,7 +83,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     const rolePrefix = `/${user.role}`;
-    if (!pathname.startsWith(rolePrefix)) {
+    if (user.role !== 'admin' && !isSharedPath && !pathname.startsWith(rolePrefix)) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -12,6 +12,8 @@ import type { NextRequest } from 'next/server';
  */
 
 const PUBLIC_PATHS = ['/login', '/activate'];
+// Paths accessible to all authenticated roles (no role-prefix required)
+const SHARED_PATHS = ['/notifications'];
 const ROLE_PATHS: Record<string, string> = {
     admin: '/admin',
     lecturer: '/lecturer',
@@ -52,6 +54,11 @@ export function middleware(request: NextRequest) {
     }
 
     // --- 4. Role-based isolation ---
+    // Shared paths are accessible to all authenticated users — skip role guard
+    if (SHARED_PATHS.some(p => pathname.startsWith(p))) {
+        return NextResponse.next();
+    }
+
     // Check if the current path belongs to a specific role
     for (const [routeRole, prefix] of Object.entries(ROLE_PATHS)) {
         if (pathname.startsWith(prefix)) {

@@ -71,8 +71,14 @@ export default function PracticeResultsPage() {
         return null; // Loading
     }
 
-    const percentage = result.percentage ?? 0;
+    const percentage = Number.isFinite(result.percentage) ? result.percentage : 0;
     const passed = result.passed;
+
+    // Derive counts from result.results as fallback — guards against old
+    // sessionStorage data that pre-dates the correct_count/total_questions fields.
+    const correctCount = result.correct_count ?? result.results.filter(r => r.is_correct).length;
+    const totalQs = result.total_questions ?? result.results.length;
+    const incorrectCount = totalQs - correctCount;
 
     /* ------------------------------------------------------------------ */
     /*  Render                                                              */
@@ -117,7 +123,7 @@ export default function PracticeResultsPage() {
                                 {percentage.toFixed(1)}%
                             </p>
                             <p className="text-lg font-semibold mt-1">
-                                {result.score} / {result.total_marks} marks
+                                {Number.isFinite(result.score) ? result.score : 0} / {Number.isFinite(result.total_marks) ? result.total_marks : 0} marks
                             </p>
                             <p className={`text-sm font-medium mt-1 ${passed
                                 ? 'text-emerald-600 dark:text-emerald-400'
@@ -130,15 +136,15 @@ export default function PracticeResultsPage() {
                         {/* Stats */}
                         <div className="flex gap-4 sm:gap-6">
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{result.correct_count}</p>
+                                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{correctCount}</p>
                                 <p className="text-xs text-muted-foreground">Correct</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{result.total_questions - result.correct_count}</p>
+                                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{incorrectCount}</p>
                                 <p className="text-xs text-muted-foreground">Incorrect</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-muted-foreground">{result.total_questions}</p>
+                                <p className="text-2xl font-bold text-muted-foreground">{totalQs}</p>
                                 <p className="text-xs text-muted-foreground">Total</p>
                             </div>
                         </div>
@@ -191,7 +197,7 @@ export default function PracticeResultsPage() {
                                             {qr.question_text}
                                         </CardTitle>
                                         <span className="text-xs text-muted-foreground shrink-0">
-                                            {qr.points_awarded}/{qr.points_possible} pts
+                                            {qr.points_awarded}/{qr.points_possible ?? '?'} pts
                                         </span>
                                     </div>
                                     <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium capitalize mt-1">

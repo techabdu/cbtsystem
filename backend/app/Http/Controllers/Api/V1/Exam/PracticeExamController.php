@@ -180,6 +180,15 @@ class PracticeExamController extends Controller
             ->values()
             ->toArray();
 
+        // Practice exams are retakeable — remove any previous session (and its answers)
+        // so the unique (exam_id, student_id) constraint is satisfied.
+        ExamSession::where('exam_id', $exam->id)
+            ->where('student_id', $user->id)
+            ->each(function ($old) {
+                $old->answers()->delete();
+                $old->delete();
+            });
+
         // Create the ExamSession for this practice attempt
         $session = ExamSession::create([
             'exam_id'             => $exam->id,
@@ -199,6 +208,7 @@ class PracticeExamController extends Controller
 
         // Grade each answer and build results
         $totalScore   = 0.0;
+        $correctCount = 0;
         $results      = [];
 
         foreach ($request->input('answers', []) as $submission) {
@@ -248,6 +258,9 @@ class PracticeExamController extends Controller
             }
 
             $totalScore += $pointsAwarded;
+            if ($isCorrect) {
+                $correctCount++;
+            }
 
             // Determine correct field to store answer
             $answerText      = null;
@@ -281,7 +294,7 @@ class PracticeExamController extends Controller
                 'correct_answer'  => $question->correct_answer, // exposed in practice
                 'is_correct'      => $isCorrect,
                 'points_awarded'  => $pointsAwarded,
-                'max_points'      => (float) $examQuestion->points,
+                'points_possible' => (float) $examQuestion->points,
                 'requires_manual_grading' => $question->question_type === 'essay',
             ];
         }
@@ -298,13 +311,15 @@ class PracticeExamController extends Controller
         ]);
 
         return ResponseHelper::success([
-            'session_id'   => $session->id,
-            'score'        => $totalScore,
-            'total_marks'  => $totalPossible,
-            'percentage'   => $percentage,
-            'passing_marks'=> (float) $exam->passing_marks,
-            'passed'       => $passed,
-            'results'      => $results,
+            'session_id'      => $session->id,
+            'score'           => $totalScore,
+            'total_marks'     => $totalPossible,
+            'percentage'      => $percentage,
+            'passing_marks'   => (float) $exam->passing_marks,
+            'passed'          => $passed,
+            'correct_count'   => $correctCount,
+            'total_questions' => $exam->examQuestions->count(),
+            'results'         => $results,
         ], 'Practice exam submitted and graded successfully');
     }
 }
