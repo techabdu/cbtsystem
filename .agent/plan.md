@@ -420,21 +420,24 @@
 ## PHASE 4: Exam Taking System (Weeks 10–12) — ⚠️ CRITICAL
 > **Goal:** Robust exam interface, auto-save, session recovery, grading
 
-### Stage 4.1.1 — Offline Exam Entry Refactor 
-> **Goal:** Streamline the exam entry process for the offline lab architecture, allowing students to start exams directly using their Matric Number and an Exam Access Code.
+### Stage 4.1.1 — Offline Exam Entry Refactor ✅ COMPLETE
+> **Goal:** Streamline the exam entry process for the offline lab architecture, allowing students to start exams directly using their Matric Number and a per-semester Exam Access Code.
+> **Access Code Model:** Per-student, per-semester. Student pays → receives one access code valid for all exams that semester. New table `exam_access_codes` (student_id, access_code, semester, academic_year, is_active, expires_at). A future external app will auto-generate these codes on payment.
+> **Exam Auto-Detection:** Student enters matric + access code. System validates the code, then auto-detects the currently-open exam (published, non-practice, within time window, student enrolled in the course).
 
-- [ ] Backend: Migration `2026_02_23_000001_add_access_code_to_exams_table` — `access_code` (string 32, unique, nullable) added to `exams` table — 2026-02-23
-- [ ] Backend: `Exam` model — `access_code` added to `$fillable` — 2026-02-23
-- [ ] Backend: `OfflineEntryRequest` form request (`matric_number` + `access_code` validation) — 2026-02-23
-- [ ] Backend: `OfflineEntryController@start` — finds student by matric, finds exam by access_code, validates published + time window + active account, calls `SessionService::startSession()`, issues short-lived Sanctum token, logs activity — 2026-02-23
-- [ ] Backend: Route `POST /api/v1/offline-exams/start` registered outside `auth:sanctum` middleware (public) — 2026-02-23
-- [ ] Frontend: `OfflineEntryData` + `OfflineEntryResult` types added to `api.ts` — 2026-02-23
-- [ ] Frontend: `startOfflineExam()` added to `lib/api/sessions.ts` (raw axios, no auth header) — 2026-02-23
-- [ ] Frontend: `app/(offline)/layout.tsx` — bare passthrough layout — 2026-02-23
-- [ ] Frontend: `app/(offline)/exams/page.tsx` — full-screen kiosk entry page (dark slate theme, matric + access code form, sets auth cookies, redirects to `/exam/{sessionId}`) — 2026-02-23
-- [ ] Frontend: `middleware.ts` — `/exams` added to `PUBLIC_PATHS` — 2026-02-23
-- [ ] Frontend: `/student/exams` page — "Start Exam" button removed for real exams, replaced with "Report to the exam lab" notice; dialog + dead state removed — 2026-02-23
-- [ ] **Verification: 0 PHP syntax errors, route registered, 0 TypeScript errors** — 2026-02-23
+- [x] Backend: Migration `2026_02_23_000001_add_access_code_to_exams_table` — initial per-exam access_code (superseded) — 2026-02-23
+- [x] Backend: Migration `2026_02_24_000001_create_exam_access_codes_table` — drops per-exam access_code, creates `exam_access_codes` table (student_id FK, access_code unique, semester, academic_year, is_active, activated_at, expires_at, unique constraint on student+semester+year) — 2026-02-24
+- [x] Backend: `ExamAccessCode` model — fillable, casts, student relationship, active/notExpired/forStudent scopes, `isValid()` helper — 2026-02-24
+- [x] Backend: `OfflineEntryRequest` form request (`matric_number` + `access_code` validation) — 2026-02-23
+- [x] Backend: `OfflineEntryController@start` — finds student by matric, validates access code belongs to student + is valid, auto-detects current exam (published + time window + enrolled courses), creates/resumes ExamSession, issues short-lived Sanctum token, logs activity — 2026-02-24
+- [x] Backend: Route `POST /api/v1/offline-exams/start` registered outside `auth:sanctum` middleware (public) — 2026-02-23
+- [x] Frontend: `OfflineEntryData` + `OfflineEntryResult` types in `api.ts` — 2026-02-23
+- [x] Frontend: `startOfflineExam()` in `lib/api/sessions.ts` (raw axios, no auth header) — 2026-02-23
+- [x] Frontend: `app/(offline)/layout.tsx` — bare passthrough layout — 2026-02-23
+- [x] Frontend: `app/(offline)/exams/page.tsx` — single-panel centered entry page using existing UI components (Button, Input, Label, react-hook-form + zod) — 2026-02-24
+- [x] Frontend: `middleware.ts` — `/exams` added to `PUBLIC_PATHS` — 2026-02-23
+- [x] Frontend: `/student/exams` page — "Report to the exam lab" notice replaces old placeholder message — 2026-02-23
+- [x] **Verification: 0 PHP syntax errors, 1 route registered, migration ran, 0 TypeScript errors** — 2026-02-24
 
 ### Stage 4.1.2 — Exam Session Backend
 > **Guide Reference:** `04_BACKEND_ARCHITECTURE.md` (SessionService, RecoveryService, GradingService)

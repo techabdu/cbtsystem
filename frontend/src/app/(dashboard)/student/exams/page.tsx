@@ -231,9 +231,9 @@ function ExamCard({ exam, variant }: { exam: Exam; variant: 'available' | 'upcom
 
                 {variant === 'available' && (
                     <div className="mt-3 pt-3 border-t">
-                        <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-3 py-2">
-                            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                                This exam is now open. Exam taking will be available in the next phase.
+                        <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-3 py-2">
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                                Report to the exam lab to take this exam. Your invigilator will provide the access code.
                             </p>
                         </div>
                     </div>

@@ -482,3 +482,148 @@ export interface PracticeAnswerData {
         answer: string | null;
     }>;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Offline Exam Entry                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface OfflineEntryData {
+    matric_number: string;
+    access_code: string;
+}
+
+export interface OfflineEntryResult {
+    session_id: number;
+    session_uuid: string;
+    token: string;
+    exam: {
+        id: number;
+        uuid: string;
+        title: string;
+        course_code: string | null;
+        course_title: string | null;
+        duration_minutes: number;
+        total_marks: number;
+        total_questions: number;
+        allow_backtrack: boolean;
+        instructions: string | null;
+    };
+    student: {
+        id: number;
+        uuid: string;
+        full_name: string;
+        student_id: string | null;
+    };
+    resumed: boolean;
+    time_remaining_seconds: number;
+    current_question_index: number;
+    questions_answered: number;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Exam Session — Active exam taking                                   */
+/* ------------------------------------------------------------------ */
+
+export interface ExamSessionStatus {
+    session_id: number;
+    session_uuid: string;
+    status: string;
+    time_remaining_seconds: number;
+    current_question_index: number;
+    total_questions: number;
+    questions_answered: number;
+    answered_question_ids: number[];
+    flagged_question_ids: number[];
+    exam: {
+        id: number;
+        title: string;
+        course_code: string | null;
+        course_title: string | null;
+        duration_minutes: number;
+        total_marks: number;
+        allow_backtrack: boolean;
+        instructions: string | null;
+    };
+}
+
+export interface ExamSessionQuestion {
+    index: number;
+    total: number;
+    question_id: number;
+    question_text: string;
+    question_type: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
+    options: Array<{ key: string; value: string }> | null;
+    image_url: string | null;
+    points: number;
+    saved_answer: {
+        answer: string | string[] | null;
+        is_flagged: boolean;
+    } | null;
+}
+
+export interface ExamSessionQuestions {
+    questions: ExamSessionQuestion[];
+    total: number;
+    time_remaining_seconds: number;
+    allow_backtrack: boolean;
+}
+
+export interface SaveAnswerData {
+    question_id: number;
+    answer: string | null;
+    is_flagged?: boolean;
+}
+
+export interface SaveAnswerResult {
+    question_id: number;
+    version: number;
+    saved_at: string;
+}
+
+export interface BatchSaveAnswersData {
+    answers: Array<{
+        question_id: number;
+        answer: string | null;
+        is_flagged?: boolean;
+    }>;
+}
+
+export interface BatchSaveAnswersResult {
+    saved_count: number;
+    saved: Array<{
+        question_id: number;
+        version: number;
+    }>;
+}
+
+export interface ToggleFlagData {
+    question_id: number;
+}
+
+export interface ToggleFlagResult {
+    question_id: number;
+    is_flagged: boolean;
+}
+
+export interface ExamSubmitResult {
+    session_id: number;
+    status: string;
+    total_score: number;
+    total_marks: number;
+    percentage: number;
+    passed: boolean;
+    correct_count: number;
+    total_questions: number;
+    show_results: boolean;
+    show_answers: boolean;
+    results: Array<{
+        question_id: number;
+        question_text: string;
+        question_type: string;
+        your_answer: string | null;
+        correct_answer: string | null;
+        is_correct: boolean | null;
+        points_awarded: number;
+        points_possible: number;
+    }>;
+}

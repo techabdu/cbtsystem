@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\V1\Exam\ExamController;
 use App\Http\Controllers\Api\V1\Exam\StudentExamController;
 use App\Http\Controllers\Api\V1\Exam\PracticeExamController;
 use App\Http\Controllers\Api\V1\Notification\NotificationController;
+use App\Http\Controllers\Api\V1\ExamSession\OfflineEntryController;
+use App\Http\Controllers\Api\V1\ExamSession\ExamSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +44,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/activate', ActivateAccountController::class)->name('auth.activate');
         Route::post('/login', LoginController::class)->name('auth.login');
     });
+
+    /* ------------------------------------------------------------------ */
+    /*  Offline Exam Entry — Public (no auth required)                     */
+    /* ------------------------------------------------------------------ */
+    Route::post('/offline-exams/start', [OfflineEntryController::class, 'start'])->name('offline-exams.start');
 
     /* ------------------------------------------------------------------ */
     /*  Authentication — Protected Routes                                  */
@@ -246,7 +253,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
         });
 
-        // --- Future routes will be added here ---
-        // Route::prefix('exam-sessions')->group(function () { ... });
+        /* -------------------------------------------------------------- */
+        /*  Exam Sessions — Active exam taking                             */
+        /* -------------------------------------------------------------- */
+        Route::prefix('exam-sessions')->group(function () {
+            Route::get('/{id}/status', [ExamSessionController::class, 'status'])->name('exam-sessions.status');
+            Route::get('/{id}/questions', [ExamSessionController::class, 'questions'])->name('exam-sessions.questions');
+            Route::get('/{id}/questions/{index}', [ExamSessionController::class, 'question'])->name('exam-sessions.question');
+            Route::post('/{id}/answers', [ExamSessionController::class, 'saveAnswer'])->name('exam-sessions.save-answer');
+            Route::post('/{id}/answers/batch', [ExamSessionController::class, 'saveAnswersBatch'])->name('exam-sessions.save-answers-batch');
+            Route::post('/{id}/flag', [ExamSessionController::class, 'toggleFlag'])->name('exam-sessions.toggle-flag');
+            Route::post('/{id}/submit', [ExamSessionController::class, 'submit'])->name('exam-sessions.submit');
+        });
     });
 });

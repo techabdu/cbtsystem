@@ -11,7 +11,7 @@ import type { NextRequest } from 'next/server';
  *    e.g. a student at /admin is redirected to /student
  */
 
-const PUBLIC_PATHS = ['/login', '/activate'];
+const PUBLIC_PATHS = ['/login', '/activate', '/exams'];
 // Paths accessible to all authenticated roles (no role-prefix required)
 const SHARED_PATHS = ['/notifications'];
 const ROLE_PATHS: Record<string, string> = {
@@ -37,11 +37,19 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // --- 2. Public auth pages (login, register) ---
+    // --- 2. Public pages ---
     if (PUBLIC_PATHS.includes(pathname)) {
-        if (token && role) {
-            // Already logged in → redirect to their dashboard
+        // Auth pages redirect logged-in users; /exams is always accessible
+        if (pathname !== '/exams' && token && role) {
             return NextResponse.redirect(new URL(getDashboardForRole(role), request.url));
+        }
+        return NextResponse.next();
+    }
+
+    // --- 2b. Exam taking interface (/exam/*) — requires token but no role guard ---
+    if (pathname.startsWith('/exam/')) {
+        if (!token) {
+            return NextResponse.redirect(new URL('/exams', request.url));
         }
         return NextResponse.next();
     }
