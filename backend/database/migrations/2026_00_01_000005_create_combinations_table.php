@@ -7,38 +7,33 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * CBT System — Combinations table.
+     * NCE students study two subjects (first + second department).
+     * Some are "double major" (same department studied in depth).
      */
     public function up(): void
     {
         Schema::create('combinations', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 20)->unique();           // e.g. CS/MTH
-            $table->string('name', 200);                     // e.g. Computer Science / Mathematics
-
+            $table->string('code', 30)->unique();
+            $table->string('name', 200)->unique();
             $table->foreignId('first_department_id')
                   ->constrained('departments')
-                  ->cascadeOnUpdate()
-                  ->restrictOnDelete();
-
+                  ->onDelete('restrict');
             $table->foreignId('second_department_id')
                   ->constrained('departments')
-                  ->cascadeOnUpdate()
-                  ->restrictOnDelete();
-
-            $table->boolean('is_double_major')->default(false); // true = both FKs point to same dept
+                  ->onDelete('restrict');
+            $table->boolean('is_double_major')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
-            // Prevent duplicate pairings (A+B already covers B+A handled in app logic)
-            $table->unique(['first_department_id', 'second_department_id'], 'combo_dept_pair_unique');
+            $table->index(['is_active', 'deleted_at'], 'idx_combos_active');
+            $table->index(['first_department_id', 'deleted_at'], 'idx_combos_first_dept');
+            $table->index(['second_department_id', 'deleted_at'], 'idx_combos_second_dept');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('combinations');

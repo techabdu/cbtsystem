@@ -8,8 +8,13 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
-     * CBT System — Exams table (exam configuration, scheduling, rules, access control).
+     * CBT System — Exams table (COMPLETE — all columns in one migration).
+     *
+     * Workflow statuses:
+     *   draft → pending_review → verified → published → ongoing → completed → archived
+     *
+     * Results workflow statuses (results_status):
+     *   pending → grading_in_progress → grading_submitted → results_verified → results_published
      */
     public function up(): void
     {
@@ -33,12 +38,12 @@ return new class extends Migration
             // Exam Type
             $table->enum('exam_type', ['midterm', 'final', 'quiz', 'practice', 'makeup']);
 
-            // Scheduling (nullable at DB level; always set in application code)
+            // Scheduling
             $table->timestamp('start_time')->nullable();
             $table->timestamp('end_time')->nullable();
-            $table->integer('duration_minutes'); // Per-student duration
+            $table->integer('duration_minutes');
 
-            // Configuration
+            // Marks
             $table->decimal('total_marks', 6, 2);
             $table->decimal('passing_marks', 6, 2);
 
@@ -55,13 +60,20 @@ return new class extends Migration
             // Access Control
             $table->boolean('requires_password')->default(false);
             $table->string('exam_password_hash', 255)->nullable();
-            $table->json('allowed_student_ids')->nullable(); // Array of student IDs if restricted
+            $table->json('allowed_student_ids')->nullable();
 
-            // Status
-            $table->enum('status', ['draft', 'published', 'ongoing', 'completed', 'archived'])->default('draft');
+            // Workflow Status (exam creation lifecycle)
+            $table->string('status', 30)->default('draft');
+            // Allowed: draft | pending_review | verified | published | ongoing | completed | archived
+
+            // Practice flag
             $table->boolean('is_practice')->default(false);
 
-            // Proctoring (future feature)
+            // Results Workflow Status
+            $table->string('results_status', 30)->nullable();
+            // Allowed: pending | grading_in_progress | grading_submitted | results_verified | results_published
+
+            // Proctoring (future)
             $table->boolean('enable_proctoring')->default(false);
             $table->json('proctoring_config')->nullable();
 
@@ -77,17 +89,16 @@ return new class extends Migration
             $table->index(['start_time', 'deleted_at'], 'idx_exams_start_time');
             $table->index(['exam_type', 'deleted_at'], 'idx_exams_type');
             $table->index(['course_id', 'status', 'deleted_at'], 'idx_exams_published');
+            $table->index(['is_practice', 'status', 'deleted_at'], 'idx_exams_practice');
+            $table->index(['results_status', 'deleted_at'], 'idx_exams_results_status');
         });
 
-        // Add CHECK constraint for valid exam time (MySQL only — not supported by SQLite)
+        // CHECK constraint for valid exam time (MySQL only)
         if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE exams ADD CONSTRAINT valid_exam_time CHECK (end_time > start_time)');
+            DB::statement('ALTER TABLE exams ADD CONSTRAINT valid_exam_time CHECK (end_time > start_time OR end_time IS NULL)');
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('exams');

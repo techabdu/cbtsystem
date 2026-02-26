@@ -31,51 +31,36 @@ class ExamPolicy
             return true;
         }
 
-        // 3. Admin can view all exams (maybe strictly for system info, but safe to allow)
+        // 3. Admin can view all exams
         if ($user->isAdmin()) {
             return true;
         }
 
-        // 4. CBT Admin can view exams that are at 'cbt_setup' and beyond
+        // 4. CBT Admin can see verified and beyond (ready to publish through published)
         if ($user->isCbt()) {
-            $cbtVisibleStatuses = ['cbt_setup', 'published', 'grading', 'grading_review', 'results_published'];
+            $cbtVisibleStatuses = ['verified', 'published'];
             return in_array($exam->status, $cbtVisibleStatuses);
         }
 
-        // 5. HOD Review limits
+        // 5. HOD can see exams in their department that are pending_review or beyond
         if ($user->isHod()) {
-            // Can see if it belongs to their department AND is past 'draft'
-            $isVisibleStatus = !in_array($exam->status, ['draft']);
-            $isSameDept = \App\Models\CourseLecturer::where('lecturer_id', $exam->created_by)
-                            ->join('courses', 'courses.id', '=', 'course_lecturers.course_id')
-                            ->where('courses.department_id', $user->department_id)
-                            ->exists() || $user->department_id === $exam->creator->department_id; // Simpler check based on exam creator's department
-            
-            if ($isVisibleStatus && $isSameDept) {
-                return true;
-            }
+            $isVisibleStatus = $exam->status !== 'draft';
+            $isSameDept = $user->department_id === optional($exam->creator)->department_id;
+            return $isVisibleStatus && $isSameDept;
         }
 
-        // 6. School Exam Officer Review limits
+        // 6. School Exam Officer can see verified and published exams in their school
         if ($user->isSchoolExamOfficer()) {
-            // Can see if past 'hod_review' AND in same school
-            $isVisibleStatus = !in_array($exam->status, ['draft', 'hod_review']);
-            $isSameSchool = $user->school_id === $exam->creator->department->school_id;
-
-            if ($isVisibleStatus && $isSameSchool) {
-                return true;
-            }
+            $isVisibleStatus = in_array($exam->status, ['verified', 'published']);
+            $isSameSchool    = $user->school_id === optional(optional($exam->creator)->department)->school_id;
+            return $isVisibleStatus && $isSameSchool;
         }
 
-        // 7. Department Exam Officer
+        // 7. Department Exam Officer can see exams in grading workflow in their department
         if ($user->isDepartmentExamOfficer()) {
-            // Can see if past 'grading' AND in same department
-            $isVisibleStatus = in_array($exam->status, ['grading_review', 'results_published']);
-            $isSameDept = $user->department_id === $exam->creator->department_id;
-
-            if ($isVisibleStatus && $isSameDept) {
-                return true;
-            }
+            $isSameDept      = $user->department_id === optional($exam->creator)->department_id;
+            $isGradingStage  = in_array($exam->results_status, ['grading_submitted', 'results_verified']);
+            return $isSameDept && $isGradingStage;
         }
 
         return false;

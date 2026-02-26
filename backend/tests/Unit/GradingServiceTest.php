@@ -54,7 +54,7 @@ class GradingServiceTest extends TestCase
         ExamQuestion::create([
             'exam_id'        => $this->exam->id,
             'question_id'    => $question->id,
-            'question_order' => 1,
+            'order' => 1,
             'points'         => 2.00,
         ]);
 
@@ -83,7 +83,7 @@ class GradingServiceTest extends TestCase
         ExamQuestion::create([
             'exam_id'        => $this->exam->id,
             'question_id'    => $question->id,
-            'question_order' => 1,
+            'order' => 1,
             'points'         => 2.00,
         ]);
 
@@ -115,7 +115,7 @@ class GradingServiceTest extends TestCase
         ExamQuestion::create([
             'exam_id'        => $this->exam->id,
             'question_id'    => $question->id,
-            'question_order' => 1,
+            'order' => 1,
             'points'         => 1.00,
         ]);
 
@@ -144,7 +144,7 @@ class GradingServiceTest extends TestCase
         ExamQuestion::create([
             'exam_id'        => $this->exam->id,
             'question_id'    => $question->id,
-            'question_order' => 1,
+            'order' => 1,
             'points'         => 5.00,
         ]);
 
@@ -169,7 +169,7 @@ class GradingServiceTest extends TestCase
         ExamQuestion::create([
             'exam_id'        => $this->exam->id,
             'question_id'    => $question->id,
-            'question_order' => 1,
+            'order' => 1,
             'points'         => 2.00,
         ]);
 
@@ -197,7 +197,7 @@ class GradingServiceTest extends TestCase
         ExamQuestion::create([
             'exam_id'        => $this->exam->id,
             'question_id'    => $question->id,
-            'question_order' => 1,
+            'order' => 1,
             'points'         => 2.00,
         ]);
 

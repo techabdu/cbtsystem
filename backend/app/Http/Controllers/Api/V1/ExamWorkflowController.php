@@ -5,177 +5,245 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamFeedbackRequest;
 use App\Models\Exam;
-use App\Services\ExamWorkflowService;
+use App\Models\ExamFeedback;
+use App\Services\Exam\ExamService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
+/**
+ * ExamWorkflowController
+ *
+ * Handles the multi-step exam approval pipeline:
+ *
+ *  PRE-EXAM:
+ *    Lecturer → submitHod   → pending_review
+ *    HOD      → hodApprove  → verified
+ *    HOD      → hodReject   → draft  (+ feedback)
+ *    School / CBT Admin → schoolOfficerApprove / cbtPublish → published
+ *    School Officer     → schoolOfficerReject → draft (+ feedback)
+ *
+ *  POST-EXAM (results workflow via results_status):
+ *    CBT        → syncResults      → results_status = pending_grading
+ *    Lecturer   → submitGrading    → results_status = grading_submitted
+ *    Dept Off.  → deptOfficerApprove → results_status = results_verified
+ *    Dept Off.  → deptOfficerReject  → results_status = pending_grading  (+ feedback)
+ */
 class ExamWorkflowController extends Controller
 {
-    public function __construct(private ExamWorkflowService $workflowService)
-    {
-    }
+    public function __construct(private ExamService $service) {}
+
+    /* ------------------------------------------------------------------ */
+    /*  PRE-EXAM WORKFLOW                                                   */
+    /* ------------------------------------------------------------------ */
 
     /**
-     * Submit an exam for HOD review.
+     * Lecturer submits a draft exam for HOD review.
+     * draft → pending_review
      */
     public function submitHod(Exam $exam): JsonResponse
     {
         $this->authorize('update', $exam);
-        
-        $exam = $this->workflowService->submitForHodReview($exam);
+
+        $exam = $this->service->submitForReview($exam, request()->user());
 
         return response()->json([
             'success' => true,
             'message' => 'Exam submitted for HOD review.',
-            'data' => $exam,
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * HOD approves the exam.
+     * HOD approves a pending_review exam.
+     * pending_review → verified
      */
     public function hodApprove(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam); // Ensure they can see it (checked by policy)
-        
-        $exam = $this->workflowService->approveByHod($exam);
+        $this->authorize('view', $exam);
+
+        $exam = $this->service->verifyExam($exam, request()->user());
 
         return response()->json([
             'success' => true,
-            'message' => 'Exam approved by HOD.',
-            'data' => $exam,
+            'message' => 'Exam verified by HOD. Awaiting publishing.',
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * HOD rejects the exam.
+     * HOD rejects a pending_review exam back to draft.
+     * pending_review → draft  (creates ExamFeedback)
      */
     public function hodReject(ExamFeedbackRequest $request, Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
-        
-        $exam = $this->workflowService->rejectByHod($exam, $request->user(), $request->validated('comments'));
+
+        $comments = $request->validated('comments');
+
+        $exam = $this->service->rejectExam($exam, $request->user(), $comments);
+
+        // Persist feedback so lecturer can see the rejection reason
+        ExamFeedback::create([
+            'exam_id'      => $exam->id,
+            'user_id'      => $request->user()->id,
+            'recipient_id' => $exam->created_by,
+            'stage'        => 'pending_review',
+            'comments'     => $comments,
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Exam rejected by HOD.',
-            'data' => $exam,
+            'message' => 'Exam rejected by HOD and returned to draft.',
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * School Officer approves the exam.
+     * School Officer (or CBT) publishes a verified exam.
+     * verified → published
      */
     public function schoolOfficerApprove(Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
-        
-        $exam = $this->workflowService->approveBySchoolOfficer($exam);
+
+        $exam = $this->service->publish($exam, request()->user());
 
         return response()->json([
             'success' => true,
-            'message' => 'Exam approved by School Officer.',
-            'data' => $exam,
+            'message' => 'Exam published.',
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * School Officer rejects the exam.
+     * School Officer rejects a verified exam back to draft.
+     * verified → draft  (creates ExamFeedback)
      */
     public function schoolOfficerReject(ExamFeedbackRequest $request, Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
-        
-        $exam = $this->workflowService->rejectBySchoolOfficer($exam, $request->user(), $request->validated('comments'));
+
+        $comments = $request->validated('comments');
+
+        $exam = $this->service->rejectExam($exam, $request->user(), $comments);
+
+        ExamFeedback::create([
+            'exam_id'      => $exam->id,
+            'user_id'      => $request->user()->id,
+            'recipient_id' => $exam->created_by,
+            'stage'        => 'verified',
+            'comments'     => $comments,
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Exam rejected by School Officer.',
-            'data' => $exam,
+            'message' => 'Exam rejected by School Officer and returned to draft.',
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * CBT marks exam as ready/published.
+     * CBT Admin publishes a verified exam.
+     * verified → published  (same as schoolOfficerApprove)
      */
     public function cbtPublish(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam); // CBT policy restricted
-        
-        $exam = $this->workflowService->publishByCbt($exam);
+        $this->authorize('view', $exam);
+
+        $exam = $this->service->publish($exam, request()->user());
 
         return response()->json([
             'success' => true,
             'message' => 'Exam published by CBT Admin.',
-            'data' => $exam,
+            'data'    => $exam,
         ]);
     }
 
-    // ==============================================
-    // POST-EXAM WORKFLOW
-    // ==============================================
+    /* ------------------------------------------------------------------ */
+    /*  POST-EXAM WORKFLOW                                                  */
+    /* ------------------------------------------------------------------ */
 
     /**
-     * CBT marks exam as having results synced.
+     * CBT marks results as synced — starts the grading workflow.
+     * published → results_status = pending_grading
      */
     public function syncResults(Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
-        
-        $exam = $this->workflowService->syncResultsByCbt($exam);
+
+        if (! $exam->isPublished()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only published exams can have results synced.',
+            ], 422);
+        }
+
+        $exam->update(['results_status' => 'pending_grading']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Results synced, moving to grading stage.',
-            'data' => $exam,
+            'message' => 'Results synced. Exam is now in grading stage.',
+            'data'    => $exam->fresh(),
         ]);
     }
 
     /**
-     * Lecturer submits their grading.
+     * Lecturer submits grading for verification.
+     * results_status: pending_grading → grading_submitted
      */
     public function submitGrading(Exam $exam): JsonResponse
     {
-        $this->authorize('update', $exam); // Must be creator
-        
-        $exam = $this->workflowService->submitGrading($exam);
+        $this->authorize('update', $exam);
+
+        $exam = $this->service->submitGrading($exam, request()->user());
 
         return response()->json([
             'success' => true,
-            'message' => 'Grading submitted for review.',
-            'data' => $exam,
+            'message' => 'Grading submitted for verification.',
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * Dept Officer approves the grading.
+     * Dept Officer approves grading → results verified.
+     * results_status: grading_submitted → results_verified
      */
     public function deptOfficerApprove(Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
-        
-        $exam = $this->workflowService->approveGradingByDeptOfficer($exam);
+
+        $exam = $this->service->verifyResults($exam, request()->user());
 
         return response()->json([
             'success' => true,
-            'message' => 'Grading approved and results published.',
-            'data' => $exam,
+            'message' => 'Grading verified by Dept Officer. Results ready to publish.',
+            'data'    => $exam,
         ]);
     }
 
     /**
-     * Dept Officer rejects the grading.
+     * Dept Officer rejects grading — returns to lecturer.
+     * results_status: grading_submitted → pending_grading  (creates ExamFeedback)
      */
     public function deptOfficerReject(ExamFeedbackRequest $request, Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
-        
-        $exam = $this->workflowService->rejectGradingByDeptOfficer($exam, $request->user(), $request->validated('comments'));
+
+        $comments = $request->validated('comments');
+
+        $exam = $this->service->rejectGrading($exam, $request->user(), $comments);
+
+        ExamFeedback::create([
+            'exam_id'      => $exam->id,
+            'user_id'      => $request->user()->id,
+            'recipient_id' => $exam->created_by,
+            'stage'        => 'grading_submitted',
+            'comments'     => $comments,
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Grading rejected by Dept Officer.',
-            'data' => $exam,
+            'message' => 'Grading rejected by Dept Officer. Returned to lecturer.',
+            'data'    => $exam,
         ]);
     }
 }

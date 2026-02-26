@@ -231,16 +231,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/{exam}/dept-officer-approve', [ExamWorkflowController::class, 'deptOfficerApprove'])->name('exams.workflow.dept-officer-approve');
             Route::post('/{exam}/dept-officer-reject', [ExamWorkflowController::class, 'deptOfficerReject'])->name('exams.workflow.dept-officer-reject');
 
-            // Legacy ones to be replaced/deprecated eventually:
-            Route::post('/{id}/submit-for-review', [ExamController::class, 'submitForReview'])->name('exams.submit-for-review');
-            Route::post('/{id}/verify', [ExamController::class, 'verifyExam'])->name('exams.verify');
-            Route::post('/{id}/reject', [ExamController::class, 'rejectExam'])->name('exams.reject');
-            Route::post('/{id}/publish', [ExamController::class, 'publish'])->name('exams.publish');
             Route::get('/{id}/results', [ExamController::class, 'results'])->name('exams.results');
             Route::get('/{id}/manual-grading', [ManualGradingController::class, 'index'])->name('exams.manual-grading');
             Route::get('/{id}/grading-summary', [ManualGradingController::class, 'summary'])->name('exams.grading-summary');
-            Route::post('/{id}/verify-results', [ExamController::class, 'verifyResults'])->name('exams.verify-results');
-            Route::post('/{id}/publish-results', [ExamController::class, 'publishResults'])->name('exams.publish-results');
         });
 
         /* -------------------------------------------------------------- */

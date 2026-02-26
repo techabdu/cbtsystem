@@ -7,9 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
-     * CBT System — Exam Sessions (CRITICAL: individual student exam attempts).
-     * High-importance table: session tracking, timing, progress, recovery, integrity, violations.
+     * CBT System — Exam Sessions (CRITICAL).
+     * Tracks individual student exam attempts: timing, progress, recovery, integrity.
      */
     public function up(): void
     {
@@ -25,7 +24,7 @@ return new class extends Migration
                   ->constrained('users')
                   ->onDelete('cascade');
 
-            // Session Tracking
+            // Session Token (short-lived, used as Bearer token for exam endpoint access)
             $table->string('session_token', 255)->unique();
 
             // Timing
@@ -34,13 +33,13 @@ return new class extends Migration
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('actual_end_time')->nullable();
 
-            // Question Order (personalized per student)
-            $table->json('question_sequence'); // Array of question IDs in randomized order
+            // Question Order (personalized per student when randomize_questions = true)
+            $table->json('question_sequence'); // Array of question IDs
 
-            // Progress Tracking
+            // Progress
             $table->integer('current_question_index')->default(0);
             $table->integer('questions_answered')->default(0);
-            $table->json('questions_flagged')->nullable(); // Array of question IDs marked for review
+            $table->json('questions_flagged')->nullable(); // Array of question IDs flagged for review
 
             // Status
             $table->enum('status', [
@@ -51,27 +50,27 @@ return new class extends Migration
                 'interrupted',
             ])->default('in_progress');
 
-            // Recovery Data
+            // Recovery
             $table->timestamp('last_activity_at')->useCurrent();
-            $table->json('recovery_data')->nullable(); // Complete session state for crash recovery
+            $table->json('recovery_data')->nullable(); // Full state snapshot for crash recovery
 
-            // Scoring (populated after submission/grading)
+            // Scoring (populated post-submission)
             $table->decimal('total_score', 6, 2)->nullable();
             $table->decimal('percentage', 5, 2)->nullable();
 
-            // Integrity / Device Info
+            // Integrity / Device
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->string('device_fingerprint', 255)->nullable();
 
-            // Violation Flags
+            // Violations
             $table->boolean('has_violations')->default(false);
             $table->integer('violation_count')->default(0);
             $table->json('violations')->nullable(); // Array of violation events
 
             $table->timestamps();
 
-            // Constraints — one session per student per exam
+            // One session per student per exam
             $table->unique(['exam_id', 'student_id'], 'unique_session');
 
             // Indexes
@@ -84,9 +83,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('exam_sessions');

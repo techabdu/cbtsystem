@@ -16,13 +16,13 @@ class CourseFactory extends Factory
         return [
             'uuid'          => (string) Str::uuid(),
             'department_id' => Department::factory(),
+            'level_id'      => \App\Models\Level::factory(),
             'code'          => strtoupper($this->faker->unique()->bothify('??###')),
-            'title'         => $this->faker->words(4, true) . ' Course',
+            'name'          => $this->faker->words(4, true) . ' Course',
             'description'   => $this->faker->sentence(),
-            'credit_hours'  => $this->faker->numberBetween(1, 4),
-            'semester'      => $this->faker->randomElement(['First', 'Second']),
+            'credit_units'  => $this->faker->numberBetween(1, 4),
+            'semester'      => $this->faker->randomElement(['first', 'second']),
             'academic_year' => '2025/2026',
-            'level'         => $this->faker->randomElement(['100L', '200L', '300L', '400L']),
             'is_active'     => true,
         ];
     }

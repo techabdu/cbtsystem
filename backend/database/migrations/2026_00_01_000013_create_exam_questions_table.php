@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
-     * CBT System — Exam Questions pivot (links questions to specific exams).
+     * CBT System — Exam Questions pivot table.
+     * Links questions to exams with ordering and per-question marks override.
      */
     public function up(): void
     {
@@ -23,28 +23,17 @@ return new class extends Migration
                   ->constrained('questions')
                   ->onDelete('cascade');
 
-            // Order and scoring
-            $table->integer('question_order');
-            $table->decimal('points', 5, 2); // Can override question's default points
-
-            // Question variation
-            $table->boolean('is_required')->default(true);
+            $table->integer('order')->unsigned()->default(0);
+            $table->decimal('points', 5, 2)->nullable(); // Per-question marks override
 
             $table->timestamp('created_at')->useCurrent();
+            // No updated_at: pivot records are immutable once created
 
-            // Constraints
             $table->unique(['exam_id', 'question_id'], 'unique_exam_question');
-
-            // Indexes
-            $table->index('exam_id', 'idx_exam_questions_exam');
-            $table->index('question_id', 'idx_exam_questions_question');
-            $table->index(['exam_id', 'question_order'], 'idx_exam_questions_order');
+            $table->index(['exam_id', 'order'], 'idx_eq_exam_order');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('exam_questions');

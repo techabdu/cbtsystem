@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
      * CBT System — Student Answers (CRITICAL: high-write, auto-save, versioning).
      */
     public function up(): void
@@ -19,29 +18,38 @@ return new class extends Migration
                   ->constrained('exam_sessions')
                   ->onDelete('cascade');
 
-            $table->unsignedBigInteger('question_id'); // References questions (may be cross-DB in offline mode)
+            // Not FK — may reference questions across DB in offline sync scenario
+            $table->unsignedBigInteger('question_id');
 
             // Answer Content
-            $table->text('answer_text')->nullable();       // For essay/fill-in-blank
-            $table->json('selected_option')->nullable();   // For MCQ: single value or array
+            $table->text('answer_text')->nullable();      // Essay / fill-in-blank
+            $table->json('selected_option')->nullable();  // MCQ: single or array
 
             // Metadata
-            $table->boolean('is_flagged')->default(false); // Marked for review
+            $table->boolean('is_flagged')->default(false);
             $table->integer('time_spent_seconds')->nullable();
 
-            // Versioning (for auto-save)
+            // Versioning (each auto-save increments version)
             $table->integer('version')->default(1);
             $table->boolean('is_final')->default(false);
+
+            // Manual Grading fields
+            $table->text('grader_feedback')->nullable();
+            $table->foreignId('graded_by')
+                  ->nullable()
+                  ->constrained('users')
+                  ->nullOnDelete();
+            $table->timestamp('graded_at')->nullable();
 
             // Scoring (populated after submission)
             $table->boolean('is_correct')->nullable();
             $table->decimal('points_awarded', 5, 2)->nullable();
 
-            // Timestamps
+            // Timestamps (non-standard: no updated_at — versioning tracks changes)
             $table->timestamp('first_answered_at')->nullable();
             $table->timestamp('last_updated_at')->useCurrent();
 
-            // Constraints — unique per session+question+version
+            // Unique per session + question + version
             $table->unique(['session_id', 'question_id', 'version'], 'unique_answer_version');
 
             // Indexes
@@ -53,9 +61,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('student_answers');

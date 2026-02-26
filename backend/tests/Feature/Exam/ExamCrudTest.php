@@ -89,7 +89,7 @@ class ExamCrudTest extends TestCase
         $payload = [
             'course_id'         => $this->course->id,
             'title'             => 'Midterm Examination',
-            'exam_type'         => 'semester',
+            'exam_type'         => 'midterm',
             'start_time'        => now()->addDays(5)->toDateTimeString(),
             'end_time'          => now()->addDays(5)->addHours(2)->toDateTimeString(),
             'duration_minutes'  => 90,

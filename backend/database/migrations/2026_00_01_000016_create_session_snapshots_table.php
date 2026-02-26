@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
-     * CBT System — Session Snapshots (auto-save state backups for crash recovery).
+     * CBT System — Session Snapshots.
+     * Auto-save state backups for crash recovery.
+     * Created every 10 answers and before submission.
      */
     public function up(): void
     {
@@ -19,23 +20,19 @@ return new class extends Migration
                   ->constrained('exam_sessions')
                   ->onDelete('cascade');
 
-            // Complete State
-            $table->json('snapshot_data'); // Full session state including all answers
-
-            // Metadata
-            $table->enum('snapshot_type', ['auto_save', 'manual', 'recovery', 'checkpoint']);
+            $table->enum('type', ['auto', 'manual', 'pre_submit'])->default('auto');
+            $table->json('snapshot_data'); // Full answers state
+            $table->integer('question_count')->default(0);
+            $table->integer('answers_count')->default(0);
 
             $table->timestamp('created_at')->useCurrent();
+            // No updated_at — snapshots are immutable
 
-            // Indexes
-            $table->index('session_id', 'idx_snapshots_session');
-            $table->index(['session_id', 'created_at'], 'idx_snapshots_created');
+            $table->index(['session_id', 'type'], 'idx_snapshots_session');
+            $table->index('created_at', 'idx_snapshots_created');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('session_snapshots');

@@ -18,7 +18,7 @@ class UpdateExamRequest extends FormRequest
             'title'                    => 'sometimes|string|max:255',
             'description'              => 'sometimes|nullable|string|max:2000',
             'instructions'             => 'sometimes|nullable|string|max:5000',
-            'exam_type'                => 'sometimes|in:semester,practical',
+            'exam_type'                => 'sometimes|in:midterm,final,quiz,practice,makeup',
             'start_time'               => 'sometimes|date',
             'end_time'                 => 'sometimes|date|after:start_time',
             'duration_minutes'         => 'sometimes|integer|min:5|max:480',
@@ -41,7 +41,7 @@ class UpdateExamRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'exam_type.in'           => 'Exam type must be one of: semester, practical.',
+            'exam_type.in'           => 'Exam type must be one of: midterm, final, quiz, practice, makeup.',
             'end_time.after'         => 'End time must be after the start time.',
             'duration_minutes.min'   => 'Duration must be at least 5 minutes.',
             'duration_minutes.max'   => 'Duration cannot exceed 480 minutes (8 hours).',

@@ -24,7 +24,7 @@ class ExamFactory extends Factory
             'title'                    => $this->faker->sentence(4) . ' Exam',
             'description'              => $this->faker->sentence(),
             'instructions'             => $this->faker->sentence(),
-            'exam_type'                => $this->faker->randomElement(['semester', 'practical']),
+            'exam_type'                => $this->faker->randomElement(['midterm', 'final', 'quiz', 'makeup']),
             'start_time'               => $start,
             'end_time'                 => $end,
             'duration_minutes'         => 60,
@@ -55,7 +55,7 @@ class ExamFactory extends Factory
 
     public function hodReview(): static
     {
-        return $this->state(['status' => 'hod_review']);
+        return $this->state(['status' => 'pending_review']);
     }
 
     public function practice(): static

@@ -20,6 +20,8 @@ import {
     ClipboardCheck,
     Bell,
     FileText,
+    KeyRound,
+    RefreshCw,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -139,12 +141,6 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.EDU_PORTAL],
         },
         {
-            href: '/edu_portal/users',
-            label: 'Users',
-            icon: Users,
-            roles: [ROLES.EDU_PORTAL],
-        },
-        {
             href: '/edu_portal/departments',
             label: 'Departments',
             icon: Building2,
@@ -169,9 +165,21 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.EDU_PORTAL],
         },
         {
+            href: '/edu_portal/users?role=student',
+            label: 'Students',
+            icon: GraduationCap,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/users?role=lecturer',
+            label: 'Lecturers',
+            icon: Users,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
             href: '/edu_portal/results',
             label: 'Results & Reports',
-            icon: GraduationCap,
+            icon: FileText,
             roles: [ROLES.EDU_PORTAL],
         },
 
@@ -184,8 +192,20 @@ export function Sidebar({ className }: SidebarProps) {
         },
         {
             href: '/cbt/exams',
-            label: 'Exams Sync',
+            label: 'Exam Publishing',
             icon: ClipboardCheck,
+            roles: [ROLES.CBT],
+        },
+        {
+            href: '/cbt/exams?status=published',
+            label: 'Sync Results',
+            icon: RefreshCw,
+            roles: [ROLES.CBT],
+        },
+        {
+            href: '/cbt/access-codes',
+            label: 'Access Codes',
+            icon: KeyRound,
             roles: [ROLES.CBT],
         },
 

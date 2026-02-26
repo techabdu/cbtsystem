@@ -151,10 +151,19 @@ export async function cbtPublish(id: number): Promise<ApiResponse<Exam>> {
 }
 
 /**
- * Publish a practice exam.
+ * Sync exam results from the offline server back into the system.
+ */
+export async function syncResults(id: number): Promise<ApiResponse<{ synced_sessions: number }>> {
+    const response = await apiClient.post<ApiResponse<{ synced_sessions: number }>>(`/exams/${id}/sync-results`);
+    return response.data;
+}
+
+/**
+ * Publish a practice exam (lecturer direct-publish) or a CBT-setup exam.
+ * Both cases use the cbt-publish workflow route.
  */
 export async function publishExam(id: number): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/publish`);
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/cbt-publish`);
     return response.data;
 }
 
@@ -307,16 +316,6 @@ export async function deptOfficerReject(examId: number, reason: string): Promise
 export async function deptOfficerApprove(examId: number): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(
         `/exams/${examId}/dept-officer-approve`
-    );
-    return response.data;
-}
-
-/**
- * Publish results to students (admin action).
- */
-export async function publishResults(examId: number): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(
-        `/exams/${examId}/publish-results`
     );
     return response.data;
 }

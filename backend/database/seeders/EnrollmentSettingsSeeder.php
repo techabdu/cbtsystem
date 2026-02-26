@@ -2,34 +2,36 @@
 
 namespace Database\Seeders;
 
-use App\Models\SystemSetting;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class EnrollmentSettingsSeeder extends Seeder
 {
+    /**
+     * Ensure enrollment window settings are present.
+     * These are also in SystemSettingsSeeder — this seeder is kept for independent usage.
+     */
     public function run(): void
     {
         $settings = [
-            [
-                'key' => 'enrollment_start_date',
-                'value' => now()->subDays(1)->format('Y-m-d H:i:s'),
-                'value_type' => 'string',
-                'description' => 'Start date for student course enrollment',
-                'is_public' => true,
-            ],
-            [
-                'key' => 'enrollment_end_date',
-                'value' => now()->addDays(30)->format('Y-m-d H:i:s'),
-                'value_type' => 'string',
-                'description' => 'End date for student course enrollment',
-                'is_public' => true,
-            ],
+            'enrollment_open'       => 'true',
+            'enrollment_start_date' => '2025-09-01',
+            'enrollment_end_date'   => '2025-10-31',
         ];
 
-        foreach ($settings as $data) {
-            SystemSetting::updateOrCreate(
-                ['key' => $data['key']],
-                $data
+        $now = now();
+
+        foreach ($settings as $key => $value) {
+            DB::table('system_settings')->updateOrInsert(
+                ['key' => $key],
+                [
+                    'value'      => $value,
+                    'type'       => 'string',
+                    'group'      => 'enrollment',
+                    'is_public'  => true,
+                    'updated_at' => $now,
+                    'created_at' => $now,
+                ]
             );
         }
     }

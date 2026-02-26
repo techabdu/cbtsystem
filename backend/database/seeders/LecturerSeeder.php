@@ -10,97 +10,114 @@ use Illuminate\Support\Str;
 class LecturerSeeder extends Seeder
 {
     /**
-     * Seed 5 lecturers per department (30 total).
-     * The first lecturer in each department is designated as HOD.
-     * Password: Lecturer@123
+     * Seed 5 lecturers for every department (34 depts × 5 = 170 lecturers).
+     *
+     * Per department:
+     *   Lecturer #1 — HOD (is_hod = true)
+     *   Lecturer #2 — School Exam Officer (is_school_exam_officer = true)
+     *   Lecturer #3 — Department Exam Officer (is_department_exam_officer = true)
+     *   Lecturer #4 — Regular lecturer
+     *   Lecturer #5 — Regular lecturer
+     *
+     * Staff ID format: {SCHOOL_CODE}-{DEPT_CODE}-{ROLE_SUFFIX}
+     *   e.g.  SCI-MTH-HOD  | SCI-MTH-SEO | SCI-MTH-DEO | SCI-MTH-L01 | SCI-MTH-L02
      */
     public function run(): void
     {
-        $depts = DB::table('departments')->pluck('id', 'code');
-        $now   = now();
+        $departments = DB::table('departments')
+            ->join('schools', 'departments.school_id', '=', 'schools.id')
+            ->select(
+                'departments.id as dept_id',
+                'departments.code as dept_code',
+                'departments.name as dept_name',
+                'schools.id as school_id',
+                'schools.code as school_code'
+            )
+            ->get();
 
-        // [dept_code => [lecturers]]
-        // First entry in each dept array is the HOD (is_hod = true)
-        $lecturersByDept = [
-            'CS' => [
-                ['staff_id' => 'CS01', 'email' => 'cs.lec1@cbt.edu',  'first_name' => 'Emeka',     'last_name' => 'Nwosu',      'middle_name' => 'C.',  'is_hod' => true],
-                ['staff_id' => 'CS02', 'email' => 'cs.lec2@cbt.edu',  'first_name' => 'Tunde',     'last_name' => 'Adeyemi',    'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'CS03', 'email' => 'cs.lec3@cbt.edu',  'first_name' => 'Ngozi',     'last_name' => 'Obi',        'middle_name' => 'A.',  'is_hod' => false],
-                ['staff_id' => 'CS04', 'email' => 'cs.lec4@cbt.edu',  'first_name' => 'Chukwudi',  'last_name' => 'Eze',        'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'CS05', 'email' => 'cs.lec5@cbt.edu',  'first_name' => 'Blessing',  'last_name' => 'Okonkwo',   'middle_name' => 'N.',  'is_hod' => false],
-            ],
-            'ENG' => [
-                ['staff_id' => 'ENG01', 'email' => 'eng.lec1@cbt.edu', 'first_name' => 'Yusuf',    'last_name' => 'Abdullahi',  'middle_name' => 'B.',  'is_hod' => true],
-                ['staff_id' => 'ENG02', 'email' => 'eng.lec2@cbt.edu', 'first_name' => 'Segun',    'last_name' => 'Afolabi',    'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'ENG03', 'email' => 'eng.lec3@cbt.edu', 'first_name' => 'Amina',    'last_name' => 'Bello',      'middle_name' => 'R.',  'is_hod' => false],
-                ['staff_id' => 'ENG04', 'email' => 'eng.lec4@cbt.edu', 'first_name' => 'Olumide',  'last_name' => 'Adeyinka',   'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'ENG05', 'email' => 'eng.lec5@cbt.edu', 'first_name' => 'Chioma',   'last_name' => 'Uzor',       'middle_name' => 'S.',  'is_hod' => false],
-            ],
-            'MTH' => [
-                ['staff_id' => 'MTH01', 'email' => 'mth.lec1@cbt.edu', 'first_name' => 'Babatunde', 'last_name' => 'Ogundimu', 'middle_name' => 'O.',  'is_hod' => true],
-                ['staff_id' => 'MTH02', 'email' => 'mth.lec2@cbt.edu', 'first_name' => 'Ifeanyi',   'last_name' => 'Nwachukwu','middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'MTH03', 'email' => 'mth.lec3@cbt.edu', 'first_name' => 'Halima',    'last_name' => 'Sule',      'middle_name' => 'M.',  'is_hod' => false],
-                ['staff_id' => 'MTH04', 'email' => 'mth.lec4@cbt.edu', 'first_name' => 'Obinna',    'last_name' => 'Okeke',     'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'MTH05', 'email' => 'mth.lec5@cbt.edu', 'first_name' => 'Rukayat',   'last_name' => 'Salami',    'middle_name' => 'F.',  'is_hod' => false],
-            ],
-            'PHY' => [
-                ['staff_id' => 'PHY01', 'email' => 'phy.lec1@cbt.edu', 'first_name' => 'Adaeze',   'last_name' => 'Igwe',       'middle_name' => 'C.',  'is_hod' => true],
-                ['staff_id' => 'PHY02', 'email' => 'phy.lec2@cbt.edu', 'first_name' => 'Musa',     'last_name' => 'Garba',      'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'PHY03', 'email' => 'phy.lec3@cbt.edu', 'first_name' => 'Olawale',  'last_name' => 'Fashola',    'middle_name' => 'T.',  'is_hod' => false],
-                ['staff_id' => 'PHY04', 'email' => 'phy.lec4@cbt.edu', 'first_name' => 'Eniola',   'last_name' => 'Adeleke',    'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'PHY05', 'email' => 'phy.lec5@cbt.edu', 'first_name' => 'Chidinma', 'last_name' => 'Okafor',     'middle_name' => 'U.',  'is_hod' => false],
-            ],
-            'BIO' => [
-                ['staff_id' => 'BIO01', 'email' => 'bio.lec1@cbt.edu', 'first_name' => 'Taiwo',    'last_name' => 'Oladele',    'middle_name' => 'A.',  'is_hod' => true],
-                ['staff_id' => 'BIO02', 'email' => 'bio.lec2@cbt.edu', 'first_name' => 'Aliyu',    'last_name' => 'Musa',       'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'BIO03', 'email' => 'bio.lec3@cbt.edu', 'first_name' => 'Uchenna',  'last_name' => 'Nwofor',     'middle_name' => 'K.',  'is_hod' => false],
-                ['staff_id' => 'BIO04', 'email' => 'bio.lec4@cbt.edu', 'first_name' => 'Seun',     'last_name' => 'Adesanya',   'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'BIO05', 'email' => 'bio.lec5@cbt.edu', 'first_name' => 'Mariam',   'last_name' => 'Lawal',      'middle_name' => 'I.',  'is_hod' => false],
-            ],
-            'BUS' => [
-                ['staff_id' => 'BUS01', 'email' => 'bus.lec1@cbt.edu', 'first_name' => 'Kunle',    'last_name' => 'Adebowale',  'middle_name' => 'O.',  'is_hod' => true],
-                ['staff_id' => 'BUS02', 'email' => 'bus.lec2@cbt.edu', 'first_name' => 'Suleiman', 'last_name' => 'Dahiru',     'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'BUS03', 'email' => 'bus.lec3@cbt.edu', 'first_name' => 'Ifeoma',   'last_name' => 'Obiora',     'middle_name' => 'G.',  'is_hod' => false],
-                ['staff_id' => 'BUS04', 'email' => 'bus.lec4@cbt.edu', 'first_name' => 'Tobi',     'last_name' => 'Olawale',    'middle_name' => null,  'is_hod' => false],
-                ['staff_id' => 'BUS05', 'email' => 'bus.lec5@cbt.edu', 'first_name' => 'Hauwa',    'last_name' => 'Ibrahim',    'middle_name' => 'F.',  'is_hod' => false],
-            ],
+        $password = Hash::make('Lecturer@123');
+        $now      = now();
+        $users    = [];
+
+        // Nigerian name pools for realistic data
+        $firstNames = [
+            'Abdullahi', 'Adaeze', 'Ahmed', 'Aisha', 'Amina', 'Babatunde', 'Bashir',
+            'Blessing', 'Chidinma', 'Chioma', 'David', 'Emeka', 'Fatima', 'Felix',
+            'Funmilayo', 'Gloria', 'Hassan', 'Ibrahim', 'Ifeanyi', 'Ismaila',
+            'John', 'Josephine', 'Kabir', 'Kwame', 'Laila', 'Mahmud', 'Mary',
+            'Mohammed', 'Musa', 'Ngozi', 'Nnamdi', 'Nkechi', 'Obioma', 'Okafor',
+            'Oluwaseun', 'Omowunmi', 'Patience', 'Peter', 'Rashid', 'Rita',
+            'Samuel', 'Sani', 'Sarah', 'Solomon', 'Sunday', 'Taiwo', 'Tochukwu',
+            'Usman', 'Victor', 'Yakubu', 'Yetunde', 'Zainab', 'Zubairu',
         ];
 
-        $hashedPassword = Hash::make('Lecturer@123');
+        $lastNames = [
+            'Abdullahi', 'Adeyemi', 'Agbo', 'Ahmed', 'Aliyu', 'Amaechi',
+            'Bello', 'Chukwu', 'Danladi', 'Eze', 'Garba', 'Hassan',
+            'Ibrahim', 'Idris', 'Ige', 'Ismaila', 'Jibrin', 'Kadiri',
+            'Lawal', 'Lawan', 'Madu', 'Maikano', 'Mohammed', 'Musa',
+            'Nwosu', 'Odeh', 'Okafor', 'Okeke', 'Okereke', 'Okonkwo',
+            'Omotayo', 'Onuoha', 'Orji', 'Osagie', 'Suleiman', 'Umar',
+            'Usman', 'Yakubu', 'Yusuf', 'Zurmi',
+        ];
 
-        foreach ($lecturersByDept as $deptCode => $lecturers) {
-            if (! isset($depts[$deptCode])) {
-                continue;
+        $nameIndex = 0;
+        $getName   = function () use ($firstNames, $lastNames, &$nameIndex) {
+            $first = $firstNames[$nameIndex % count($firstNames)];
+            $last  = $lastNames[($nameIndex + 7) % count($lastNames)];
+            $nameIndex++;
+            return ['first' => $first, 'last' => $last];
+        };
+
+        foreach ($departments as $dept) {
+            $schoolCode = $dept->school_code;
+            $deptCode   = $dept->dept_code;
+
+            // Lecturer sub-role definitions for the 5 slots
+            $slots = [
+                1 => ['suffix' => 'HOD', 'is_hod' => true, 'is_school_exam_officer' => false, 'is_department_exam_officer' => false],
+                2 => ['suffix' => 'SEO', 'is_hod' => false, 'is_school_exam_officer' => true,  'is_department_exam_officer' => false],
+                3 => ['suffix' => 'DEO', 'is_hod' => false, 'is_school_exam_officer' => false, 'is_department_exam_officer' => true],
+                4 => ['suffix' => 'L01', 'is_hod' => false, 'is_school_exam_officer' => false, 'is_department_exam_officer' => false],
+                5 => ['suffix' => 'L02', 'is_hod' => false, 'is_school_exam_officer' => false, 'is_department_exam_officer' => false],
+            ];
+
+            foreach ($slots as $slotNum => $slot) {
+                $name    = $getName();
+                $staffId = "{$schoolCode}-{$deptCode}-{$slot['suffix']}";
+                $email   = strtolower("{$deptCode}.{$slot['suffix']}@fctzuba.edu.ng");
+
+                $users[] = [
+                    'uuid'                         => Str::uuid()->toString(),
+                    'email'                        => $email,
+                    'password'                     => $password,
+                    'first_name'                   => $name['first'],
+                    'last_name'                    => $name['last'],
+                    'middle_name'                  => null,
+                    'staff_id'                     => $staffId,
+                    'student_id'                   => null,
+                    'role'                         => 'lecturer',
+                    'school_id'                    => $dept->school_id,
+                    'department_id'                => $dept->dept_id,
+                    'combination_id'               => null,
+                    'level_id'                     => null,
+                    'is_hod'                       => $slot['is_hod'],
+                    'is_school_exam_officer'       => $slot['is_school_exam_officer'],
+                    'is_department_exam_officer'   => $slot['is_department_exam_officer'],
+                    'is_active'                    => true,
+                    'is_verified'                  => true,
+                    'email_verified_at'            => $now,
+                    'password_changed_at'          => $now,
+                    'metadata'                     => json_encode(['department' => $deptCode, 'school' => $schoolCode]),
+                    'created_at'                   => $now,
+                    'updated_at'                   => $now,
+                ];
             }
+        }
 
-            $deptId = $depts[$deptCode];
-
-            foreach ($lecturers as $lec) {
-                DB::table('users')->updateOrInsert(
-                    ['email' => $lec['email']],
-                    [
-                        'uuid'                  => Str::uuid()->toString(),
-                        'email'                 => $lec['email'],
-                        'password'              => $hashedPassword,
-                        'first_name'            => $lec['first_name'],
-                        'last_name'             => $lec['last_name'],
-                        'middle_name'           => $lec['middle_name'],
-                        'staff_id'              => $lec['staff_id'],
-                        'student_id'            => null,
-                        'role'                  => 'lecturer',
-                        'department_id'         => $deptId,
-                        'combination_id'        => null,
-                        'is_hod'                => $lec['is_hod'],
-                        'is_active'             => true,
-                        'is_verified'           => true,
-                        'email_verified_at'     => $now,
-                        'password_changed_at'   => $now,
-                        'metadata'              => json_encode(['department' => $deptCode]),
-                        'created_at'            => $now,
-                        'updated_at'            => $now,
-                    ]
-                );
-            }
+        // Insert in chunks to avoid max_allowed_packet issues
+        foreach (array_chunk($users, 50) as $chunk) {
+            DB::table('users')->insert($chunk);
         }
     }
 }
