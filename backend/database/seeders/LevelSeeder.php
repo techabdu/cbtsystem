@@ -17,12 +17,12 @@ class LevelSeeder extends Seeder
     public function run(): void
     {
         $levels = [
-            ['code' => '100L', 'name' => '100 Level', 'numeric_order' => 1, 'description' => 'Year 1 / NCE 1'],
-            ['code' => '200L', 'name' => '200 Level', 'numeric_order' => 2, 'description' => 'Year 2 / NCE 2'],
-            ['code' => '300L', 'name' => '300 Level', 'numeric_order' => 3, 'description' => 'Year 3 / NCE 3'],
-            ['code' => '400L', 'name' => '400 Level', 'numeric_order' => 4, 'description' => 'Year 4'],
-            ['code' => '500L', 'name' => '500 Level', 'numeric_order' => 5, 'description' => 'Year 5'],
-            ['code' => '600L', 'name' => '600 Level', 'numeric_order' => 6, 'description' => 'Year 6'],
+            ['code' => '100L', 'name' => '100 Level', 'numeric_order' => 1],
+            ['code' => '200L', 'name' => '200 Level', 'numeric_order' => 2],
+            ['code' => '300L', 'name' => '300 Level', 'numeric_order' => 3],
+            ['code' => '400L', 'name' => '400 Level', 'numeric_order' => 4],
+            ['code' => '500L', 'name' => '500 Level', 'numeric_order' => 5],
+            ['code' => '600L', 'name' => '600 Level', 'numeric_order' => 6],
         ];
 
         foreach ($levels as $level) {
@@ -34,7 +34,6 @@ class LevelSeeder extends Seeder
                 $existing->update(array_filter([
                     'name'          => $level['name'],
                     'numeric_order' => $level['numeric_order'],
-                    'description'   => $level['description'],
                 ]));
                 continue;
             }
@@ -49,7 +48,6 @@ class LevelSeeder extends Seeder
                     'code'          => $level['code'],
                     'name'          => $level['name'],
                     'numeric_order' => $level['numeric_order'],
-                    'description'   => $level['description'],
                     'is_active'     => true,
                 ]);
                 continue;

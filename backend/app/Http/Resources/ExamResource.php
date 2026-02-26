@@ -51,6 +51,7 @@ class ExamResource extends JsonResource
             'show_correct_answers'     => $this->show_correct_answers,
             'requires_password'        => $this->requires_password,
             'status'                   => $this->status,
+            'results_status'           => $this->results_status,
             'is_practice'              => $this->is_practice,
             'enable_proctoring'        => $this->enable_proctoring,
 

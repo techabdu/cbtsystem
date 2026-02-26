@@ -1,3 +1,12 @@
+export interface School {
+    id: number;
+    uuid: string;
+    code: string;
+    name: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface User {
     id: number;
     uuid: string;
@@ -6,10 +15,14 @@ export interface User {
     last_name: string;
     middle_name?: string;
     full_name: string;
-    role: 'admin' | 'lecturer' | 'student';
+    role: 'admin' | 'lecturer' | 'student' | 'cbt' | 'edu_portal';
     is_hod?: boolean;
+    is_school_exam_officer?: boolean;
+    is_department_exam_officer?: boolean;
     student_id?: string;
     staff_id?: string;
+    school_id?: number;
+    school?: School;
     department_id?: number;
     department?: {
         id: number;
@@ -35,6 +48,8 @@ export interface Department {
     code: string;
     name: string;
     description?: string;
+    school_id?: number;
+    school?: School;
     is_active: boolean;
     courses_count?: number;
     created_at?: string;
@@ -121,8 +136,8 @@ export interface Exam {
     title: string;
     description?: string;
     instructions?: string;
-    exam_type: 'quiz' | 'midterm' | 'final' | 'makeup' | 'practice';
-    status: 'draft' | 'pending_review' | 'verified' | 'published' | 'ongoing' | 'completed' | 'archived';
+    exam_type: 'semester' | 'practical';
+    status: 'draft' | 'hod_review' | 'school_officer_review' | 'cbt_setup' | 'published' | 'grading' | 'grading_review' | 'results_published' | 'archived';
     start_time: string;
     end_time: string;
     duration_minutes: number;
@@ -136,6 +151,7 @@ export interface Exam {
     show_results_immediately: boolean;
     show_correct_answers: boolean;
     requires_password: boolean;
+    results_status?: 'pending_grading' | 'grading_submitted' | 'grading_rejected' | 'results_verified' | 'results_published';
     is_practice: boolean;
     enable_proctoring: boolean;
 
@@ -143,6 +159,7 @@ export interface Exam {
     course?: { id: number; code: string; title: string; };
     creator?: { id: number; full_name: string; email: string; };
     questions?: ExamQuestion[];
+    feedbacks?: ExamFeedback[];
 
     created_at?: string;
     updated_at?: string;
@@ -163,6 +180,21 @@ export interface ExamQuestion {
         difficulty_level?: 'easy' | 'medium' | 'hard';
         topic?: string;
     };
+}
+
+export interface ExamFeedback {
+    id: number;
+    exam_id: number;
+    user_id: number;
+    recipient_id: number;
+    stage: string;
+    comments: string;
+    resolved: boolean;
+    created_at?: string;
+    updated_at?: string;
+
+    user?: { id: number; full_name: string; email: string; };
+    recipient?: { id: number; full_name: string; email: string; };
 }
 
 export interface ExamStats {
@@ -200,6 +232,9 @@ export interface Notification {
 export interface ExamResults {
     exam_id: number;
     exam_title: string;
+    results_status: string;
+    needs_manual_grading: boolean;
+    ungraded_answers_count: number;
     total_students: number;
     completed: number;
     in_progress: number;

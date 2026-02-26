@@ -12,8 +12,11 @@ class DepartmentSeeder extends Seeder
      */
     public function run(): void
     {
+        $schools = DB::table('schools')->pluck('id', 'code');
+
         $departments = [
             [
+                'school_id' => $schools['SCI'] ?? null,
                 'code' => 'CS',
                 'name' => 'Computer Science',
                 'description' => 'Department of Computer Science covering software engineering, AI, data science, and systems.',
@@ -22,6 +25,7 @@ class DepartmentSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'school_id' => $schools['SENG'] ?? null,
                 'code' => 'ENG',
                 'name' => 'Engineering',
                 'description' => 'Department of Engineering covering civil, mechanical, electrical, and chemical engineering.',
@@ -30,6 +34,7 @@ class DepartmentSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'school_id' => $schools['SCI'] ?? null,
                 'code' => 'MTH',
                 'name' => 'Mathematics',
                 'description' => 'Department of Mathematics covering pure math, applied math, and statistics.',
@@ -38,6 +43,7 @@ class DepartmentSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'school_id' => $schools['SCI'] ?? null,
                 'code' => 'PHY',
                 'name' => 'Physics',
                 'description' => 'Department of Physics covering classical mechanics, quantum physics, and thermodynamics.',
@@ -46,6 +52,7 @@ class DepartmentSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'school_id' => $schools['SCI'] ?? null,
                 'code' => 'BIO',
                 'name' => 'Biology',
                 'description' => 'Department of Biology covering microbiology, genetics, ecology, and biochemistry.',
@@ -54,6 +61,7 @@ class DepartmentSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'school_id' => $schools['SBUS'] ?? null,
                 'code' => 'BUS',
                 'name' => 'Business Administration',
                 'description' => 'Department of Business Administration covering management, finance, marketing, and entrepreneurship.',

@@ -439,46 +439,71 @@
 - [x] Frontend: `/student/exams` page — "Report to the exam lab" notice replaces old placeholder message — 2026-02-23
 - [x] **Verification: 0 PHP syntax errors, 1 route registered, migration ran, 0 TypeScript errors** — 2026-02-24
 
-### Stage 4.1.2 — Exam Session Backend
+### Stage 4.1.2 — Exam Session Backend ✅ COMPLETE
 > **Guide Reference:** `04_BACKEND_ARCHITECTURE.md` (SessionService, RecoveryService, GradingService)
+> **Completed:** 2026-02-24
 
-- [ ] Service: `SessionService` (start session, save answer, submit, recover)
-- [ ] Service: `RecoveryService` (snapshots, Redis caching, crash recovery)
-- [ ] Service: `GradingService` (grade by question type: MCQ, T/F, fill-in-blank, essay manual flag)
-- [ ] Controller: `SessionController` — start, status, current question, navigate
-- [ ] Controller: `AnswerController` — save answer, get saved answers
-- [ ] API Routes: All exam session endpoints (`POST /start`, `GET /status`, `POST /answers`, `POST /submit`, `POST /recover`, `GET /questions/{index}`)
-- [ ] Event: `ExamStarted`, `ExamSubmitted`, `AnswerSaved`
-- [ ] Listener: `LogExamActivity`
-- [ ] Job: `ProcessExamResults`
-- [ ] Snapshot auto-creation logic (every 5 min or 10 answers)
-- [ ] Auto-submit on session timeout (background job)
+- [x] Service: `GradingService` — grades MCQ/T-F (exact match), fill-in-blank (80% similarity), essay (manual, 0pts) — 2026-02-24
+- [x] Service: `SessionService` — get session status, get questions (all/by-index), save answer (versioned), toggle flags, submit with auto-grading, auto-snapshots every 10 answers — 2026-02-24
+- [x] Controller: `ExamSessionController` — status, questions, question by index, save answer, batch save, toggle flag, submit — 2026-02-24
+- [x] API Routes: 7 endpoints under `exam-sessions/{id}/...` (status, questions, questions/{index}, answers, answers/batch, flag, submit) — all behind `auth:sanctum` — 2026-02-24
+- [x] Snapshot auto-creation logic (every 10 answers + pre-submit checkpoint) — 2026-02-24
+- [x] Auto-submit on session timeout (checked on every endpoint call, returns graded results) — 2026-02-24
+- [x] Activity logging for session start, resume, submit, auto-submit — 2026-02-24
+- [ ] Event: `ExamStarted`, `ExamSubmitted`, `AnswerSaved` — deferred (activity logging covers audit needs)
+- [ ] Job: `ProcessExamResults` — deferred (grading is synchronous on submit)
+- [ ] Redis session caching — deferred to Stage 6.3 (Performance Optimization)
 
-### Stage 4.2 — Exam Interface Frontend
+### Stage 4.2 — Exam Interface Frontend ✅ COMPLETE
 > **Guide Reference:** `05_FRONTEND_ARCHITECTURE.md` (Exam components, hooks)
+> **Completed:** 2026-02-24
 
-- [ ] Hook: `useExamSession` (session state, navigation, save, submit)
-- [ ] Hook: `useAutoSave` (queue-based auto-save every 5 seconds)
-- [ ] Hook: `useTimer` (countdown with formatting, expiry detection)
-- [ ] Component: `QuestionDisplay` (renders MCQ, T/F, essay, fill-in-blank)
-- [ ] Component: `AnswerInput` (input components per question type)
-- [ ] Component: `ExamTimer` (prominent countdown display, warning colors at low time)
-- [ ] Component: `ExamNavigation` (prev/next, question grid, flag indicators)
-- [ ] Component: `ExamSubmitDialog` (confirmation with unanswered question count)
-- [ ] Page: `app/exam/[sessionId]/page.tsx` (full-screen exam interface)
-- [ ] Browser tab/unload warning during active exam
-- [ ] Recovery UI — "Resume from where you left off" on reconnect
-- [ ] Saving indicator (auto-save status display)
+- [x] Hook: `useTimer` — countdown with hours/mins/secs formatting, warning (5min) and critical (1min) states, auto-submit on expiry — 2026-02-24
+- [x] Auto-save — queue-based with 3s debounce, save status indicator (saving/saved/error) — 2026-02-24
+- [x] Component: `QuestionInput` — renders MCQ (radio labels), T/F (radio buttons), fill-in-blank (text input), essay (textarea) — 2026-02-24
+- [x] Exam timer — prominent display in top bar, warning amber at 5min, critical red pulse at 1min — 2026-02-24
+- [x] Question navigation — prev/next buttons, numbered dot grid with answered/flagged/current states, respects `allow_backtrack` — 2026-02-24
+- [x] Submit confirmation dialog — shows answered/unanswered count, flagged count, "cannot be undone" warning — 2026-02-24
+- [x] Page: `app/exam/[sessionId]/page.tsx` — full-screen exam interface with sticky top bar — 2026-02-24
+- [x] Browser tab/unload warning during active exam — 2026-02-24
+- [x] Session resume support — restores saved answers and flags on load — 2026-02-24
+- [x] Save status indicator — saving spinner, saved checkmark, error warning — 2026-02-24
+- [x] Submit result view — score card, pass/fail, per-question breakdown with correct answers — 2026-02-24
+- [x] Flag for review — toggle flag per question with amber dot indicator — 2026-02-24
+- [x] Middleware: `/exam/*` requires auth token but bypasses role isolation; `/exams` always accessible — 2026-02-24
+- [x] Frontend API: `sessions.ts` — 7 functions (getSessionStatus, getSessionQuestions, getSessionQuestion, saveAnswer, saveAnswersBatch, toggleQuestionFlag, submitExam) — 2026-02-24
+- [x] Frontend types: `ExamSessionStatus`, `ExamSessionQuestion`, `ExamSessionQuestions`, `SaveAnswerData/Result`, `BatchSaveAnswersData/Result`, `ToggleFlagData/Result`, `ExamSubmitResult` — 2026-02-24
+- [x] **Verification: 0 PHP syntax errors, 7 routes registered, 0 TypeScript errors** — 2026-02-24
 
-### Stage 4.3 — Results & Grading
-- [ ] Backend: Auto-grading on submit (MCQ, T/F, fill-in-blank)
-- [ ] Backend: Essay questions marked as "manual grading pending"
-- [ ] Backend: Exam results endpoint (`GET /api/v1/exams/{id}/results`)
-- [ ] Backend: Student individual result endpoint
-- [ ] Frontend: Student results page (score, percentage, pass/fail)
-- [ ] Frontend: Lecturer results view (class statistics: avg, highest, lowest, pass rate)
-- [ ] Frontend: Individual student result detail (per-question breakdown, if `show_correct_answers`)
-- [ ] Frontend: Lecturer manual grading interface for essay questions
+### Stage 4.3 — Manual Grading & Session Calculation ✅ COMPLETE
+> **Workflow Feature:** MCQ/True-False auto-grade; Fill-in-the-blanks/Essays require manual grading by Lecturer.
+> **Completed:** 2026-02-25
+- [x] Backend: Update `GradingService` — Fill-in-blank and Essay set `is_correct` null, 0 points (manual review required); added `needsManualGrading()` and `recalculateSessionScore()` helpers — 2026-02-25
+- [x] Backend: Migration — `results_status` column on `exams` table (already existed from earlier migration `2026_02_25_203906`) — verified
+- [x] Backend: Endpoint — `GET /api/v1/exams/{id}/manual-grading` — returns sessions with ungraded fill-in-blank/essay answers — 2026-02-25
+- [x] Backend: Endpoint — `GET /api/v1/exams/{id}/grading-summary` — returns grading progress stats — 2026-02-25
+- [x] Backend: Endpoint — `POST /api/v1/student-answers/{id}/grade` — lecturer grades answer, recalculates session score — 2026-02-25
+- [x] Backend: Updated `ExamService::getResults()` — includes `results_status`, `needs_manual_grading`, `ungraded_answers_count` — 2026-02-25
+- [x] Backend: Updated `ExamResource` — exposes `results_status` — 2026-02-25
+- [x] Frontend: Types — `GradeAnswerData`, `GradeAnswerResult`, `UngradedAnswer`, `GradingSession`, `ManualGradingResponse`, `GradingSummary` in `api.ts`; `results_status` on `Exam` and `ExamResults` in `models.ts` — 2026-02-25
+- [x] Frontend: API — `getManualGrading()`, `getGradingSummary()`, `gradeAnswer()` in `exams.ts` — 2026-02-25
+- [x] Frontend: Grading page (`/lecturer/exams/[id]/grading`) — collapsible student sessions, per-answer grading with points input and feedback, real-time score recalculation — 2026-02-25
+- [x] Frontend: Exam detail page Results tab — grading banner with "Grade Answers" button when manual grading needed, "All Graded" success state — 2026-02-25
+- [x] **Verification: 0 PHP syntax errors, 3 routes registered, 0 TypeScript errors** — 2026-02-25
+
+### Stage 4.3.1 — Results Verification & Publishing Workflow ✅ COMPLETE
+> **Workflow:** Lecturer submits grading -> HOD verifies (or rejects) -> Admin publishes -> Students can view.
+> **Completed:** 2026-02-26
+- [x] Backend: Workflow Endpoints — `submit-grading`, `reject-grading`, `verify-results`, `publish-results` in ExamService + ExamController — 2026-02-26
+- [x] Backend: Student results API (`GET /api/v1/student/exams/{id}/results`) — only returns data if `results_status === 'results_published'` — 2026-02-26
+- [x] Backend: `results_status` filter added to exam list endpoint — 2026-02-26
+- [x] Frontend: HOD Results Verification page (`/lecturer/results-verification`) — lists grading_submitted exams, verify/reject with reason — 2026-02-26
+- [x] Frontend: Admin Results Publishing page (`/admin/results-publishing`) — lists results_verified exams, one-click publish — 2026-02-26
+- [x] Frontend: Student Results View (`/student/results` + `/student/results/[id]`) — pending/available status, detailed score/answer review — 2026-02-26
+- [x] Frontend: Lecturer exam detail Results tab — workflow-aware banners (Submit Grading, Awaiting HOD, Verified, Published) — 2026-02-26
+- [x] Frontend: Sidebar links — HOD "Verify Results", Admin "Publish Results" — 2026-02-26
+- [x] Frontend: Types + API functions — `StudentExamResult`, `submitGrading`, `rejectGrading`, `verifyResults`, `publishResults`, `getStudentExamResults` — 2026-02-26
+- [x] Verification: 0 PHP syntax errors, 0 TypeScript errors, 5 new routes registered — 2026-02-26
 
 ### Stage 4.4 — Performance Testing
 - [ ] Load test: 100 concurrent simulated exam sessions

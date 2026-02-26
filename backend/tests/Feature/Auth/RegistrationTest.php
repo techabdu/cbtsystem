@@ -4,67 +4,94 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
+/**
+ * Tests for the account activation flow.
+ *
+ * In this system there is no self-registration. Accounts are created by
+ * an admin (via /api/v1/users) without a password. The user then activates
+ * their account via POST /api/v1/auth/activate using their identifier
+ * (matric number / staff ID / email) and their chosen password.
+ */
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
     /* ------------------------------------------------------------------ */
-    /*  Successful Registration                                            */
+    /*  Helpers                                                            */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    /** Create a user that has NOT yet been activated (no password). */
+    private function makeUnactivatedUser(array $overrides = []): User
+    {
+        return User::factory()->create(array_merge([
+            'password'   => null,
+            'is_verified' => false,
+            'is_active'  => true,
+        ], $overrides));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Successful Activation                                              */
+    /* ------------------------------------------------------------------ */
+
+    #[Test]
     public function a_student_can_register_with_valid_data(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', [
-            'email'                 => 'newstudent@college.edu',
-            'password'              => 'SecurePass1!',
-            'password_confirmation' => 'SecurePass1!',
-            'first_name'            => 'John',
-            'last_name'             => 'Doe',
-            'student_id'            => '2024/CS/001',
-            'phone'                 => '+2348012345678',
+        $user = $this->makeUnactivatedUser([
+            'email'      => 'newstudent@college.edu',
+            'first_name' => 'John',
+            'last_name'  => 'Doe',
+            'role'       => 'student',
         ]);
 
-        $response->assertStatus(201)
+        $response = $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'newstudent@college.edu',
+            'password'              => 'SecurePass1!',
+            'password_confirmation' => 'SecurePass1!',
+        ]);
+
+        $response->assertOk()
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
                     'user' => ['id', 'uuid', 'email', 'first_name', 'last_name', 'role'],
+                    'token',
+                    'expires_in',
                 ],
-                'meta' => ['timestamp', 'version'],
             ])
             ->assertJson([
                 'success' => true,
                 'data' => [
                     'user' => [
-                        'email'     => 'newstudent@college.edu',
-                        'role'      => 'student',
+                        'email'      => 'newstudent@college.edu',
+                        'role'       => 'student',
                         'first_name' => 'John',
                     ],
                 ],
             ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'newstudent@college.edu',
-            'role'  => 'student',
+            'email'       => 'newstudent@college.edu',
+            'is_verified' => true,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function registration_generates_uuid_automatically(): void
     {
-        $this->postJson('/api/v1/auth/register', [
-            'email'                 => 'uuid@college.edu',
+        $user = $this->makeUnactivatedUser(['email' => 'uuid@college.edu']);
+
+        $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'uuid@college.edu',
             'password'              => 'SecurePass1!',
             'password_confirmation' => 'SecurePass1!',
-            'first_name'            => 'UUID',
-            'last_name'             => 'Test',
         ]);
 
-        $user = User::where('email', 'uuid@college.edu')->first();
+        $user->refresh();
         $this->assertNotNull($user->uuid);
         $this->assertEquals(36, strlen($user->uuid)); // UUID v4 format
     }
@@ -73,62 +100,96 @@ class RegistrationTest extends TestCase
     /*  Validation Failures                                                */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function registration_fails_without_required_fields(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', []);
+        $response = $this->postJson('/api/v1/auth/activate', []);
 
         $response->assertStatus(422)
             ->assertJson(['success' => false])
             ->assertJsonStructure([
-                'errors' => ['email', 'password', 'first_name', 'last_name'],
+                'errors' => ['identifier', 'password'],
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function registration_fails_with_weak_password(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', [
-            'email'                 => 'weak@college.edu',
-            'password'              => 'password',  // No uppercase, no digit, no special
+        $this->makeUnactivatedUser(['email' => 'weak@college.edu']);
+
+        $response = $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'weak@college.edu',
+            'password'              => 'password',   // No uppercase, digit, or special char
             'password_confirmation' => 'password',
-            'first_name'            => 'Weak',
-            'last_name'             => 'Pass',
         ]);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('password');
     }
 
-    /** @test */
+    #[Test]
     public function registration_fails_with_duplicate_email(): void
     {
-        User::factory()->create(['email' => 'exists@college.edu']);
-
-        $response = $this->postJson('/api/v1/auth/register', [
-            'email'                 => 'exists@college.edu',
-            'password'              => 'SecurePass1!',
-            'password_confirmation' => 'SecurePass1!',
-            'first_name'            => 'Dup',
-            'last_name'             => 'Email',
+        // An already-activated user cannot be reactivated
+        User::factory()->create([
+            'email'      => 'exists@college.edu',
+            'is_verified' => true,
         ]);
 
+        $response = $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'exists@college.edu',
+            'password'              => 'SecurePass1!',
+            'password_confirmation' => 'SecurePass1!',
+        ]);
+
+        // Already has a password — activation should be rejected
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('email');
+            ->assertJson(['success' => false]);
     }
 
-    /** @test */
+    #[Test]
     public function registration_fails_when_password_confirmation_does_not_match(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', [
-            'email'                 => 'mismatch@college.edu',
+        $this->makeUnactivatedUser(['email' => 'mismatch@college.edu']);
+
+        $response = $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'mismatch@college.edu',
             'password'              => 'SecurePass1!',
             'password_confirmation' => 'DifferentPass1!',
-            'first_name'            => 'Mis',
-            'last_name'             => 'Match',
         ]);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors('password');
+    }
+
+    #[Test]
+    public function activation_fails_for_nonexistent_identifier(): void
+    {
+        $response = $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'ghost@nowhere.edu',
+            'password'              => 'SecurePass1!',
+            'password_confirmation' => 'SecurePass1!',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
+    }
+
+    #[Test]
+    public function activation_fails_for_deactivated_account(): void
+    {
+        $this->makeUnactivatedUser([
+            'email'     => 'disabled@college.edu',
+            'is_active' => false,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/activate', [
+            'identifier'            => 'disabled@college.edu',
+            'password'              => 'SecurePass1!',
+            'password_confirmation' => 'SecurePass1!',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
     }
 }

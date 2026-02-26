@@ -6,6 +6,8 @@ export const ROLES = {
     ADMIN: 'admin',
     LECTURER: 'lecturer',
     STUDENT: 'student',
+    EDU_PORTAL: 'edu_portal',
+    CBT: 'cbt',
 } as const;
 
 export const ROUTES = {
@@ -15,5 +17,7 @@ export const ROUTES = {
         STUDENT: '/student',
         LECTURER: '/lecturer',
         ADMIN: '/admin',
+        EDU_PORTAL: '/edu_portal',
+        CBT: '/cbt',
     },
 } as const;

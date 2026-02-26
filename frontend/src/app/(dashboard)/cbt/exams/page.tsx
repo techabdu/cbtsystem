@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { getExams, publishExam, rejectExam, updateExam } from '@/lib/api/exams';
+import { getExams, cbtPublish, updateExam, publishExam } from '@/lib/api/exams';
 import type { Exam } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,18 +22,19 @@ import { format } from 'date-fns';
 /*  Status filter tabs                                                   */
 /* ------------------------------------------------------------------ */
 
-type StatusFilter = 'verified' | 'published' | 'all';
+type StatusFilter = 'cbt_setup' | 'published' | 'all';
 
-const FILTER_TABS: { label: string; value: StatusFilter }[] = [
-    { label: 'Ready to Publish', value: 'verified' },
-    { label: 'Published', value: 'published' },
-    { label: 'All', value: 'all' },
+const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
+    { label: 'All Exams', value: 'all' },
+    { label: 'Ready for Setup', value: 'cbt_setup' },
+    { label: 'Published / Active', value: 'published' },
 ];
 
 const STATUS_BADGES: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
-    pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    verified: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    hod_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    school_officer_review: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    cbt_setup: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     ongoing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     completed: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
@@ -45,7 +46,7 @@ const STATUS_BADGES: Record<string, string> = {
 /* ------------------------------------------------------------------ */
 
 export default function AdminExamsPage() {
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('verified');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('cbt_setup');
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -101,12 +102,11 @@ export default function AdminExamsPage() {
         setScheduleError('');
         setActionError('');
         try {
-            // Set the schedule then publish
             await updateExam(examId, {
                 start_time: new Date(scheduleStart).toISOString(),
                 end_time: new Date(scheduleEnd).toISOString(),
             });
-            await publishExam(examId);
+            await cbtPublish(examId);
             setShowScheduleDialog(null);
             setActionSuccess('Exam scheduled and published successfully! Students can now access it.');
             setTimeout(() => setActionSuccess(''), 4000);
@@ -120,27 +120,8 @@ export default function AdminExamsPage() {
     };
 
     const handleReject = async (examId: number) => {
-        if (!rejectReason.trim()) {
-            setRejectDialogError('A reason for rejection is required.');
-            return;
-        }
-        setProcessingId(examId);
+        // Not used manually for CBT anymore since the reject flow was updated, but keeping signature if needed
         setShowRejectDialog(null);
-        setRejectDialogError('');
-        setActionError('');
-        try {
-            await rejectExam(examId, rejectReason || undefined);
-            setRejectReason('');
-            setActionSuccess('Exam rejected and returned to draft.');
-            setTimeout(() => setActionSuccess(''), 4000);
-            await fetchExams();
-        } catch (err: unknown) {
-            const e = err as { response?: { data?: { message?: string } } };
-            setActionError(e.response?.data?.message || 'Failed to reject exam.');
-            setTimeout(() => setActionError(''), 5000);
-        } finally {
-            setProcessingId(null);
-        }
     };
 
     return (
@@ -149,7 +130,7 @@ export default function AdminExamsPage() {
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Exam Management</h1>
                 <p className="text-muted-foreground">
-                    Review verified exams and publish them for students.
+                    Review exams approved by School Officers and set them up for publication.
                 </p>
             </div>
 
@@ -175,7 +156,7 @@ export default function AdminExamsPage() {
 
             {/* Filter tabs */}
             <div className="flex space-x-1 rounded-lg bg-muted p-1 w-fit">
-                {FILTER_TABS.map(tab => (
+                {STATUS_FILTERS.map(tab => (
                     <button
                         key={tab.value}
                         onClick={() => setStatusFilter(tab.value)}
@@ -198,12 +179,12 @@ export default function AdminExamsPage() {
                 <Card>
                     <CardContent className="py-16 text-center">
                         <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
-                        <p className="mt-2 text-sm font-medium text-muted-foreground">No exams found</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {statusFilter === 'verified'
-                                ? 'No exams ready to publish. HODs need to verify submitted exams first.'
-                                : 'No exams in this category.'}
-                        </p>
+                        <CardTitle className="mt-2 text-sm font-medium text-muted-foreground">No Exams Found</CardTitle>
+                        <CardDescription className="text-xs text-muted-foreground mt-1">
+                            {statusFilter === 'cbt_setup'
+                                ? "There are currently no new exams awaiting CBT setup."
+                                : "No exams match your current filters."}
+                        </CardDescription>
                     </CardContent>
                 </Card>
             ) : (
@@ -241,24 +222,14 @@ export default function AdminExamsPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
-                                        <Link href={`/admin/exams/${exam.id}`}>
-                                            <Button variant="outline" size="sm" className="gap-1.5">
-                                                View
-                                                <ArrowRight className="h-3.5 w-3.5" />
+                                        <Link href={`/cbt/exams/${exam.id}`}>
+                                            <Button variant="outline" size="sm" className="gap-2">
+                                                Manage
+                                                <ArrowRight className="h-4 w-4" />
                                             </Button>
                                         </Link>
-                                        {exam.status === 'verified' && (
+                                        {exam.status === 'cbt_setup' && (
                                             <>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => { setShowRejectDialog(exam.id); setRejectReason(''); setRejectDialogError(''); }}
-                                                    disabled={processingId === exam.id}
-                                                    className="gap-1.5 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                                                >
-                                                    <X className="h-3.5 w-3.5" />
-                                                    Reject
-                                                </Button>
                                                 <Button
                                                     size="sm"
                                                     onClick={() => openPublishDialog(exam)}

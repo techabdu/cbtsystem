@@ -7,6 +7,11 @@ import {
     UpdateExamData,
     AddExamQuestionsData,
     PracticeAnswerData,
+    GradeAnswerData,
+    GradeAnswerResult,
+    ManualGradingResponse,
+    GradingSummary,
+    StudentExamResult,
 } from '@/lib/types/api';
 import { Exam, ExamStats, ExamResults, PracticeSubmitResult } from '@/lib/types/models';
 
@@ -100,29 +105,53 @@ export async function removeExamQuestion(
 /**
  * Submit a draft exam for HOD review.
  */
-export async function submitExamForReview(id: number): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/submit-for-review`);
+export async function submitForHodReview(id: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/submit-hod`);
     return response.data;
 }
 
 /**
- * Verify an exam (HOD or admin approves for publishing).
+ * HOD Approve
  */
-export async function verifyExam(id: number): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/verify`);
+export async function hodApprove(id: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/hod-approve`);
     return response.data;
 }
 
 /**
- * Reject an exam (HOD or admin sends back to draft).
+ * HOD Reject
  */
-export async function rejectExam(id: number, reason?: string): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/reject`, { reason });
+export async function hodReject(id: number, reason: string): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/hod-reject`, { reason });
     return response.data;
 }
 
 /**
- * Publish an exam (admin only — exam must be in verified status).
+ * School Officer Approve
+ */
+export async function schoolOfficerApprove(id: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/school-officer-approve`);
+    return response.data;
+}
+
+/**
+ * School Officer Reject
+ */
+export async function schoolOfficerReject(id: number, reason: string): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/school-officer-reject`, { reason });
+    return response.data;
+}
+
+/**
+ * CBT Publish
+ */
+export async function cbtPublish(id: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/cbt-publish`);
+    return response.data;
+}
+
+/**
+ * Publish a practice exam.
  */
 export async function publishExam(id: number): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/publish`);
@@ -205,6 +234,99 @@ export async function submitPracticeExam(
     const response = await apiClient.post<ApiResponse<PracticeSubmitResult>>(
         `/student/practice-exams/${id}/submit`,
         data
+    );
+    return response.data;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Manual Grading                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Get all sessions with ungraded answers for an exam.
+ */
+export async function getManualGrading(examId: number): Promise<ApiResponse<ManualGradingResponse>> {
+    const response = await apiClient.get<ApiResponse<ManualGradingResponse>>(
+        `/exams/${examId}/manual-grading`
+    );
+    return response.data;
+}
+
+/**
+ * Get grading summary for an exam.
+ */
+export async function getGradingSummary(examId: number): Promise<ApiResponse<GradingSummary>> {
+    const response = await apiClient.get<ApiResponse<GradingSummary>>(
+        `/exams/${examId}/grading-summary`
+    );
+    return response.data;
+}
+
+/**
+ * Grade a single student answer (manual grading).
+ */
+export async function gradeAnswer(
+    answerId: number,
+    data: GradeAnswerData
+): Promise<ApiResponse<GradeAnswerResult>> {
+    const response = await apiClient.post<ApiResponse<GradeAnswerResult>>(
+        `/student-answers/${answerId}/grade`,
+        data
+    );
+    return response.data;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Results Workflow                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Submit grading for HOD verification (lecturer action).
+ */
+export async function submitGrading(examId: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(
+        `/exams/${examId}/submit-grading`
+    );
+    return response.data;
+}
+
+/**
+ * Reject grading back to lecturer (Department Exam Officer action).
+ */
+export async function deptOfficerReject(examId: number, reason: string): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(
+        `/exams/${examId}/dept-officer-reject`,
+        { reason }
+    );
+    return response.data;
+}
+
+/**
+ * Verify results and publish them to Edu Portal (Department Exam Officer action).
+ */
+export async function deptOfficerApprove(examId: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(
+        `/exams/${examId}/dept-officer-approve`
+    );
+    return response.data;
+}
+
+/**
+ * Publish results to students (admin action).
+ */
+export async function publishResults(examId: number): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(
+        `/exams/${examId}/publish-results`
+    );
+    return response.data;
+}
+
+/**
+ * Get student's individual exam results (published only).
+ */
+export async function getStudentExamResults(examId: number): Promise<ApiResponse<StudentExamResult>> {
+    const response = await apiClient.get<ApiResponse<StudentExamResult>>(
+        `/student/exams/${examId}/results`
     );
     return response.data;
 }

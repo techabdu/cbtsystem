@@ -4,8 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getUser, updateUser, deleteUser, toggleUserActive } from '@/lib/api/users';
+import { getActiveSchools } from '@/lib/api/schools';
 import { getActiveLevels } from '@/lib/api/levels';
-import type { User, Level } from '@/lib/types/models';
+import { getActiveDepartments } from '@/lib/api/departments';
+import { getActiveCombinations } from '@/lib/api/combinations';
+import type { User, School, Level, Department, Combination } from '@/lib/types/models';
 import type { UpdateUserData } from '@/lib/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +44,9 @@ export default function UserDetailPage() {
     const [generalError, setGeneralError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
     const [actionLoading, setActionLoading] = useState(false);
+    const [schools, setSchools] = useState<School[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [combinations, setCombinations] = useState<Combination[]>([]);
     const [levels, setLevels] = useState<Level[]>([]);
 
     // Edit form state
@@ -67,6 +73,11 @@ export default function UserDetailPage() {
                 is_active: res.data.user.is_active,
                 is_verified: res.data.user.is_verified,
                 is_hod: res.data.user.is_hod || false,
+                is_school_exam_officer: res.data.user.is_school_exam_officer || false,
+                is_department_exam_officer: res.data.user.is_department_exam_officer || false,
+                school_id: res.data.user.school_id,
+                department_id: res.data.user.department_id,
+                combination_id: res.data.user.combination_id,
                 level_id: res.data.user.level_id,
             });
         } catch (err) {
@@ -79,11 +90,19 @@ export default function UserDetailPage() {
 
     useEffect(() => { fetchUser(); }, [fetchUser]);
 
-    // Load levels for student editing
+    // Load references for editing
     useEffect(() => {
-        getActiveLevels()
-            .then(res => setLevels(res.data.levels))
-            .catch(console.error);
+        Promise.all([
+            getActiveSchools(),
+            getActiveDepartments(),
+            getActiveCombinations(),
+            getActiveLevels(),
+        ]).then(([schoolRes, deptRes, comboRes, levelRes]) => {
+            setSchools(schoolRes.data.schools);
+            setDepartments(deptRes.data.departments);
+            setCombinations(comboRes.data.combinations);
+            setLevels(levelRes.data.levels);
+        }).catch(console.error);
     }, []);
 
     /* ------------------------------------------------------------------ */
@@ -97,7 +116,7 @@ export default function UserDetailPage() {
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setForm((prev) => ({ ...prev, [name]: checked }));
-        } else if (name === 'level_id' || name === 'department_id' || name === 'combination_id') {
+        } else if (name === 'school_id' || name === 'level_id' || name === 'department_id' || name === 'combination_id') {
             setForm((prev) => ({ ...prev, [name]: value ? parseInt(value, 10) : undefined }));
         } else {
             setForm((prev) => ({ ...prev, [name]: value }));
@@ -140,7 +159,7 @@ export default function UserDetailPage() {
         setActionLoading(true);
         try {
             await deleteUser(userId);
-            router.push('/admin/users');
+            router.push('/edu_portal/users');
         } catch (err) {
             console.error('Delete failed:', err);
             setGeneralError('Failed to delete user.');
@@ -181,6 +200,11 @@ export default function UserDetailPage() {
                 is_active: user.is_active,
                 is_verified: user.is_verified,
                 is_hod: user.is_hod || false,
+                is_school_exam_officer: user.is_school_exam_officer || false,
+                is_department_exam_officer: user.is_department_exam_officer || false,
+                school_id: user.school_id,
+                department_id: user.department_id,
+                combination_id: user.combination_id,
                 level_id: user.level_id,
             });
         }
@@ -203,7 +227,7 @@ export default function UserDetailPage() {
     if (!user && !isLoading) {
         return (
             <div className="space-y-4">
-                <Link href="/admin/users">
+                <Link href="/edu_portal/users">
                     <Button variant="ghost" size="sm" className="gap-2">
                         <ArrowLeft className="h-4 w-4" /> Back to Users
                     </Button>
@@ -227,7 +251,7 @@ export default function UserDetailPage() {
             {/* Page Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                    <Link href="/admin/users">
+                    <Link href="/edu_portal/users">
                         <Button variant="ghost" size="icon">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
@@ -343,9 +367,11 @@ export default function UserDetailPage() {
                                     <select id="role" name="role" value={form.role} onChange={handleChange}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
-                                        <option value="admin">Admin</option>
+                                        <option value="admin">System Admin</option>
                                         <option value="lecturer">Lecturer</option>
                                         <option value="student">Student</option>
+                                        <option value="edu_portal">Edu Portal Admin</option>
+                                        <option value="cbt">CBT Admin</option>
                                     </select>
                                 </div>
                                 <div className="space-y-2">
@@ -359,8 +385,55 @@ export default function UserDetailPage() {
                                     )}
                                 </div>
                             </div>
+
+                            {(form.role === 'lecturer' || form.role === 'admin') && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {form.role === 'lecturer' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="school_id">School</Label>
+                                            <select id="school_id" name="school_id" value={form.school_id || ''} onChange={handleChange}
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                <option value="">Select school...</option>
+                                                {schools.map((sch) => (
+                                                    <option key={sch.id} value={sch.id}>
+                                                        {sch.name} ({sch.code})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="department_id">Department</Label>
+                                        <select id="department_id" name="department_id" value={form.department_id || ''} onChange={handleChange}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <option value="">Select department...</option>
+                                            {departments.map((dept) => (
+                                                <option key={dept.id} value={dept.id}>
+                                                    {dept.name} ({dept.code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
                             {form.role === 'student' && (
                                 <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="combination_id">Combination</Label>
+                                        <select id="combination_id" name="combination_id" value={form.combination_id || ''} onChange={handleChange}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <option value="">Select combination...</option>
+                                            {combinations.map((combo) => (
+                                                <option key={combo.id} value={combo.id}>
+                                                    {combo.code} — {combo.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="level_id">Level</Label>
                                         <select id="level_id" name="level_id" value={form.level_id || ''} onChange={handleChange}
@@ -386,15 +459,30 @@ export default function UserDetailPage() {
                                     Email Verified
                                 </label>
                                 {form.role === 'lecturer' && (
-                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                        <input type="checkbox" name="is_hod" checked={form.is_hod || false} onChange={handleChange} className="h-4 w-4 rounded border-input" />
-                                        Head of Department (HOD)
-                                    </label>
+                                    <>
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" name="is_hod" checked={form.is_hod || false} onChange={handleChange} className="h-4 w-4 rounded border-input" />
+                                            Head of Department (HOD)
+                                        </label>
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" name="is_school_exam_officer" checked={form.is_school_exam_officer || false} onChange={handleChange} className="h-4 w-4 rounded border-input" />
+                                            School Exam Officer
+                                        </label>
+                                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" name="is_department_exam_officer" checked={form.is_department_exam_officer || false} onChange={handleChange} className="h-4 w-4 rounded border-input" />
+                                            Department Exam Officer
+                                        </label>
+                                    </>
                                 )}
                             </div>
                             {form.role === 'lecturer' && form.is_hod && (
-                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                                     Only one HOD per department. Setting this will remove HOD from any other lecturer in the same department.
+                                </p>
+                            )}
+                            {form.role === 'lecturer' && (form.is_school_exam_officer || form.is_department_exam_officer) && (
+                                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                                    Exam Officers have special privileges in the Exam approval workflows.
                                 </p>
                             )}
                         </CardContent>
@@ -458,6 +546,20 @@ export default function UserDetailPage() {
                                 <InfoRow icon={<Calendar className="h-4 w-4" />} label="Last Login"
                                     value={user!.last_login_at ? new Date(user!.last_login_at).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never'}
                                 />
+                                {user!.school && (
+                                    <InfoRow icon={<Hash className="h-4 w-4" />} label="School"
+                                        value={<span className="inline-flex items-center rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-medium text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                                            {user!.school.code} — {user!.school.name}
+                                        </span>}
+                                    />
+                                )}
+                                {user!.department && (
+                                    <InfoRow icon={<Hash className="h-4 w-4" />} label="Department"
+                                        value={<span className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                            {user!.department.code} — {user!.department.name}
+                                        </span>}
+                                    />
+                                )}
                                 {user!.role === 'student' && (
                                     <InfoRow icon={<BarChart3 className="h-4 w-4" />} label="Level"
                                         value={user!.level
@@ -489,7 +591,11 @@ export default function UserDetailPage() {
                             <StatusItem label="Email Verified" active={user!.is_verified} />
                             <StatusItem label="Profile Complete" active={user!.is_profile_complete} />
                             {user!.role === 'lecturer' && (
-                                <StatusItem label="Head of Department" active={user!.is_hod || false} />
+                                <>
+                                    <StatusItem label="Head of Department" active={user!.is_hod || false} />
+                                    <StatusItem label="School Exam Officer" active={user!.is_school_exam_officer || false} />
+                                    <StatusItem label="Department Exam Officer" active={user!.is_department_exam_officer || false} />
+                                </>
                             )}
                         </CardContent>
                         <CardFooter className="flex-col gap-2">

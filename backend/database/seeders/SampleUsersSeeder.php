@@ -39,6 +39,9 @@ class SampleUsersSeeder extends Seeder
                 'role' => 'lecturer',
                 'department_id' => $depts['CS'],
                 'combination_id' => null,
+                'is_hod' => true,
+                'is_school_exam_officer' => false,
+                'is_department_exam_officer' => true,
                 'is_active' => true,
                 'is_verified' => true,
                 'email_verified_at' => $now,
@@ -62,6 +65,9 @@ class SampleUsersSeeder extends Seeder
                 'role' => 'lecturer',
                 'department_id' => $depts['MTH'],
                 'combination_id' => null,
+                'is_hod' => false,
+                'is_school_exam_officer' => true,
+                'is_department_exam_officer' => false,
                 'is_active' => true,
                 'is_verified' => true,
                 'email_verified_at' => $now,
@@ -197,6 +203,43 @@ class SampleUsersSeeder extends Seeder
                 'updated_at' => $now,
             ];
         }
+
+        // ------------------------------------------------------------------
+        // Edu Portal & CBT Users
+        // ------------------------------------------------------------------
+        $users[] = [
+            'uuid' => Str::uuid()->toString(),
+            'email' => 'eduportal@cbt.edu',
+            'password' => Hash::make('EduPortal@123'),
+            'first_name' => 'Edu',
+            'last_name' => 'Portal',
+            'middle_name' => 'Manager',
+            'staff_id' => 'EDU001',
+            'role' => 'edu_portal',
+            'is_active' => true,
+            'is_verified' => true,
+            'email_verified_at' => $now,
+            'password_changed_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $users[] = [
+            'uuid' => Str::uuid()->toString(),
+            'email' => 'cbt@cbt.edu',
+            'password' => Hash::make('CbtAdmin@123'),
+            'first_name' => 'CBT',
+            'last_name' => 'Center',
+            'middle_name' => 'Admin',
+            'staff_id' => 'CBT001',
+            'role' => 'cbt',
+            'is_active' => true,
+            'is_verified' => true,
+            'email_verified_at' => $now,
+            'password_changed_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
 
         foreach ($users as $user) {
             DB::table('users')->updateOrInsert(

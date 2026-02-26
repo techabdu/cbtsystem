@@ -6,11 +6,15 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\CourseEnrollment;
 use App\Models\Exam;
+use App\Services\Exam\ExamService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class StudentExamController extends Controller
 {
+    public function __construct(
+        private ExamService $examService,
+    ) {}
     /* ------------------------------------------------------------------ */
     /*  Index — List published exams for enrolled courses                  */
     /* ------------------------------------------------------------------ */
@@ -62,6 +66,7 @@ class StudentExamController extends Controller
                 'total_marks'      => (float) $exam->total_marks,
                 'passing_marks'    => (float) $exam->passing_marks,
                 'total_questions'  => $exam->exam_questions_count ?? 0,
+                'results_status'   => $exam->results_status,
                 'course'           => $exam->course ? [
                     'id'    => $exam->course->id,
                     'code'  => $exam->course->code,
@@ -137,5 +142,34 @@ class StudentExamController extends Controller
                 'title' => $exam->course->title,
             ] : null,
         ], 'Exam retrieved successfully');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Results — Student views their individual exam results              */
+    /* ------------------------------------------------------------------ */
+
+    public function results(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $exam = Exam::with(['course', 'examQuestions'])->findOrFail($id);
+
+        // Verify student is enrolled in the course
+        $enrolled = CourseEnrollment::where('course_id', $exam->course_id)
+            ->where('student_id', $user->id)
+            ->where('status', 'active')
+            ->exists();
+
+        if (! $enrolled) {
+            return ResponseHelper::error('You are not enrolled in the course for this exam.', 403);
+        }
+
+        try {
+            $results = $this->examService->getStudentResults($exam, $user);
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success($results, 'Exam results retrieved successfully');
     }
 }

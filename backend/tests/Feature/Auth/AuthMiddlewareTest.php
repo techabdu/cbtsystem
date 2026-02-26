@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AuthMiddlewareTest extends TestCase
@@ -14,7 +15,7 @@ class AuthMiddlewareTest extends TestCase
     /*  Protected Route Access                                             */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function unauthenticated_request_returns_401_json(): void
     {
         $response = $this->getJson('/api/v1/auth/me');
@@ -26,7 +27,7 @@ class AuthMiddlewareTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function invalid_token_returns_401(): void
     {
         $response = $this->withHeader('Authorization', 'Bearer invalid-token-here')
@@ -39,7 +40,7 @@ class AuthMiddlewareTest extends TestCase
     /*  Role-Based Access Control                                          */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function admin_user_has_admin_role(): void
     {
         $admin = User::factory()->create([
@@ -58,7 +59,7 @@ class AuthMiddlewareTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function lecturer_user_has_lecturer_role(): void
     {
         $lecturer = User::factory()->create([
@@ -77,7 +78,7 @@ class AuthMiddlewareTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function student_user_has_student_role(): void
     {
         $student = User::factory()->create([
@@ -100,7 +101,7 @@ class AuthMiddlewareTest extends TestCase
     /*  API Returns JSON (not HTML redirects)                              */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function api_404_returns_json_not_html(): void
     {
         $response = $this->getJson('/api/v1/nonexistent-route');
@@ -112,7 +113,7 @@ class AuthMiddlewareTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function api_wrong_method_returns_json(): void
     {
         $response = $this->deleteJson('/api/v1/auth/login');

@@ -7,7 +7,7 @@ import {
     getExams,
     deleteExam,
     publishExam,
-    submitExamForReview,
+    submitForHodReview,
     getExamStats,
 } from '@/lib/api/exams';
 import { getLecturerMyCourses } from '@/lib/api/hod';
@@ -155,11 +155,11 @@ export default function LecturerExamsPage() {
     /* ------------------------------------------------------------------ */
 
     const getDeleteConfirmMessage = (exam: Exam): string => {
-        if (exam.status === 'pending_review') {
-            return `"${exam.title}" is currently under HOD review. Deleting it will cancel the review process. Continue?`;
+        if (exam.status === 'hod_review' || exam.status === 'school_officer_review') {
+            return `"${exam.title}" is currently under review. Deleting it will cancel the review process. Continue?`;
         }
-        if (exam.status === 'verified') {
-            return `"${exam.title}" has been verified by HOD and is awaiting admin publishing. Deleting it will remove it from the publish queue. Continue?`;
+        if (exam.status === 'cbt_setup') {
+            return `"${exam.title}" has been verified and is awaiting CBT setup. Deleting it will remove it from the publish queue. Continue?`;
         }
         if (exam.status === 'published' && exam.is_practice) {
             return `"${exam.title}" is published and currently accessible to students. Deleting it will immediately remove student access. Continue?`;
@@ -207,7 +207,7 @@ export default function LecturerExamsPage() {
         if (!confirm(`Submit "${exam.title}" for HOD review? The exam will be locked from editing until reviewed.`)) return;
         setActionLoadingId(exam.id);
         try {
-            await submitExamForReview(exam.id);
+            await submitForHodReview(exam.id);
             setSuccessMessage('Exam submitted for HOD review successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchExams();
@@ -491,8 +491,7 @@ export default function LecturerExamsPage() {
                                                             }
                                                         </Button>
                                                     )}
-                                                    {/* Results (published/completed) */}
-                                                    {(exam.status === 'published' || exam.status === 'completed' || exam.status === 'ongoing') && (
+                                                    {(exam.status === 'published' || exam.status === 'grading' || exam.status === 'grading_review' || exam.status === 'results_published') && (
                                                         <Link href={`/lecturer/exams/${exam.id}?tab=results`}>
                                                             <Button variant="ghost" size="icon" title="View Results">
                                                                 <BarChart3 className="h-4 w-4 text-blue-500" />
@@ -505,24 +504,25 @@ export default function LecturerExamsPage() {
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    {/* Delete — draft, pending review, verified, or published practice */}
+                                                    {/* Delete — draft, hod_review, school_officer_review, cbt_setup, or published practice */}
                                                     {(exam.status === 'draft' ||
-                                                        exam.status === 'pending_review' ||
-                                                        exam.status === 'verified' ||
+                                                        exam.status === 'hod_review' ||
+                                                        exam.status === 'school_officer_review' ||
+                                                        exam.status === 'cbt_setup' ||
                                                         (exam.status === 'published' && exam.is_practice)) && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            title="Delete"
-                                                            onClick={() => handleDelete(exam)}
-                                                            disabled={actionLoadingId === exam.id}
-                                                        >
-                                                            {actionLoadingId === exam.id
-                                                                ? <Loader2 className="h-4 w-4 animate-spin" />
-                                                                : <Trash2 className="h-4 w-4 text-destructive" />
-                                                            }
-                                                        </Button>
-                                                    )}
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                title="Delete"
+                                                                onClick={() => handleDelete(exam)}
+                                                                disabled={actionLoadingId === exam.id}
+                                                            >
+                                                                {actionLoadingId === exam.id
+                                                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    : <Trash2 className="h-4 w-4 text-destructive" />
+                                                                }
+                                                            </Button>
+                                                        )}
                                                 </div>
                                             </td>
                                         </tr>

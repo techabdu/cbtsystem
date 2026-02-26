@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import {
     getExam,
     updateExam,
-    rejectExam,
+    cbtPublish,
     publishExam,
 } from '@/lib/api/exams';
 import type { Exam, ExamQuestion } from '@/lib/types/models';
@@ -31,8 +31,9 @@ import Link from 'next/link';
 
 const STATUS_BADGES: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
-    pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    verified: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    hod_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    school_officer_review: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    cbt_setup: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     ongoing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     completed: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
@@ -40,11 +41,8 @@ const STATUS_BADGES: Record<string, string> = {
 };
 
 const TYPE_BADGES: Record<string, string> = {
-    quiz: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-    midterm: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-    final: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    practice: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-    makeup: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    practical: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+    semester: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
 
 const Q_TYPE_BADGES: Record<string, string> = {
@@ -73,7 +71,7 @@ type TabType = 'overview' | 'questions';
 /*  Component                                                           */
 /* ------------------------------------------------------------------ */
 
-export default function AdminExamDetailPage() {
+export default function CbtExamDetailPage() {
     const params = useParams();
     const examId = Number(params.id);
 
@@ -83,12 +81,6 @@ export default function AdminExamDetailPage() {
     const [error, setError] = useState('');
     const [actionSuccess, setActionSuccess] = useState('');
     const [actionError, setActionError] = useState('');
-
-    // Reject dialog state
-    const [showRejectDialog, setShowRejectDialog] = useState(false);
-    const [rejectReason, setRejectReason] = useState('');
-    const [rejectDialogError, setRejectDialogError] = useState('');
-    const [isRejecting, setIsRejecting] = useState(false);
 
     // Schedule & Publish dialog state
     const [showScheduleDialog, setShowScheduleDialog] = useState(false);
@@ -133,35 +125,6 @@ export default function AdminExamDetailPage() {
     };
 
     /* ------------------------------------------------------------------ */
-    /*  Reject action                                                       */
-    /* ------------------------------------------------------------------ */
-
-    const handleReject = async () => {
-        if (!exam) return;
-        if (!rejectReason.trim()) {
-            setRejectDialogError('A reason for rejection is required.');
-            return;
-        }
-        setIsRejecting(true);
-        setShowRejectDialog(false);
-        setRejectDialogError('');
-        setActionError('');
-        try {
-            const res = await rejectExam(exam.id, rejectReason || undefined);
-            setExam(res.data);
-            setRejectReason('');
-            setActionSuccess('Exam rejected and returned to draft. The lecturer will be notified.');
-            setTimeout(() => setActionSuccess(''), 5000);
-        } catch (err: unknown) {
-            const e = err as { response?: { data?: { message?: string } } };
-            setActionError(e.response?.data?.message || 'Failed to reject exam.');
-            setTimeout(() => setActionError(''), 5000);
-        } finally {
-            setIsRejecting(false);
-        }
-    };
-
-    /* ------------------------------------------------------------------ */
     /*  Schedule & Publish action                                           */
     /* ------------------------------------------------------------------ */
 
@@ -179,8 +142,13 @@ export default function AdminExamDetailPage() {
                 start_time: new Date(scheduleStart).toISOString(),
                 end_time: new Date(scheduleEnd).toISOString(),
             });
-            const res = await publishExam(exam.id);
-            setExam(res.data);
+            let res;
+            if (exam.status === 'cbt_setup') {
+                res = await cbtPublish(exam.id);
+            } else {
+                res = await publishExam(exam.id);
+            }
+            if (res) setExam(res.data);
             setShowScheduleDialog(false);
             setActionSuccess('Exam scheduled and published successfully! Students can now access it.');
             setTimeout(() => setActionSuccess(''), 5000);
@@ -207,7 +175,7 @@ export default function AdminExamDetailPage() {
     if (error || !exam) {
         return (
             <div className="space-y-4">
-                <Link href="/admin/exams">
+                <Link href="/cbt/exams">
                     <Button variant="outline" className="gap-2">
                         <ChevronLeft className="h-4 w-4" />
                         Back to Exams
@@ -221,8 +189,7 @@ export default function AdminExamDetailPage() {
         );
     }
 
-    const isVerified = exam.status === 'verified';
-    const canAct = isVerified; // only verified exams can be rejected or published from here
+    const canAct = exam.status === 'cbt_setup'; // only cbt_setup exams can be published from here
 
     /* ------------------------------------------------------------------ */
     /*  Render                                                              */
@@ -233,7 +200,7 @@ export default function AdminExamDetailPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
-                    <Link href="/admin/exams">
+                    <Link href="/cbt/exams">
                         <Button variant="ghost" size="icon">
                             <ChevronLeft className="h-5 w-5" />
                         </Button>
@@ -259,21 +226,12 @@ export default function AdminExamDetailPage() {
                     </div>
                 </div>
 
-                {/* Action buttons — only shown for verified exams */}
+                {/* Action buttons — only shown for ready exams */}
                 {canAct && (
                     <div className="flex items-center gap-2 shrink-0">
                         <Button
-                            variant="outline"
-                            onClick={() => { setShowRejectDialog(true); setRejectReason(''); }}
-                            disabled={isRejecting || isPublishing}
-                            className="gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                        >
-                            <X className="h-4 w-4" />
-                            Reject
-                        </Button>
-                        <Button
                             onClick={openScheduleDialog}
-                            disabled={isRejecting || isPublishing}
+                            disabled={isPublishing}
                             className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                         >
                             <Calendar className="h-4 w-4" />
@@ -301,7 +259,7 @@ export default function AdminExamDetailPage() {
             <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/30 dark:text-blue-300">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <p className="text-sm">
-                    This is a <span className="font-semibold">read-only</span> view. Review the exam details and questions, then reject or schedule &amp; publish.
+                    This is a <span className="font-semibold">read-only</span> view. Review the exam details and questions, then schedule &amp; publish.
                 </p>
             </div>
 
@@ -390,14 +348,6 @@ export default function AdminExamDetailPage() {
                         {canAct && (
                             <div className="flex gap-3 pt-2 border-t">
                                 <Button
-                                    variant="outline"
-                                    onClick={() => { setShowRejectDialog(true); setRejectReason(''); }}
-                                    className="gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Reject Exam
-                                </Button>
-                                <Button
                                     onClick={openScheduleDialog}
                                     className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                                 >
@@ -432,14 +382,6 @@ export default function AdminExamDetailPage() {
                     {canAct && (
                         <div className="flex gap-3 pt-2">
                             <Button
-                                variant="outline"
-                                onClick={() => { setShowRejectDialog(true); setRejectReason(''); }}
-                                className="gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                            >
-                                <X className="h-4 w-4" />
-                                Reject Exam
-                            </Button>
-                            <Button
                                 onClick={openScheduleDialog}
                                 className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                             >
@@ -451,50 +393,6 @@ export default function AdminExamDetailPage() {
                 </div>
             )}
 
-            {/* ==================== REJECT DIALOG ==================== */}
-            {showRejectDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <Card className="w-full max-w-md shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Reject Exam</CardTitle>
-                            <CardDescription>
-                                The exam will be returned to <strong>Draft</strong> status. You must provide a reason so the lecturer knows what to fix.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {rejectDialogError && (
-                                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">
-                                    <AlertCircle className="h-4 w-4 shrink-0" />
-                                    <p className="text-sm">{rejectDialogError}</p>
-                                </div>
-                            )}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Reason for rejection <span className="text-destructive">*</span></label>
-                                <textarea
-                                    value={rejectReason}
-                                    onChange={(e) => { setRejectReason(e.target.value); setRejectDialogError(''); }}
-                                    placeholder="Explain what needs to be corrected..."
-                                    rows={3}
-                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-3">
-                                <Button variant="outline" onClick={() => { setShowRejectDialog(false); setRejectDialogError(''); }}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleReject}
-                                    isLoading={isRejecting}
-                                    className="gap-2 bg-red-600 hover:bg-red-700"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Confirm Reject
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
 
             {/* ==================== SCHEDULE & PUBLISH DIALOG ==================== */}
             {showScheduleDialog && (

@@ -59,7 +59,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 ? ROUTES.DASHBOARD.ADMIN
                 : user.role === 'lecturer'
                     ? ROUTES.DASHBOARD.LECTURER
-                    : ROUTES.DASHBOARD.STUDENT;
+                    : user.role === 'edu_portal'
+                        ? ROUTES.DASHBOARD.EDU_PORTAL
+                        : user.role === 'cbt'
+                            ? ROUTES.DASHBOARD.CBT
+                            : ROUTES.DASHBOARD.STUDENT;
             router.replace(correctDashboard);
         }
     }, [isReady, isLoading, isAuthenticated, user, pathname, router, isSharedPath]);

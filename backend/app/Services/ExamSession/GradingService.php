@@ -102,23 +102,10 @@ class GradingService
 
     private function gradeFillInBlank(StudentAnswer $answer, Question $question, string $studentAnswer, float $maxPoints): void
     {
-        $correctAnswer = $this->getCorrectAnswer($question);
-        $studentNorm = strtolower(trim($studentAnswer));
-        $correctNorm = strtolower(trim($correctAnswer));
-
-        // Exact match first
-        if ($studentNorm === $correctNorm) {
-            $answer->update(['is_correct' => true, 'points_awarded' => $maxPoints]);
-            return;
-        }
-
-        // Similarity check — 80% threshold
-        similar_text($studentNorm, $correctNorm, $percent);
-        $isCorrect = $percent >= 80;
-
+        // Fill-in-blank requires manual grading for real exams — award 0 for now
         $answer->update([
-            'is_correct'     => $isCorrect,
-            'points_awarded' => $isCorrect ? $maxPoints : 0,
+            'is_correct'     => null,
+            'points_awarded' => 0,
         ]);
     }
 
@@ -128,6 +115,34 @@ class GradingService
         $answer->update([
             'is_correct'     => null,
             'points_awarded' => 0,
+        ]);
+    }
+
+    /**
+     * Check if a session has any final answers still needing manual grading.
+     */
+    public function needsManualGrading(ExamSession $session): bool
+    {
+        return $session->finalAnswers()
+            ->whereNull('is_correct')
+            ->whereHas('question', function ($q) {
+                $q->whereIn('question_type', ['fill_in_blank', 'essay']);
+            })
+            ->exists();
+    }
+
+    /**
+     * Recalculate session total_score and percentage from all final answers.
+     */
+    public function recalculateSessionScore(ExamSession $session): void
+    {
+        $totalScore = (float) $session->finalAnswers()->sum('points_awarded');
+        $totalMarks = (float) $session->exam->total_marks;
+        $percentage = $totalMarks > 0 ? round(($totalScore / $totalMarks) * 100, 2) : 0;
+
+        $session->update([
+            'total_score' => $totalScore,
+            'percentage'  => $percentage,
         ]);
     }
 

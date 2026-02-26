@@ -26,11 +26,8 @@ import Link from 'next/link';
 /* ------------------------------------------------------------------ */
 
 const EXAM_TYPES = [
-    { value: 'quiz', label: 'Quiz' },
-    { value: 'midterm', label: 'Midterm' },
-    { value: 'final', label: 'Final' },
-    { value: 'practice', label: 'Practice' },
-    { value: 'makeup', label: 'Makeup' },
+    { value: 'semester', label: 'Semester Exam' },
+    { value: 'practical', label: 'Practical (Practice) Exam' },
 ] as const;
 
 const STEPS = [
@@ -48,7 +45,7 @@ const defaultData: CreateExamData = {
     title: '',
     description: '',
     instructions: '',
-    exam_type: 'midterm',
+    exam_type: 'semester',
     duration_minutes: 60,
     total_marks: 100,
     passing_marks: 50,
@@ -359,13 +356,16 @@ export default function CreateExamPage() {
                             />
                         </div>
 
-                        {/* Is Practice */}
+                        {/* Is Practice / Practical */}
                         <div className="flex items-center gap-3 rounded-lg border border-input p-3">
                             <input
                                 type="checkbox"
                                 id="is_practice"
-                                checked={formData.is_practice || false}
-                                onChange={(e) => set('is_practice', e.target.checked)}
+                                checked={formData.is_practice || formData.exam_type === 'practical'}
+                                onChange={(e) => {
+                                    set('is_practice', e.target.checked);
+                                    if (e.target.checked) set('exam_type', 'practical');
+                                }}
                                 className="h-4 w-4 rounded border-input"
                             />
                             <div>

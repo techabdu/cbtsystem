@@ -25,8 +25,8 @@ class ExamController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only([
-            'search', 'course_id', 'exam_type', 'status', 'is_practice',
-            'trashed', 'per_page', 'page', 'sort_by', 'sort_dir',
+            'search', 'course_id', 'exam_type', 'status', 'results_status',
+            'is_practice', 'trashed', 'per_page', 'page', 'sort_by', 'sort_dir',
         ]);
 
         $paginator = $this->examService->list($filters, $request->user());
@@ -331,6 +331,113 @@ class ExamController extends Controller
         $results = $this->examService->getResults($exam);
 
         return ResponseHelper::success($results, 'Exam results retrieved successfully');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Submit Grading — Lecturer submits grading for HOD verification     */
+    /* ------------------------------------------------------------------ */
+
+    public function submitGrading(int $id, Request $request): JsonResponse
+    {
+        $exam = $this->examService->find($id);
+        $user = $request->user();
+
+        if ($exam->created_by !== $user->id && $user->role !== 'admin') {
+            return ResponseHelper::error('You can only submit grading for your own exams.', 403);
+        }
+
+        try {
+            $updated = $this->examService->submitGrading($exam, $user);
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Grading submitted for verification'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Reject Grading — HOD rejects grading back to lecturer             */
+    /* ------------------------------------------------------------------ */
+
+    public function rejectGrading(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'admin' && ! $user->is_hod) {
+            return ResponseHelper::error('Only HODs or administrators can reject grading.', 403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $exam = $this->examService->find($id);
+
+        try {
+            $updated = $this->examService->rejectGrading($exam, $user, $request->input('reason'));
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Grading rejected and returned to lecturer'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Verify Results — HOD approves grading results                     */
+    /* ------------------------------------------------------------------ */
+
+    public function verifyResults(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'admin' && ! $user->is_hod) {
+            return ResponseHelper::error('Only HODs or administrators can verify results.', 403);
+        }
+
+        $exam = $this->examService->find($id);
+
+        try {
+            $updated = $this->examService->verifyResults($exam, $user);
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Results verified successfully'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Publish Results — Admin publishes results to students             */
+    /* ------------------------------------------------------------------ */
+
+    public function publishResults(int $id, Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'admin') {
+            return ResponseHelper::error('Only administrators can publish results.', 403);
+        }
+
+        $exam = $this->examService->find($id);
+
+        try {
+            $updated = $this->examService->publishResults($exam, $user);
+        } catch (\RuntimeException $e) {
+            return ResponseHelper::error($e->getMessage(), 422);
+        }
+
+        return ResponseHelper::success(
+            new ExamResource($updated),
+            'Results published to students'
+        );
     }
 
     /* ------------------------------------------------------------------ */

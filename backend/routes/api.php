@@ -22,8 +22,10 @@ use App\Http\Controllers\Api\V1\Exam\ExamController;
 use App\Http\Controllers\Api\V1\Exam\StudentExamController;
 use App\Http\Controllers\Api\V1\Exam\PracticeExamController;
 use App\Http\Controllers\Api\V1\Notification\NotificationController;
+use App\Http\Controllers\Api\V1\Exam\ManualGradingController;
 use App\Http\Controllers\Api\V1\ExamSession\OfflineEntryController;
 use App\Http\Controllers\Api\V1\ExamSession\ExamSessionController;
+use App\Http\Controllers\Api\V1\ExamWorkflowController;
 
 /*
 |--------------------------------------------------------------------------
@@ -218,11 +220,42 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/restore', [ExamController::class, 'restore'])->name('exams.restore');
             Route::post('/{id}/questions', [ExamController::class, 'addQuestions'])->name('exams.questions.add');
             Route::delete('/{id}/questions/{questionId}', [ExamController::class, 'removeQuestion'])->name('exams.questions.remove');
+            
+            // Workflow Routes — Lecturer/Admin actions
+            Route::post('/{exam}/submit-hod', [ExamWorkflowController::class, 'submitHod'])->name('exams.workflow.submit-hod');
+            Route::post('/{exam}/hod-approve', [ExamWorkflowController::class, 'hodApprove'])->name('exams.workflow.hod-approve');
+            Route::post('/{exam}/hod-reject', [ExamWorkflowController::class, 'hodReject'])->name('exams.workflow.hod-reject');
+            Route::post('/{exam}/school-officer-approve', [ExamWorkflowController::class, 'schoolOfficerApprove'])->name('exams.workflow.school-officer-approve');
+            Route::post('/{exam}/school-officer-reject', [ExamWorkflowController::class, 'schoolOfficerReject'])->name('exams.workflow.school-officer-reject');
+            Route::post('/{exam}/submit-grading', [ExamWorkflowController::class, 'submitGrading'])->name('exams.workflow.submit-grading');
+            Route::post('/{exam}/dept-officer-approve', [ExamWorkflowController::class, 'deptOfficerApprove'])->name('exams.workflow.dept-officer-approve');
+            Route::post('/{exam}/dept-officer-reject', [ExamWorkflowController::class, 'deptOfficerReject'])->name('exams.workflow.dept-officer-reject');
+
+            // Legacy ones to be replaced/deprecated eventually:
             Route::post('/{id}/submit-for-review', [ExamController::class, 'submitForReview'])->name('exams.submit-for-review');
             Route::post('/{id}/verify', [ExamController::class, 'verifyExam'])->name('exams.verify');
             Route::post('/{id}/reject', [ExamController::class, 'rejectExam'])->name('exams.reject');
             Route::post('/{id}/publish', [ExamController::class, 'publish'])->name('exams.publish');
             Route::get('/{id}/results', [ExamController::class, 'results'])->name('exams.results');
+            Route::get('/{id}/manual-grading', [ManualGradingController::class, 'index'])->name('exams.manual-grading');
+            Route::get('/{id}/grading-summary', [ManualGradingController::class, 'summary'])->name('exams.grading-summary');
+            Route::post('/{id}/verify-results', [ExamController::class, 'verifyResults'])->name('exams.verify-results');
+            Route::post('/{id}/publish-results', [ExamController::class, 'publishResults'])->name('exams.publish-results');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  CBT Workflow — Actions performed by CBT admin role             */
+        /* -------------------------------------------------------------- */
+        Route::prefix('exams')->middleware('role:admin,lecturer,cbt')->group(function () {
+            Route::post('/{exam}/cbt-publish', [ExamWorkflowController::class, 'cbtPublish'])->name('exams.workflow.cbt-publish');
+            Route::post('/{exam}/sync-results', [ExamWorkflowController::class, 'syncResults'])->name('exams.workflow.sync-results');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Manual Grading — Grade individual student answers              */
+        /* -------------------------------------------------------------- */
+        Route::prefix('student-answers')->middleware('role:admin,lecturer')->group(function () {
+            Route::post('/{id}/grade', [ManualGradingController::class, 'gradeAnswer'])->name('student-answers.grade');
         });
 
         /* -------------------------------------------------------------- */
@@ -231,6 +264,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('student/exams')->middleware('role:student')->group(function () {
             Route::get('/', [StudentExamController::class, 'index'])->name('student.exams.index');
             Route::get('/{id}', [StudentExamController::class, 'show'])->name('student.exams.show');
+            Route::get('/{id}/results', [StudentExamController::class, 'results'])->name('student.exams.results');
         });
 
         /* -------------------------------------------------------------- */

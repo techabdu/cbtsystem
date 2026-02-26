@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUser } from '@/lib/api/users';
+import { getActiveSchools } from '@/lib/api/schools';
 import { getActiveDepartments } from '@/lib/api/departments';
 import { getActiveCombinations } from '@/lib/api/combinations';
 import { getActiveLevels } from '@/lib/api/levels';
 import type { CreateUserData } from '@/lib/types/api';
-import type { Department, Combination, Level } from '@/lib/types/models';
+import type { School, Department, Combination, Level } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,7 @@ export default function CreateUserPage() {
     const [successMessage, setSuccessMessage] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
     const [generalError, setGeneralError] = useState('');
+    const [schools, setSchools] = useState<School[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [combinations, setCombinations] = useState<Combination[]>([]);
     const [levels, setLevels] = useState<Level[]>([]);
@@ -37,16 +39,22 @@ export default function CreateUserPage() {
         student_id: '',
         phone: '',
         is_active: true,
+        is_hod: false,
+        is_school_exam_officer: false,
+        is_department_exam_officer: false,
+        school_id: undefined,
         level_id: undefined,
     });
 
-    // Fetch departments and combinations
+    // Fetch reference data
     useEffect(() => {
         Promise.all([
+            getActiveSchools(),
             getActiveDepartments(),
             getActiveCombinations(),
             getActiveLevels(),
-        ]).then(([deptRes, comboRes, levelRes]) => {
+        ]).then(([schoolRes, deptRes, comboRes, levelRes]) => {
+            setSchools(schoolRes.data.schools);
             setDepartments(deptRes.data.departments);
             setCombinations(comboRes.data.combinations);
             setLevels(levelRes.data.levels);
@@ -61,7 +69,7 @@ export default function CreateUserPage() {
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setForm((prev) => ({ ...prev, [name]: checked }));
-        } else if (name === 'department_id' || name === 'combination_id' || name === 'level_id') {
+        } else if (name === 'school_id' || name === 'department_id' || name === 'combination_id' || name === 'level_id') {
             setForm((prev) => ({ ...prev, [name]: value ? parseInt(value, 10) : undefined }));
         } else {
             setForm((prev) => ({ ...prev, [name]: value }));
@@ -81,11 +89,11 @@ export default function CreateUserPage() {
             // Reset form
             setForm({
                 first_name: '', last_name: '', middle_name: '', email: '',
-                role: 'student', department_id: undefined,
+                role: 'student', school_id: undefined, department_id: undefined,
                 staff_id: '', student_id: '', phone: '', is_active: true,
             });
             // Redirect after brief delay so success is visible
-            setTimeout(() => router.push('/admin/users'), 1500);
+            setTimeout(() => router.push('/edu_portal/users'), 1500);
         } catch (err: unknown) {
             const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
             if (error.response?.data?.errors) {
@@ -99,17 +107,18 @@ export default function CreateUserPage() {
 
     const getError = (field: string) => fieldErrors[field]?.[0] || '';
 
-    // Logic: Lecturers -> Department, Students -> Combination
-    const showDepartment = form.role === 'lecturer' || form.role === 'admin';
+    // Logic: Lecturers & Exam Officers -> Department/School, Students -> Combination
+    const showSchool = form.role === 'lecturer';
+    const showDepartment = form.role === 'lecturer';
     const showCombination = form.role === 'student';
     const showStudentId = form.role === 'student';
-    const showStaffId = form.role === 'lecturer' || form.role === 'admin';
+    const showStaffId = form.role === 'lecturer' || form.role === 'admin' || form.role === 'edu_portal' || form.role === 'cbt';
 
     return (
         <div className="space-y-6">
             {/* Page Header */}
             <div className="flex items-center gap-4">
-                <Link href="/admin/users">
+                <Link href="/edu_portal/users">
                     <Button variant="ghost" size="icon">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
@@ -204,31 +213,55 @@ export default function CreateUserPage() {
                                 >
                                     <option value="student">Student</option>
                                     <option value="lecturer">Lecturer</option>
-                                    <option value="admin">Admin</option>
+                                    <option value="admin">System Admin</option>
+                                    <option value="edu_portal">Edu Portal Admin</option>
+                                    <option value="cbt">CBT Admin</option>
                                 </select>
                                 {getError('role') && <span className="text-xs text-red-500">{getError('role')}</span>}
                             </div>
-                            {showDepartment && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="department_id">
-                                        Department {form.role !== 'admin' ? '*' : ''}
-                                    </Label>
-                                    <select
-                                        id="department_id"
-                                        name="department_id"
-                                        value={form.department_id || ''}
-                                        onChange={handleChange}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        required={form.role === 'student' || form.role === 'lecturer'}
-                                    >
-                                        <option value="">Select department...</option>
-                                        {departments.map((dept) => (
-                                            <option key={dept.id} value={dept.id}>
-                                                {dept.name} ({dept.code})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {getError('department_id') && <span className="text-xs text-red-500">{getError('department_id')}</span>}
+
+                            {(showSchool || showDepartment) && (
+                                <div className="space-y-4">
+                                    {showSchool && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="school_id">School</Label>
+                                            <select
+                                                id="school_id"
+                                                name="school_id"
+                                                value={form.school_id || ''}
+                                                onChange={handleChange}
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                <option value="">Select school...</option>
+                                                {schools.map((sch) => (
+                                                    <option key={sch.id} value={sch.id}>
+                                                        {sch.name} ({sch.code})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {getError('school_id') && <span className="text-xs text-red-500">{getError('school_id')}</span>}
+                                        </div>
+                                    )}
+                                    {showDepartment && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="department_id">Department</Label>
+                                            <select
+                                                id="department_id"
+                                                name="department_id"
+                                                value={form.department_id || ''}
+                                                onChange={handleChange}
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                <option value="">Select department...</option>
+                                                {departments.map((dept) => (
+                                                    <option key={dept.id} value={dept.id}>
+                                                        {dept.name} ({dept.code})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {getError('department_id') && <span className="text-xs text-red-500">{getError('department_id')}</span>}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -324,16 +357,38 @@ export default function CreateUserPage() {
                                 Account Active
                             </label>
                             {form.role === 'lecturer' && (
-                                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="is_hod"
-                                        checked={form.is_hod || false}
-                                        onChange={handleChange}
-                                        className="h-4 w-4 rounded border-input"
-                                    />
-                                    <span>Head of Department (HOD)</span>
-                                </label>
+                                <>
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="is_hod"
+                                            checked={form.is_hod || false}
+                                            onChange={handleChange}
+                                            className="h-4 w-4 rounded border-input"
+                                        />
+                                        <span>Head of Department (HOD)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="is_school_exam_officer"
+                                            checked={form.is_school_exam_officer || false}
+                                            onChange={handleChange}
+                                            className="h-4 w-4 rounded border-input"
+                                        />
+                                        <span>School Exam Officer</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="is_department_exam_officer"
+                                            checked={form.is_department_exam_officer || false}
+                                            onChange={handleChange}
+                                            className="h-4 w-4 rounded border-input"
+                                        />
+                                        <span>Department Exam Officer</span>
+                                    </label>
+                                </>
                             )}
                         </div>
                         {form.role === 'lecturer' && form.is_hod && (
@@ -341,12 +396,17 @@ export default function CreateUserPage() {
                                 Only one HOD per department. If another lecturer is currently HOD in this department, they will be replaced.
                             </p>
                         )}
+                        {form.role === 'lecturer' && (form.is_school_exam_officer || form.is_department_exam_officer) && (
+                            <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                                Exam Officers have special privileges in the Exam approval workflows. Ensure they are assigned to the correct School or Department.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
                 {/* Submit */}
                 <div className="flex justify-end gap-3">
-                    <Link href="/admin/users">
+                    <Link href="/edu_portal/users">
                         <Button variant="outline" type="button">Cancel</Button>
                     </Link>
                     <Button type="submit" isLoading={isLoading} className="gap-2">

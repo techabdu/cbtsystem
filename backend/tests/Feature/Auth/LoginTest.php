@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
@@ -29,12 +30,12 @@ class LoginTest extends TestCase
     /*  Successful Login                                                   */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function a_user_can_login_with_valid_credentials(): void
     {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => 'student@college.edu',
-            'password' => 'SecurePass1!',
+            'identifier' => 'student@college.edu',
+            'password'   => 'SecurePass1!',
         ]);
 
         $response->assertOk()
@@ -55,19 +56,19 @@ class LoginTest extends TestCase
         $this->assertNotEmpty($response->json('data.token'));
     }
 
-    /** @test */
+    #[Test]
     public function login_updates_last_login_timestamp(): void
     {
         $this->postJson('/api/v1/auth/login', [
-            'email'    => 'student@college.edu',
-            'password' => 'SecurePass1!',
+            'identifier' => 'student@college.edu',
+            'password'   => 'SecurePass1!',
         ]);
 
         $this->user->refresh();
         $this->assertNotNull($this->user->last_login_at);
     }
 
-    /** @test */
+    #[Test]
     public function login_returns_correct_user_role(): void
     {
         $admin = User::factory()->create([
@@ -78,8 +79,8 @@ class LoginTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => 'admin@college.edu',
-            'password' => 'AdminPass1!',
+            'identifier' => 'admin@college.edu',
+            'password'   => 'AdminPass1!',
         ]);
 
         $response->assertOk()
@@ -92,45 +93,45 @@ class LoginTest extends TestCase
     /*  Failed Login                                                       */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function login_fails_with_wrong_password(): void
     {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => 'student@college.edu',
-            'password' => 'WrongPass1!',
+            'identifier' => 'student@college.edu',
+            'password'   => 'WrongPass1!',
         ]);
 
         $response->assertStatus(401)
             ->assertJson(['success' => false]);
     }
 
-    /** @test */
+    #[Test]
     public function login_fails_with_nonexistent_email(): void
     {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => 'nobody@college.edu',
-            'password' => 'SecurePass1!',
+            'identifier' => 'nobody@college.edu',
+            'password'   => 'SecurePass1!',
         ]);
 
         $response->assertStatus(401)
             ->assertJson(['success' => false]);
     }
 
-    /** @test */
+    #[Test]
     public function login_fails_for_deactivated_account(): void
     {
         $this->user->update(['is_active' => false]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => 'student@college.edu',
-            'password' => 'SecurePass1!',
+            'identifier' => 'student@college.edu',
+            'password'   => 'SecurePass1!',
         ]);
 
         $response->assertStatus(401)
             ->assertJson(['success' => false]);
     }
 
-    /** @test */
+    #[Test]
     public function login_fails_for_locked_account(): void
     {
         $this->user->update([
@@ -139,21 +140,21 @@ class LoginTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => 'student@college.edu',
-            'password' => 'SecurePass1!',
+            'identifier' => 'student@college.edu',
+            'password'   => 'SecurePass1!',
         ]);
 
         $response->assertStatus(401)
             ->assertJson(['success' => false]);
     }
 
-    /** @test */
+    #[Test]
     public function account_locks_after_five_failed_attempts(): void
     {
         for ($i = 0; $i < 5; $i++) {
             $this->postJson('/api/v1/auth/login', [
-                'email'    => 'student@college.edu',
-                'password' => 'WrongPass!',
+                'identifier' => 'student@college.edu',
+                'password'   => 'WrongPass1!',
             ]);
         }
 
@@ -166,7 +167,7 @@ class LoginTest extends TestCase
     /*  Logout                                                             */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function an_authenticated_user_can_logout(): void
     {
         $token = $this->user->createToken('auth_token')->plainTextToken;
@@ -183,7 +184,7 @@ class LoginTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function logout_fails_without_token(): void
     {
         $response = $this->postJson('/api/v1/auth/logout');
@@ -195,7 +196,7 @@ class LoginTest extends TestCase
     /*  Me Endpoint                                                        */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function authenticated_user_can_get_their_profile(): void
     {
         $token = $this->user->createToken('auth_token')->plainTextToken;
@@ -216,7 +217,7 @@ class LoginTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function me_fails_without_authentication(): void
     {
         $response = $this->getJson('/api/v1/auth/me');
@@ -228,7 +229,7 @@ class LoginTest extends TestCase
     /*  Token Refresh                                                      */
     /* ------------------------------------------------------------------ */
 
-    /** @test */
+    #[Test]
     public function authenticated_user_can_refresh_token(): void
     {
         $token = $this->user->createToken('auth_token')->plainTextToken;

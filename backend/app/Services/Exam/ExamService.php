@@ -63,6 +63,11 @@ class ExamService
             $query->where('status', $filters['status']);
         }
 
+        // --- Results status filter ---
+        if (! empty($filters['results_status'])) {
+            $query->where('results_status', $filters['results_status']);
+        }
+
         // --- Practice filter ---
         if (isset($filters['is_practice'])) {
             $query->where('is_practice', filter_var($filters['is_practice'], FILTER_VALIDATE_BOOLEAN));
@@ -121,7 +126,7 @@ class ExamService
     public function create(array $data, User $user): Exam
     {
         $data['created_by'] = $user->id;
-        $data['status']     = 'draft';
+        $data['status']     = ($data['exam_type'] === 'practical') ? 'published' : 'draft';
 
         // Handle password hashing
         if (! empty($data['requires_password']) && ! empty($data['exam_password'])) {
@@ -620,6 +625,290 @@ class ExamService
     }
 
     /* ------------------------------------------------------------------ */
+    /*  Submit Grading — Lecturer marks grading as complete                */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Lecturer/admin submits grading for HOD verification.
+     *
+     * @throws \RuntimeException
+     */
+    public function submitGrading(Exam $exam, User $user): Exam
+    {
+        if (! in_array($exam->results_status, ['pending_grading', 'grading_rejected', null], true)) {
+            throw new \RuntimeException(
+                "Grading can only be submitted when status is 'pending_grading' or 'grading_rejected'. " .
+                "Current status: '{$exam->results_status}'."
+            );
+        }
+
+        // Verify all answers have been graded
+        $ungradedCount = 0;
+        $submitted = $exam->sessions()->whereIn('status', ['submitted', 'auto_submitted'])->get();
+        foreach ($submitted as $session) {
+            $ungradedCount += \App\Models\StudentAnswer::where('session_id', $session->id)
+                ->where('is_final', true)
+                ->whereNull('is_correct')
+                ->whereHas('question', fn ($q) => $q->whereIn('question_type', ['fill_in_blank', 'essay']))
+                ->count();
+        }
+
+        if ($ungradedCount > 0) {
+            throw new \RuntimeException(
+                "Cannot submit grading — {$ungradedCount} answer(s) still need manual grading."
+            );
+        }
+
+        $exam->update(['results_status' => 'grading_submitted']);
+
+        $this->logActivity($user, 'grading_submitted', $exam->id, newValues: [
+            'results_status' => 'grading_submitted',
+        ]);
+
+        // Notify HODs in the course's department
+        try {
+            if ($exam->course) {
+                $hods = User::where('role', 'lecturer')
+                    ->where('is_hod', true)
+                    ->where('department_id', $exam->course->department_id)
+                    ->get();
+                foreach ($hods as $hod) {
+                    $this->notifications->notify(
+                        $hod,
+                        'grading_submitted',
+                        'Grading Ready for Verification',
+                        "Grading for \"{$exam->title}\" ({$exam->course->code}) is complete and ready for verification.",
+                        ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            // Non-critical
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Reject Grading — HOD sends grading back to lecturer               */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * HOD/admin rejects grading and returns it to the lecturer.
+     *
+     * @throws \RuntimeException
+     */
+    public function rejectGrading(Exam $exam, User $user, string $reason): Exam
+    {
+        if ($exam->results_status !== 'grading_submitted') {
+            throw new \RuntimeException(
+                "Only submitted grading can be rejected. Current status: '{$exam->results_status}'."
+            );
+        }
+
+        $exam->update(['results_status' => 'pending_grading']);
+
+        $this->logActivity($user, 'grading_rejected', $exam->id, newValues: [
+            'results_status' => 'pending_grading',
+            'reason'         => $reason,
+        ]);
+
+        // Notify exam creator
+        try {
+            if ($exam->creator) {
+                $this->notifications->notify(
+                    $exam->creator,
+                    'grading_rejected',
+                    'Grading Rejected — Needs Revision',
+                    "Grading for \"{$exam->title}\" was rejected. Reason: {$reason}",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+        } catch (\Exception $e) {
+            // Non-critical
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Verify Results — HOD approves grading                             */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * HOD/admin verifies grading results, making them ready for admin publishing.
+     *
+     * @throws \RuntimeException
+     */
+    public function verifyResults(Exam $exam, User $user): Exam
+    {
+        if ($exam->results_status !== 'grading_submitted') {
+            throw new \RuntimeException(
+                "Only submitted grading can be verified. Current status: '{$exam->results_status}'."
+            );
+        }
+
+        $exam->update(['results_status' => 'results_verified']);
+
+        $this->logActivity($user, 'results_verified', $exam->id, newValues: [
+            'results_status' => 'results_verified',
+        ]);
+
+        // Notify admins and exam creator
+        try {
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $this->notifications->notify(
+                    $admin,
+                    'results_verified',
+                    'Results Ready to Publish',
+                    "Results for \"{$exam->title}\" have been verified by the HOD and are ready to publish.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+
+            if ($exam->creator) {
+                $this->notifications->notify(
+                    $exam->creator,
+                    'results_verified',
+                    'Results Verified',
+                    "Your exam \"{$exam->title}\" results have been verified. Admin will publish them soon.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+        } catch (\Exception $e) {
+            // Non-critical
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Publish Results — Admin makes results visible to students          */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Admin publishes results to students.
+     *
+     * @throws \RuntimeException
+     */
+    public function publishResults(Exam $exam, User $user): Exam
+    {
+        if ($exam->results_status !== 'results_verified') {
+            throw new \RuntimeException(
+                "Only verified results can be published. Current status: '{$exam->results_status}'."
+            );
+        }
+
+        $exam->update([
+            'results_status' => 'results_published',
+            'metadata'       => array_merge($exam->metadata ?? [], [
+                'results_published_at' => now()->toIso8601String(),
+            ]),
+        ]);
+
+        $this->logActivity($user, 'results_published', $exam->id, newValues: [
+            'results_status' => 'results_published',
+        ]);
+
+        // Notify exam creator and enrolled students
+        try {
+            if ($exam->creator) {
+                $this->notifications->notify(
+                    $exam->creator,
+                    'results_published',
+                    'Results Published',
+                    "Results for \"{$exam->title}\" have been published to students.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+
+            $enrolledStudents = User::join('course_enrollments', 'users.id', '=', 'course_enrollments.student_id')
+                ->where('course_enrollments.course_id', $exam->course_id)
+                ->where('course_enrollments.status', 'active')
+                ->select('users.*')
+                ->get();
+
+            foreach ($enrolledStudents as $student) {
+                $this->notifications->notify(
+                    $student,
+                    'results_published',
+                    'Exam Results Available',
+                    "Your results for \"{$exam->title}\" are now available.",
+                    ['related_entity_type' => 'exam', 'related_entity_id' => $exam->id]
+                );
+            }
+        } catch (\Exception $e) {
+            // Non-critical
+        }
+
+        return $exam->fresh()->load(['course', 'creator']);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Student Results — Individual student results (published only)      */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Get a student's individual results for a published exam.
+     *
+     * @throws \RuntimeException
+     */
+    public function getStudentResults(Exam $exam, User $student): array
+    {
+        if ($exam->results_status !== 'results_published') {
+            throw new \RuntimeException('Results for this exam have not been published yet.');
+        }
+
+        $session = $exam->sessions()
+            ->where('student_id', $student->id)
+            ->whereIn('status', ['submitted', 'auto_submitted'])
+            ->first();
+
+        if (! $session) {
+            throw new \RuntimeException('No submitted exam session found.');
+        }
+
+        $answers = $session->finalAnswers()
+            ->with('question')
+            ->get()
+            ->map(function ($answer) use ($exam) {
+                $examQuestion = $exam->examQuestions()
+                    ->where('question_id', $answer->question_id)
+                    ->first();
+
+                return [
+                    'question_id'     => $answer->question_id,
+                    'question_text'   => $answer->question?->question_text,
+                    'question_type'   => $answer->question?->question_type,
+                    'your_answer'     => $answer->answer_text ?? $answer->selected_option,
+                    'correct_answer'  => $exam->show_correct_answers
+                        ? $answer->question?->correct_answer
+                        : null,
+                    'is_correct'      => $answer->is_correct,
+                    'points_awarded'  => (float) $answer->points_awarded,
+                    'points_possible' => $examQuestion ? (float) $examQuestion->points : 0,
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        return [
+            'exam_id'              => $exam->id,
+            'exam_title'           => $exam->title,
+            'course_code'          => $exam->course?->code,
+            'total_marks'          => (float) $exam->total_marks,
+            'passing_marks'        => (float) $exam->passing_marks,
+            'student_score'        => (float) $session->total_score,
+            'percentage'           => (float) $session->percentage,
+            'passed'               => (float) $session->total_score >= (float) $exam->passing_marks,
+            'submitted_at'         => $session->submitted_at?->toIso8601String(),
+            'show_correct_answers' => $exam->show_correct_answers,
+            'answers'              => $answers,
+        ];
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Results                                                            */
     /* ------------------------------------------------------------------ */
 
@@ -660,17 +949,30 @@ class ExamService
             ];
         })->values()->toArray();
 
+        // Count ungraded answers across all submitted sessions
+        $ungradedCount = 0;
+        foreach ($submitted as $session) {
+            $ungradedCount += \App\Models\StudentAnswer::where('session_id', $session->id)
+                ->where('is_final', true)
+                ->whereNull('is_correct')
+                ->whereHas('question', fn ($q) => $q->whereIn('question_type', ['fill_in_blank', 'essay']))
+                ->count();
+        }
+
         return [
-            'exam_id'         => $exam->id,
-            'exam_title'      => $exam->title,
-            'total_students'  => $sessions->unique('student_id')->count(),
-            'completed'       => $submitted->count(),
-            'in_progress'     => $sessions->where('status', 'in_progress')->count(),
-            'avg_score'       => $avgScore,
-            'highest_score'   => $highestScore,
-            'lowest_score'    => $lowestScore,
-            'pass_rate'       => $passRate,
-            'results'         => $results,
+            'exam_id'                => $exam->id,
+            'exam_title'             => $exam->title,
+            'results_status'         => $exam->results_status ?? 'pending_grading',
+            'needs_manual_grading'   => $ungradedCount > 0,
+            'ungraded_answers_count' => $ungradedCount,
+            'total_students'         => $sessions->unique('student_id')->count(),
+            'completed'              => $submitted->count(),
+            'in_progress'            => $sessions->where('status', 'in_progress')->count(),
+            'avg_score'              => $avgScore,
+            'highest_score'          => $highestScore,
+            'lowest_score'           => $lowestScore,
+            'pass_rate'              => $passRate,
+            'results'                => $results,
         ];
     }
 

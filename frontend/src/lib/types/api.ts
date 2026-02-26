@@ -60,7 +60,8 @@ export interface CreateUserData {
     last_name: string;
     middle_name?: string;
     email: string;
-    role: 'admin' | 'lecturer' | 'student';
+    role: 'admin' | 'lecturer' | 'student' | 'edu_portal' | 'cbt';
+    school_id?: number;
     department_id?: number;
     combination_id?: number;
     level_id?: number;
@@ -69,6 +70,8 @@ export interface CreateUserData {
     phone?: string;
     is_active?: boolean;
     is_hod?: boolean;
+    is_school_exam_officer?: boolean;
+    is_department_exam_officer?: boolean;
 }
 
 export interface UpdateUserData {
@@ -78,7 +81,8 @@ export interface UpdateUserData {
     email?: string;
     password?: string;
     password_confirmation?: string;
-    role?: 'admin' | 'lecturer' | 'student';
+    role?: 'admin' | 'lecturer' | 'student' | 'edu_portal' | 'cbt';
+    school_id?: number;
     department_id?: number;
     combination_id?: number;
     level_id?: number;
@@ -88,6 +92,8 @@ export interface UpdateUserData {
     is_active?: boolean;
     is_verified?: boolean;
     is_hod?: boolean;
+    is_school_exam_officer?: boolean;
+    is_department_exam_officer?: boolean;
 }
 
 export interface UserFilters {
@@ -102,10 +108,34 @@ export interface UserFilters {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Department Management (Admin)                                      */
+/*  School Management (Edu Portal)                                     */
+/* ------------------------------------------------------------------ */
+
+export interface CreateSchoolData {
+    code: string;
+    name: string;
+}
+
+export interface UpdateSchoolData {
+    code?: string;
+    name?: string;
+}
+
+export interface SchoolFilters {
+    search?: string;
+    trashed?: '' | 'only' | 'with';
+    per_page?: number;
+    page?: number;
+    sort_by?: string;
+    sort_dir?: 'asc' | 'desc';
+}
+
+/* ------------------------------------------------------------------ */
+/*  Department Management (Admin / Edu Portal)                         */
 /* ------------------------------------------------------------------ */
 
 export interface CreateDepartmentData {
+    school_id: number;
     code: string;
     name: string;
     description?: string;
@@ -113,6 +143,7 @@ export interface CreateDepartmentData {
 }
 
 export interface UpdateDepartmentData {
+    school_id?: number;
     code?: string;
     name?: string;
     description?: string;
@@ -415,7 +446,7 @@ export interface CreateExamData {
     title: string;
     description?: string;
     instructions?: string;
-    exam_type: 'midterm' | 'final' | 'quiz' | 'practice' | 'makeup';
+    exam_type: 'semester' | 'practical';
     start_time?: string;  // ISO datetime string — optional; admin sets for real exams, optional for practice
     end_time?: string;    // ISO datetime string — optional; admin sets for real exams, optional for practice
     duration_minutes: number;
@@ -437,7 +468,7 @@ export interface UpdateExamData {
     title?: string;
     description?: string;
     instructions?: string;
-    exam_type?: 'midterm' | 'final' | 'quiz' | 'practice' | 'makeup';
+    exam_type?: 'semester' | 'practical';
     start_time?: string;
     end_time?: string;
     duration_minutes?: number;
@@ -460,6 +491,7 @@ export interface ExamFilters {
     course_id?: number;
     exam_type?: string;
     status?: string;
+    results_status?: string;
     is_practice?: string;
     trashed?: '' | 'only' | 'with';
     per_page?: number;
@@ -622,6 +654,94 @@ export interface ExamSubmitResult {
         question_type: string;
         your_answer: string | null;
         correct_answer: string | null;
+        is_correct: boolean | null;
+        points_awarded: number;
+        points_possible: number;
+    }>;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Manual Grading                                                      */
+/* ------------------------------------------------------------------ */
+
+export interface GradeAnswerData {
+    points_awarded: number;
+    feedback?: string;
+}
+
+export interface GradeAnswerResult {
+    answer_id: number;
+    points_awarded: number;
+    max_points: number;
+    is_correct: boolean;
+    session_score: {
+        total_score: number;
+        percentage: number;
+    };
+}
+
+export interface UngradedAnswer {
+    id: number;
+    question_id: number;
+    question_text: string;
+    question_type: 'fill_in_blank' | 'essay';
+    answer_text: string | null;
+    max_points: number;
+    points_awarded: number;
+    is_correct: boolean | null;
+}
+
+export interface GradingSession {
+    session_id: number;
+    student_id: number;
+    student_name: string;
+    student_matric: string | null;
+    status: string;
+    total_score: number;
+    percentage: number;
+    submitted_at: string;
+    ungraded_answers: UngradedAnswer[];
+    total_ungraded: number;
+}
+
+export interface ManualGradingResponse {
+    exam_id: number;
+    exam_title: string;
+    course_code: string;
+    total_sessions: number;
+    sessions_needing_grading: number;
+    sessions: GradingSession[];
+}
+
+export interface GradingSummary {
+    total_sessions: number;
+    sessions_needing_grading: number;
+    sessions_fully_graded: number;
+    total_ungraded_answers: number;
+    results_status: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Student Results                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface StudentExamResult {
+    exam_id: number;
+    exam_title: string;
+    course_code: string;
+    total_marks: number;
+    passing_marks: number;
+    student_score: number;
+    percentage: number;
+    passed: boolean;
+    submitted_at: string;
+    show_correct_answers: boolean;
+    answers: Array<{
+        question_id: number;
+        question_text: string;
+        question_type: string;
+        your_answer: string | string[] | null;
+        correct_answer: string | string[] | null;
         is_correct: boolean | null;
         points_awarded: number;
         points_possible: number;

@@ -112,10 +112,81 @@ export function Sidebar({ className }: SidebarProps) {
             hodOnly: true,
         },
         {
+            href: '/lecturer/results-verification',
+            label: 'Verify Results',
+            icon: ClipboardCheck,
+            roles: [ROLES.LECTURER],
+            hodOnly: true,
+        },
+        {
             href: '/notifications',
             label: 'Notifications',
             icon: Bell,
             roles: [ROLES.LECTURER, ROLES.STUDENT],
+        },
+
+        // Edu Portal Links
+        {
+            href: ROUTES.DASHBOARD.EDU_PORTAL,
+            label: 'Dashboard',
+            icon: LayoutDashboard,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/schools',
+            label: 'Schools',
+            icon: Building2,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/users',
+            label: 'Users',
+            icon: Users,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/departments',
+            label: 'Departments',
+            icon: Building2,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/combinations',
+            label: 'Combinations',
+            icon: Layers,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/levels',
+            label: 'Levels',
+            icon: BarChart3,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/courses',
+            label: 'Courses',
+            icon: BookOpen,
+            roles: [ROLES.EDU_PORTAL],
+        },
+        {
+            href: '/edu_portal/results',
+            label: 'Results & Reports',
+            icon: GraduationCap,
+            roles: [ROLES.EDU_PORTAL],
+        },
+
+        // CBT Links
+        {
+            href: ROUTES.DASHBOARD.CBT,
+            label: 'Dashboard',
+            icon: LayoutDashboard,
+            roles: [ROLES.CBT],
+        },
+        {
+            href: '/cbt/exams',
+            label: 'Exams Sync',
+            icon: ClipboardCheck,
+            roles: [ROLES.CBT],
         },
 
         // Admin Links
@@ -126,44 +197,14 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.ADMIN],
         },
         {
-            href: '/admin/users',
-            label: 'Users',
-            icon: Users,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/departments',
-            label: 'Departments',
-            icon: Building2,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/combinations',
-            label: 'Combinations',
-            icon: Layers,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/levels',
-            label: 'Levels',
-            icon: BarChart3,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/courses',
-            label: 'Courses',
-            icon: BookOpen,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/exams',
-            label: 'Exams',
+            href: '/admin/audits',
+            label: 'System Audits',
             icon: FileText,
             roles: [ROLES.ADMIN],
         },
         {
             href: '/admin/settings',
-            label: 'Settings',
+            label: 'System Health',
             icon: Settings,
             roles: [ROLES.ADMIN],
         },
@@ -171,7 +212,7 @@ export function Sidebar({ className }: SidebarProps) {
             href: '/notifications',
             label: 'Notifications',
             icon: Bell,
-            roles: [ROLES.ADMIN],
+            roles: [ROLES.ADMIN, ROLES.EDU_PORTAL, ROLES.CBT],
         },
     ];
 

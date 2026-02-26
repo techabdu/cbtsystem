@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    getDepartments,
-    createDepartment,
-    updateDepartment,
-    deleteDepartment,
-    restoreDepartment,
-} from '@/lib/api/departments';
-import type { Department } from '@/lib/types/models';
-import type { DepartmentFilters, CreateDepartmentData, UpdateDepartmentData } from '@/lib/types/api';
+    getSchools,
+    createSchool,
+    updateSchool,
+    deleteSchool,
+    restoreSchool,
+} from '@/lib/api/schools';
+import type { School } from '@/lib/types/models';
+import type { SchoolFilters, CreateSchoolData, UpdateSchoolData } from '@/lib/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,8 +31,8 @@ type FormMode = 'closed' | 'create' | 'edit';
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function AdminDepartmentsPage() {
-    const [departments, setDepartments] = useState<Department[]>([]);
+export default function EduPortalSchoolsPage() {
+    const [schools, setSchools] = useState<School[]>([]);
     const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, per_page: 20, total: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
@@ -44,8 +44,8 @@ export default function AdminDepartmentsPage() {
 
     // Form state
     const [formMode, setFormMode] = useState<FormMode>('closed');
-    const [editingDept, setEditingDept] = useState<Department | null>(null);
-    const [formData, setFormData] = useState<CreateDepartmentData>({ code: '', name: '', description: '', is_active: true });
+    const [editingSchool, setEditingSchool] = useState<School | null>(null);
+    const [formData, setFormData] = useState<CreateSchoolData>({ code: '', name: '' });
     const [isSaving, setIsSaving] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
     const [successMessage, setSuccessMessage] = useState('');
@@ -55,27 +55,27 @@ export default function AdminDepartmentsPage() {
     const formRef = useRef<HTMLDivElement>(null);
 
     /* ------------------------------------------------------------------ */
-    /*  Fetch departments                                                  */
+    /*  Fetch schools                                                  */
     /* ------------------------------------------------------------------ */
 
-    const fetchDepartments = useCallback(async () => {
+    const fetchSchools = useCallback(async () => {
         setIsLoading(true);
         try {
-            const filters: DepartmentFilters = { per_page: 20, page };
+            const filters: SchoolFilters = { per_page: 20, page };
             if (search) filters.search = search;
             if (trashedFilter) filters.trashed = trashedFilter;
 
-            const res = await getDepartments(filters);
-            setDepartments(res.data);
+            const res = await getSchools(filters);
+            setSchools(res.data);
             setPagination(res.pagination);
         } catch (err) {
-            console.error('Failed to fetch departments:', err);
+            console.error('Failed to fetch schools:', err);
         } finally {
             setIsLoading(false);
         }
     }, [search, trashedFilter, page]);
 
-    useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
+    useEffect(() => { fetchSchools(); }, [fetchSchools]);
 
     /* ------------------------------------------------------------------ */
     /*  Form helpers                                                       */
@@ -83,8 +83,8 @@ export default function AdminDepartmentsPage() {
 
     const openCreateForm = () => {
         setFormMode('create');
-        setEditingDept(null);
-        setFormData({ code: '', name: '', description: '', is_active: true });
+        setEditingSchool(null);
+        setFormData({ code: '', name: '' });
         setFieldErrors({});
         setErrorMessage('');
         // Scroll to form after state update
@@ -94,14 +94,12 @@ export default function AdminDepartmentsPage() {
         }, 100);
     };
 
-    const openEditForm = (dept: Department) => {
+    const openEditForm = (school: School) => {
         setFormMode('edit');
-        setEditingDept(dept);
+        setEditingSchool(school);
         setFormData({
-            code: dept.code,
-            name: dept.name,
-            description: dept.description || '',
-            is_active: dept.is_active,
+            code: school.code,
+            name: school.name,
         });
         setFieldErrors({});
         setErrorMessage('');
@@ -114,7 +112,7 @@ export default function AdminDepartmentsPage() {
 
     const closeForm = () => {
         setFormMode('closed');
-        setEditingDept(null);
+        setEditingSchool(null);
         setFieldErrors({});
         setErrorMessage('');
     };
@@ -139,15 +137,15 @@ export default function AdminDepartmentsPage() {
 
         try {
             if (formMode === 'create') {
-                await createDepartment(formData);
-                setSuccessMessage('Department created successfully');
-            } else if (formMode === 'edit' && editingDept) {
-                const updateData: UpdateDepartmentData = { ...formData };
-                await updateDepartment(editingDept.id, updateData);
-                setSuccessMessage('Department updated successfully');
+                await createSchool(formData);
+                setSuccessMessage('School created successfully');
+            } else if (formMode === 'edit' && editingSchool) {
+                const updateData: UpdateSchoolData = { ...formData };
+                await updateSchool(editingSchool.id, updateData);
+                setSuccessMessage('School updated successfully');
             }
             closeForm();
-            await fetchDepartments();
+            await fetchSchools();
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err: unknown) {
             const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -164,30 +162,17 @@ export default function AdminDepartmentsPage() {
     /*  Actions                                                            */
     /* ------------------------------------------------------------------ */
 
-    const handleDelete = async (dept: Department) => {
-        if (!confirm(`Delete "${dept.name}" (${dept.code})?\n\nThis cannot be undone if the department has no active courses.`)) return;
-        setActionLoadingId(dept.id);
+    const handleDelete = async (school: School) => {
+        if (!confirm(`Delete "${school.name}" (${school.code})?\n\nThis cannot be undone if the school has active departments.`)) return;
+        setActionLoadingId(school.id);
         try {
-            await deleteDepartment(dept.id);
-            setSuccessMessage(`"${dept.name}" deleted.`);
+            await deleteSchool(school.id);
+            setSuccessMessage(`"${school.name}" deleted.`);
             setTimeout(() => setSuccessMessage(''), 3000);
-            await fetchDepartments();
+            await fetchSchools();
         } catch (err: unknown) {
             const error = err as { response?: { data?: { message?: string } } };
-            setErrorMessage(error.response?.data?.message || 'Failed to delete department.');
-            setTimeout(() => setErrorMessage(''), 5000);
-        } finally {
-            setActionLoadingId(null);
-        }
-    };
-
-    const handleToggleActive = async (dept: Department) => {
-        setActionLoadingId(dept.id);
-        try {
-            await updateDepartment(dept.id, { is_active: !dept.is_active });
-            await fetchDepartments();
-        } catch {
-            setErrorMessage('Failed to update status.');
+            setErrorMessage(error.response?.data?.message || 'Failed to delete school.');
             setTimeout(() => setErrorMessage(''), 5000);
         } finally {
             setActionLoadingId(null);
@@ -199,17 +184,17 @@ export default function AdminDepartmentsPage() {
         setPage(1);
     };
 
-    const handleRestore = async (dept: Department) => {
-        if (!confirm(`Restore "${dept.name}"? This will reactivate the department.`)) return;
-        setActionLoadingId(dept.id);
+    const handleRestore = async (school: School) => {
+        if (!confirm(`Restore "${school.name}"? This will reactivate the school.`)) return;
+        setActionLoadingId(school.id);
         try {
-            await restoreDepartment(dept.id);
-            setSuccessMessage(`"${dept.name}" restored successfully.`);
+            await restoreSchool(school.id);
+            setSuccessMessage(`"${school.name}" restored successfully.`);
             setTimeout(() => setSuccessMessage(''), 3000);
-            await fetchDepartments();
+            await fetchSchools();
         } catch (err: unknown) {
             const error = err as { response?: { data?: { message?: string } } };
-            setErrorMessage(error.response?.data?.message || 'Failed to restore department.');
+            setErrorMessage(error.response?.data?.message || 'Failed to restore school.');
             setTimeout(() => setErrorMessage(''), 5000);
         } finally {
             setActionLoadingId(null);
@@ -227,14 +212,14 @@ export default function AdminDepartmentsPage() {
             {/* Page Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Department Management</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">School Management</h1>
                     <p className="text-muted-foreground">
-                        Manage academic departments and their settings.
+                        Manage academic schools and their settings.
                     </p>
                 </div>
                 <Button className="gap-2" onClick={openCreateForm}>
                     <Plus className="h-4 w-4" />
-                    Add Department
+                    Add School
                 </Button>
             </div>
 
@@ -258,9 +243,9 @@ export default function AdminDepartmentsPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle>{formMode === 'create' ? 'New Department' : `Edit: ${editingDept?.name}`}</CardTitle>
+                                <CardTitle>{formMode === 'create' ? 'New School' : `Edit: ${editingSchool?.name}`}</CardTitle>
                                 <CardDescription>
-                                    {formMode === 'create' ? 'Add a new academic department.' : 'Update department details.'}
+                                    {formMode === 'create' ? 'Add a new academic school.' : 'Update school details.'}
                                 </CardDescription>
                             </div>
                             <Button variant="ghost" size="icon" onClick={closeForm}>
@@ -278,62 +263,38 @@ export default function AdminDepartmentsPage() {
                         <form onSubmit={handleFormSubmit} className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="code">Department Code *</Label>
+                                    <Label htmlFor="code">School Code *</Label>
                                     <Input
                                         id="code"
                                         name="code"
                                         value={formData.code}
                                         onChange={handleFormChange}
-                                        placeholder="e.g. CS, ENG, MTH"
+                                        placeholder="e.g. SCI, ENG, ART"
                                         maxLength={20}
                                         error={getError('code')}
                                         required
                                     />
-                                    <p className="text-xs text-muted-foreground">Short code, auto-uppercased (max 20 chars)</p>
+                                    <p className="text-xs text-muted-foreground">Short code (max 20 chars)</p>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Department Name *</Label>
+                                    <Label htmlFor="name">School Name *</Label>
                                     <Input
                                         id="name"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleFormChange}
-                                        placeholder="e.g. Computer Science"
+                                        placeholder="e.g. School of Science"
                                         error={getError('name')}
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Description</Label>
-                                <textarea
-                                    id="description"
-                                    name="description"
-                                    value={formData.description || ''}
-                                    onChange={handleFormChange}
-                                    placeholder="Brief description of the department..."
-                                    rows={3}
-                                    maxLength={1000}
-                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-                                />
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="is_active"
-                                        checked={formData.is_active}
-                                        onChange={handleFormChange}
-                                        className="h-4 w-4 rounded border-input"
-                                    />
-                                    Active
-                                </label>
-                            </div>
+
                             <div className="flex justify-end gap-3 pt-2">
                                 <Button type="button" variant="outline" onClick={closeForm}>Cancel</Button>
                                 <Button type="submit" isLoading={isSaving} className="gap-2">
                                     {formMode === 'create' ? (
-                                        <><Plus className="h-4 w-4" /> Create Department</>
+                                        <><Plus className="h-4 w-4" /> Create School</>
                                     ) : (
                                         <><Pencil className="h-4 w-4" /> Save Changes</>
                                     )}
@@ -377,7 +338,7 @@ export default function AdminDepartmentsPage() {
                 </CardContent>
             </Card>
 
-            {/* Departments Table */}
+            {/* Schools Table */}
             <Card>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
@@ -386,97 +347,63 @@ export default function AdminDepartmentsPage() {
                                 <tr className="border-b bg-muted/50">
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Code</th>
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Description</th>
-                                    <th className="px-4 py-3 text-center font-medium text-muted-foreground">Courses</th>
-                                    <th className="px-4 py-3 text-center font-medium text-muted-foreground">Status</th>
                                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={6} className="py-16 text-center">
+                                        <td colSpan={3} className="py-16 text-center">
                                             <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
-                                            <p className="mt-2 text-sm text-muted-foreground">Loading departments...</p>
+                                            <p className="mt-2 text-sm text-muted-foreground">Loading schools...</p>
                                         </td>
                                     </tr>
-                                ) : departments.length === 0 ? (
+                                ) : schools.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-16 text-center">
+                                        <td colSpan={3} className="py-16 text-center">
                                             <Building2 className="mx-auto h-10 w-10 text-muted-foreground/40" />
-                                            <p className="mt-2 text-sm text-muted-foreground">No departments found</p>
+                                            <p className="mt-2 text-sm text-muted-foreground">No schools found</p>
                                             <p className="text-xs text-muted-foreground">Create one to get started</p>
                                         </td>
                                     </tr>
                                 ) : (
-                                    departments.map((dept) => (
-                                        <tr key={dept.id} className="border-b transition-colors hover:bg-muted/50">
+                                    schools.map((school) => (
+                                        <tr key={school.id} className="border-b transition-colors hover:bg-muted/50">
                                             {/* Code */}
                                             <td className="px-4 py-3">
                                                 <span className="inline-flex items-center rounded-md bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary font-mono">
-                                                    {dept.code}
+                                                    {school.code}
                                                 </span>
                                             </td>
                                             {/* Name */}
-                                            <td className="px-4 py-3 font-medium">{dept.name}</td>
-                                            {/* Description */}
-                                            <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs truncate hidden md:table-cell">
-                                                {dept.description || '—'}
-                                            </td>
-                                            {/* Courses count */}
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="inline-flex items-center gap-1 text-sm">
-                                                    <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                                                    {dept.courses_count ?? 0}
-                                                </span>
-                                            </td>
-                                            {/* Status */}
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${dept.is_active
-                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                                    }`}>
-                                                    {dept.is_active ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
+                                            <td className="px-4 py-3 font-medium">{school.name}</td>
+
                                             {/* Actions */}
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-1">
                                                     {trashedFilter === 'only' ? (
-                                                        /* Deleted department — show Restore */
+                                                        /* Deleted school — show Restore */
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             title="Restore"
                                                             className="gap-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
-                                                            onClick={() => handleRestore(dept)}
-                                                            disabled={actionLoadingId === dept.id}
+                                                            onClick={() => handleRestore(school)}
+                                                            disabled={actionLoadingId === school.id}
                                                         >
-                                                            {actionLoadingId === dept.id
+                                                            {actionLoadingId === school.id
                                                                 ? <Loader2 className="h-4 w-4 animate-spin" />
                                                                 : <><RotateCcw className="h-4 w-4" /> Restore</>
                                                             }
                                                         </Button>
                                                     ) : (
-                                                        /* Active department — show full actions */
+                                                        /* Active school — show full actions */
                                                         <>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                title={dept.is_active ? 'Deactivate' : 'Activate'}
-                                                                onClick={() => handleToggleActive(dept)}
-                                                                disabled={actionLoadingId === dept.id}
-                                                            >
-                                                                {dept.is_active
-                                                                    ? <ToggleRight className="h-4 w-4 text-green-500" />
-                                                                    : <ToggleLeft className="h-4 w-4 text-muted-foreground" />
-                                                                }
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
                                                                 title="Edit"
-                                                                onClick={() => openEditForm(dept)}
+                                                                onClick={() => openEditForm(school)}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </Button>
@@ -484,10 +411,10 @@ export default function AdminDepartmentsPage() {
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 title="Delete"
-                                                                onClick={() => handleDelete(dept)}
-                                                                disabled={actionLoadingId === dept.id}
+                                                                onClick={() => handleDelete(school)}
+                                                                disabled={actionLoadingId === school.id}
                                                             >
-                                                                {actionLoadingId === dept.id
+                                                                {actionLoadingId === school.id
                                                                     ? <Loader2 className="h-4 w-4 animate-spin" />
                                                                     : <Trash2 className="h-4 w-4 text-destructive" />
                                                                 }
@@ -509,7 +436,7 @@ export default function AdminDepartmentsPage() {
                             <p className="text-sm text-muted-foreground">
                                 Showing <span className="font-medium">{(pagination.current_page - 1) * pagination.per_page + 1}</span> to{' '}
                                 <span className="font-medium">{Math.min(pagination.current_page * pagination.per_page, pagination.total)}</span>{' '}
-                                of <span className="font-medium">{pagination.total}</span> departments
+                                of <span className="font-medium">{pagination.total}</span> schools
                             </p>
                             <div className="flex items-center gap-2">
                                 <Button

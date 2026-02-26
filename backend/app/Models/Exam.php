@@ -57,6 +57,7 @@ class Exam extends Model
         'exam_password_hash',
         'allowed_student_ids',
         'status',
+        'results_status',
         'is_practice',
         'enable_proctoring',
         'proctoring_config',
@@ -134,6 +135,12 @@ class Exam extends Model
         return $this->hasMany(ExamSession::class);
     }
 
+    /** Feedback comments from rejections. */
+    public function feedbacks(): HasMany
+    {
+        return $this->hasMany(ExamFeedback::class);
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Query Scopes                                                      */
     /* ------------------------------------------------------------------ */
@@ -169,16 +176,40 @@ class Exam extends Model
         return $query->where('status', 'draft');
     }
 
-    /** Scope: pending review exams. */
-    public function scopePendingReview($query)
+    /** Scope: pending HOD review. */
+    public function scopeHodReview($query)
     {
-        return $query->where('status', 'pending_review');
+        return $query->where('status', 'hod_review');
     }
 
-    /** Scope: verified exams (approved by HOD, awaiting admin publish). */
-    public function scopeVerified($query)
+    /** Scope: pending School Officer review. */
+    public function scopeSchoolOfficerReview($query)
     {
-        return $query->where('status', 'verified');
+        return $query->where('status', 'school_officer_review');
+    }
+
+    /** Scope: ready for CBT setup. */
+    public function scopeCbtSetup($query)
+    {
+        return $query->where('status', 'cbt_setup');
+    }
+
+    /** Scope: pending grading by lecturer. */
+    public function scopeGrading($query)
+    {
+        return $query->where('status', 'grading');
+    }
+
+    /** Scope: pending grading review by dept officer. */
+    public function scopeGradingReview($query)
+    {
+        return $query->where('status', 'grading_review');
+    }
+
+    /** Scope: fully published results. */
+    public function scopeResultsPublished($query)
+    {
+        return $query->where('status', 'results_published');
     }
 
     /** Scope: practice exams only. */
@@ -228,15 +259,39 @@ class Exam extends Model
     }
 
     /** Check if exam is pending HOD review. */
-    public function isPendingReview(): bool
+    public function isHodReview(): bool
     {
-        return $this->status === 'pending_review';
+        return $this->status === 'hod_review';
     }
 
-    /** Check if exam is verified by HOD (awaiting admin publish). */
-    public function isVerified(): bool
+    /** Check if exam is pending School Officer review. */
+    public function isSchoolOfficerReview(): bool
     {
-        return $this->status === 'verified';
+        return $this->status === 'school_officer_review';
+    }
+
+    /** Check if exam is ready for CBT setup. */
+    public function isCbtSetup(): bool
+    {
+        return $this->status === 'cbt_setup';
+    }
+
+    /** Check if exam is pending Lecturer grading. */
+    public function isGrading(): bool
+    {
+        return $this->status === 'grading';
+    }
+
+    /** Check if exam is pending Dept Officer grading review. */
+    public function isGradingReview(): bool
+    {
+        return $this->status === 'grading_review';
+    }
+
+    /** Check if results are published to Edu Portal. */
+    public function isResultsPublished(): bool
+    {
+        return $this->status === 'results_published';
     }
 
     /** Check if the exam has ended. */

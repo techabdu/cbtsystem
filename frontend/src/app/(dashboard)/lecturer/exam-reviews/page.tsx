@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { getExams, verifyExam, rejectExam } from '@/lib/api/exams';
+import { getExams, hodApprove, hodReject, schoolOfficerApprove, schoolOfficerReject } from '@/lib/api/exams';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { Exam } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
@@ -34,44 +34,58 @@ export default function ExamReviewsPage() {
     const [rejectDialogError, setRejectDialogError] = useState('');
 
     const fetchPendingExams = useCallback(async () => {
+        if (!currentUser) return;
         setIsLoading(true);
         setError('');
         try {
-            const res = await getExams({ status: 'pending_review', is_practice: 'false', per_page: 50 });
-            setExams(res.data);
+            const results: Exam[] = [];
+            if (currentUser.is_hod || currentUser.role === 'admin') {
+                const res = await getExams({ status: 'hod_review', is_practice: 'false', per_page: 50 });
+                results.push(...res.data);
+            }
+            if (currentUser.is_school_exam_officer || currentUser.role === 'admin') {
+                const res = await getExams({ status: 'school_officer_review', is_practice: 'false', per_page: 50 });
+                results.push(...res.data);
+            }
+            // sort by ID descending or just set
+            setExams(results.sort((a, b) => b.id - a.id));
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } } };
             setError(e.response?.data?.message || 'Failed to load pending exams.');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentUser]);
 
     useEffect(() => { fetchPendingExams(); }, [fetchPendingExams]);
 
-    // HOD can only act — redirect message if not HOD
-    if (currentUser && !currentUser.is_hod && currentUser.role !== 'admin') {
+    // HOD or School Exam Officer or Admin can access
+    if (currentUser && !currentUser.is_hod && !currentUser.is_school_exam_officer && currentUser.role !== 'admin') {
         return (
             <div className="space-y-4 max-w-lg mx-auto mt-8">
                 <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
                     <AlertCircle className="h-5 w-5 shrink-0" />
-                    <p className="text-sm font-medium">This page is only accessible to Heads of Department.</p>
+                    <p className="text-sm font-medium">This page is only accessible to Heads of Department and School Exam Officers.</p>
                 </div>
             </div>
         );
     }
 
-    const handleVerify = async (examId: number) => {
+    const handleApprove = async (examId: number, status: string) => {
         setProcessingId(examId);
         setActionError('');
         try {
-            await verifyExam(examId);
-            setActionSuccess('Exam verified and sent to admin for publishing.');
+            if (status === 'hod_review') {
+                await hodApprove(examId);
+            } else {
+                await schoolOfficerApprove(examId);
+            }
+            setActionSuccess('Exam approved successfully.');
             setTimeout(() => setActionSuccess(''), 4000);
             await fetchPendingExams();
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } } };
-            setActionError(e.response?.data?.message || 'Failed to verify exam.');
+            setActionError(e.response?.data?.message || 'Failed to approve exam.');
             setTimeout(() => setActionError(''), 5000);
         } finally {
             setProcessingId(null);
@@ -84,11 +98,18 @@ export default function ExamReviewsPage() {
             return;
         }
         setProcessingId(examId);
+        const exam = exams.find(e => e.id === examId);
+        if (!exam) return;
+
         setShowRejectDialog(null);
         setRejectDialogError('');
         setActionError('');
         try {
-            await rejectExam(examId, rejectReason);
+            if (exam.status === 'hod_review') {
+                await hodReject(examId, rejectReason);
+            } else {
+                await schoolOfficerReject(examId, rejectReason);
+            }
             setRejectReason('');
             setActionSuccess('Exam rejected and returned to draft.');
             setTimeout(() => setActionSuccess(''), 4000);
@@ -116,7 +137,7 @@ export default function ExamReviewsPage() {
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Exam Reviews</h1>
                 <p className="text-muted-foreground">
-                    Review and verify exam submissions from lecturers in your department.
+                    Review and approve exam submissions from lecturers in your department or school.
                 </p>
             </div>
 
@@ -164,9 +185,16 @@ export default function ExamReviewsPage() {
                                         <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-bold font-mono">
                                             {exam.course?.code || `#${exam.course_id}`}
                                         </span>
-                                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                                            pending review
-                                        </span>
+                                        {exam.status === 'hod_review' && (
+                                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                HOD review
+                                            </span>
+                                        )}
+                                        {exam.status === 'school_officer_review' && (
+                                            <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                                                School Officer review
+                                            </span>
+                                        )}
                                     </div>
                                     <h3 className="font-semibold text-sm leading-tight">{exam.title}</h3>
                                     {exam.course?.title && (
@@ -202,13 +230,13 @@ export default function ExamReviewsPage() {
                                     </Button>
                                     <Button
                                         size="sm"
-                                        onClick={() => handleVerify(exam.id)}
+                                        onClick={() => handleApprove(exam.id, exam.status)}
                                         disabled={processingId !== null}
                                         isLoading={processingId === exam.id}
                                         className="gap-1.5 bg-violet-600 hover:bg-violet-700"
                                     >
                                         <CheckCircle2 className="h-3.5 w-3.5" />
-                                        Verify
+                                        Approve
                                     </Button>
                                 </div>
                             </div>

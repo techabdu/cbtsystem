@@ -38,6 +38,7 @@ class User extends Authenticatable
     /** @var list<string> */
     protected $fillable = [
         'uuid',
+        'school_id',
         'email',
         'password',
         'first_name',
@@ -52,6 +53,8 @@ class User extends Authenticatable
         'avatar_url',
         'role',
         'is_hod',
+        'is_school_exam_officer',
+        'is_department_exam_officer',
         'is_active',
         'is_verified',
         'email_verified_at',
@@ -90,6 +93,8 @@ class User extends Authenticatable
             'is_active'          => 'boolean',
             'is_verified'        => 'boolean',
             'is_hod'             => 'boolean',
+            'is_school_exam_officer' => 'boolean',
+            'is_department_exam_officer' => 'boolean',
             'metadata'           => 'array',
         ];
     }
@@ -97,6 +102,24 @@ class User extends Authenticatable
     /* ------------------------------------------------------------------ */
     /*  Relationships                                                     */
     /* ------------------------------------------------------------------ */
+
+    /** School the user belongs to (optional). */
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    /** Exam feedbacks received by this lecturer. */
+    public function receivedFeedback(): HasMany
+    {
+        return $this->hasMany(ExamFeedback::class, 'recipient_id');
+    }
+
+    /** Exam feedbacks given by this reviewer. */
+    public function givenFeedback(): HasMany
+    {
+        return $this->hasMany(ExamFeedback::class, 'user_id');
+    }
 
     /** Department the user belongs to (required for lecturers, optional for admins). */
     public function department(): BelongsTo
@@ -200,6 +223,30 @@ class User extends Authenticatable
     public function scopeAdmins($query)
     {
         return $query->where('role', 'admin');
+    }
+
+    /** Scope: only Edu Portal roles. */
+    public function scopeEduPortal($query)
+    {
+        return $query->where('role', 'edu_portal');
+    }
+
+    /** Scope: only CBT roles. */
+    public function scopeCbt($query)
+    {
+        return $query->where('role', 'cbt');
+    }
+
+    /** Scope: only School Exam Officers. */
+    public function scopeSchoolExamOfficer($query)
+    {
+        return $query->where('is_school_exam_officer', true);
+    }
+
+    /** Scope: only Department Exam Officers. */
+    public function scopeDepartmentExamOfficer($query)
+    {
+        return $query->where('is_department_exam_officer', true);
     }
 
     /** Scope: only HODs. */
@@ -307,6 +354,30 @@ class User extends Authenticatable
     public function isLecturer(): bool
     {
         return $this->role === 'lecturer';
+    }
+
+    /** Check if user is a CBT admin. */
+    public function isCbt(): bool
+    {
+        return $this->role === 'cbt';
+    }
+
+    /** Check if user is an Edu Portal admin. */
+    public function isEduPortal(): bool
+    {
+        return $this->role === 'edu_portal';
+    }
+
+    /** Check if user is a School Exam Officer. */
+    public function isSchoolExamOfficer(): bool
+    {
+        return $this->role === 'lecturer' && $this->is_school_exam_officer === true;
+    }
+
+    /** Check if user is a Department Exam Officer. */
+    public function isDepartmentExamOfficer(): bool
+    {
+        return $this->role === 'lecturer' && $this->is_department_exam_officer === true;
     }
 
     /** Check if user is a Head of Department. */

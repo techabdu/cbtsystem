@@ -19,19 +19,13 @@ import {
 /* ------------------------------------------------------------------ */
 
 const TYPE_BADGES: Record<string, string> = {
-    quiz: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-    midterm: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-    final: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    practice: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-    makeup: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    practical: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+    semester: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
 
 const TYPE_LABELS: Record<string, string> = {
-    quiz: 'Quiz',
-    midterm: 'Midterm',
-    final: 'Final',
-    practice: 'Practice',
-    makeup: 'Makeup',
+    practical: 'Practical',
+    semester: 'Semester',
 };
 
 /* ------------------------------------------------------------------ */
@@ -90,7 +84,7 @@ export default function StudentExamsPage() {
 
     const past = exams.filter(e => {
         try {
-            return isPast(new Date(e.end_time)) || e.status === 'completed';
+            return isPast(new Date(e.end_time)) || ['grading', 'grading_review', 'results_published', 'archived'].includes(e.status);
         } catch { return false; }
     });
 

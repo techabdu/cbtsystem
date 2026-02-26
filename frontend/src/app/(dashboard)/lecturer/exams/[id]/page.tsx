@@ -6,13 +6,17 @@ import { format } from 'date-fns';
 import {
     getExam,
     updateExam,
-    submitExamForReview,
-    verifyExam,
-    rejectExam,
+    submitForHodReview,
+    hodApprove,
+    hodReject,
+    schoolOfficerApprove,
+    schoolOfficerReject,
+    cbtPublish,
     publishExam,
     addExamQuestions,
     removeExamQuestion,
     getExamResults,
+    submitGrading,
 } from '@/lib/api/exams';
 import { useAuthStore } from '@/lib/store/authStore';
 import { getQuestions } from '@/lib/api/questions';
@@ -35,6 +39,7 @@ import {
     Pencil,
     X,
     Save,
+    Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -44,20 +49,21 @@ import Link from 'next/link';
 
 const STATUS_BADGES: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300',
-    pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    verified: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    hod_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    school_officer_review: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    cbt_setup: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    ongoing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    grading: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    grading_review: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+    results_published: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+    ongoing: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
     completed: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
     archived: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
 const TYPE_BADGES: Record<string, string> = {
-    quiz: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-    midterm: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-    final: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    practice: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-    makeup: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    practical: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+    semester: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
 
 const Q_TYPE_BADGES: Record<string, string> = {
@@ -109,11 +115,12 @@ export default function ExamDetailPage() {
 
     // Workflow action state
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-    const [isVerifying, setIsVerifying] = useState(false);
+    const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [isSubmittingGrading, setIsSubmittingGrading] = useState(false);
 
     // Questions tab state
     const [questionSearch, setQuestionSearch] = useState('');
@@ -214,7 +221,7 @@ export default function ExamDetailPage() {
             title: exam.title,
             description: exam.description,
             instructions: exam.instructions,
-            exam_type: exam.exam_type,
+            exam_type: exam.exam_type as 'semester' | 'practical',
             start_time: exam.start_time,
             end_time: exam.end_time,
             duration_minutes: exam.duration_minutes,
@@ -288,7 +295,7 @@ export default function ExamDetailPage() {
         }
         setIsSubmittingReview(true);
         try {
-            const res = await submitExamForReview(examId);
+            const res = await submitForHodReview(examId);
             setExam(res.data);
             setSaveSuccess('Exam submitted for HOD review.');
             setTimeout(() => setSaveSuccess(''), 4000);
@@ -301,20 +308,26 @@ export default function ExamDetailPage() {
         }
     };
 
-    const handleVerify = async () => {
+    const handleApprove = async () => {
         if (!exam) return;
-        setIsVerifying(true);
+        setIsApproving(true);
         try {
-            const res = await verifyExam(examId);
-            setExam(res.data);
-            setSaveSuccess('Exam verified and ready for admin publishing.');
+            let res;
+            if (exam.status === 'hod_review') {
+                res = await hodApprove(examId);
+                setSaveSuccess('Exam approved! Sent to School Exam Officer.');
+            } else if (exam.status === 'school_officer_review') {
+                res = await schoolOfficerApprove(examId);
+                setSaveSuccess('Exam approved! Sent for CBT Setup.');
+            }
+            if (res) setExam(res.data);
             setTimeout(() => setSaveSuccess(''), 4000);
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } } };
-            setSaveError(e.response?.data?.message || 'Failed to verify exam.');
+            setSaveError(e.response?.data?.message || 'Failed to approve exam.');
             setTimeout(() => setSaveError(''), 5000);
         } finally {
-            setIsVerifying(false);
+            setIsApproving(false);
         }
     };
 
@@ -327,8 +340,13 @@ export default function ExamDetailPage() {
         setIsRejecting(true);
         setShowRejectDialog(false);
         try {
-            const res = await rejectExam(examId, rejectReason);
-            setExam(res.data);
+            let res;
+            if (exam.status === 'hod_review') {
+                res = await hodReject(examId, rejectReason);
+            } else if (exam.status === 'school_officer_review') {
+                res = await schoolOfficerReject(examId, rejectReason);
+            }
+            if (res) setExam(res.data);
             setRejectReason('');
             setSaveSuccess('Exam rejected and returned to draft.');
             setTimeout(() => setSaveSuccess(''), 4000);
@@ -345,8 +363,13 @@ export default function ExamDetailPage() {
         if (!exam) return;
         setIsPublishing(true);
         try {
-            const res = await publishExam(examId);
-            setExam(res.data);
+            let res;
+            if (exam.status === 'cbt_setup') {
+                res = await cbtPublish(examId);
+            } else {
+                res = await publishExam(examId);
+            }
+            if (res) setExam(res.data);
             setSaveSuccess('Exam published successfully!');
             setTimeout(() => setSaveSuccess(''), 3000);
         } catch (err: unknown) {
@@ -355,6 +378,25 @@ export default function ExamDetailPage() {
             setTimeout(() => setSaveError(''), 5000);
         } finally {
             setIsPublishing(false);
+        }
+    };
+
+    const handleSubmitGrading = async () => {
+        if (!exam) return;
+        setIsSubmittingGrading(true);
+        try {
+            const res = await submitGrading(examId);
+            setExam(res.data);
+            setSaveSuccess('Grading submitted for HOD verification!');
+            setTimeout(() => setSaveSuccess(''), 3000);
+            // Refresh results
+            fetchResults();
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setSaveError(e.response?.data?.message || 'Failed to submit grading.');
+            setTimeout(() => setSaveError(''), 5000);
+        } finally {
+            setIsSubmittingGrading(false);
         }
     };
 
@@ -406,7 +448,7 @@ export default function ExamDetailPage() {
 
     const handleRemoveQuestion = async (examQuestion: ExamQuestion) => {
         const confirmMsg = isUnderReview
-            ? 'Removing this question will reset the exam to Draft status and require re-submission for review. Continue?'
+            ? 'Removing this question will reset the exam to Draft status and require re-submission. Continue?'
             : 'Remove this question from the exam?';
         if (!confirm(confirmMsg)) return;
         setRemovingId(examQuestion.id);
@@ -461,20 +503,24 @@ export default function ExamDetailPage() {
 
     const isOwner = exam.created_by === currentUser?.id;
     const isHod = currentUser?.is_hod === true;
+    const isSchoolOfficer = currentUser?.is_school_exam_officer === true;
+    const isCbtAdmin = currentUser?.role === 'cbt' || currentUser?.role === 'admin';
     const isAdmin = currentUser?.role === 'admin';
-    const hasResults = ['published', 'completed', 'ongoing'].includes(exam.status);
-    const isLocked = ['published', 'ongoing', 'completed', 'archived'].includes(exam.status);
+    const hasResults = ['published', 'completed', 'ongoing', 'grading', 'grading_review', 'results_published'].includes(exam.status);
+    const isLocked = ['published', 'ongoing', 'completed', 'archived', 'grading', 'grading_review', 'results_published'].includes(exam.status);
     // Questions can be edited unless the exam is fully live/completed
-    const canEditQuestions = !isLocked && (isOwner || isAdmin);
+    const canEditQuestions = !isLocked && (isOwner || isAdmin || isCbtAdmin);
     // True when exam is under review — warn lecturer before modifying
-    const isUnderReview = ['pending_review', 'verified'].includes(exam.status);
+    const isUnderReview = ['hod_review', 'school_officer_review'].includes(exam.status);
 
     // Workflow action visibility
     // Practice exams: no HOD review, lecturer publishes directly
     const showPracticePublish = exam.is_practice && exam.status === 'draft' && (isOwner || isAdmin);
     const showSubmitReview = !exam.is_practice && exam.status === 'draft' && (isOwner || isAdmin);
-    const showVerifyReject = !exam.is_practice && exam.status === 'pending_review' && (isHod || isAdmin);
-    const showAdminPublish = !exam.is_practice && exam.status === 'verified' && isAdmin;
+    const showHodApprove = exam.status === 'hod_review' && (isHod || isAdmin);
+    const showSchoolOfficerApprove = exam.status === 'school_officer_review' && (isSchoolOfficer || isAdmin);
+    const showReject = (exam.status === 'hod_review' && (isHod || isAdmin)) || (exam.status === 'school_officer_review' && (isSchoolOfficer || isAdmin));
+    const showCbtPublish = !exam.is_practice && exam.status === 'cbt_setup' && isCbtAdmin;
 
     /* ------------------------------------------------------------------ */
     /*  Render                                                              */
@@ -528,38 +574,39 @@ export default function ExamDetailPage() {
                             Submit for Review
                         </Button>
                     )}
-                    {/* HOD: verify or reject */}
-                    {showVerifyReject && (
-                        <>
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowRejectDialog(true)}
-                                disabled={isRejecting || isVerifying}
-                                className="gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                            >
-                                <X className="h-4 w-4" />
-                                Reject
-                            </Button>
-                            <Button
-                                onClick={handleVerify}
-                                isLoading={isVerifying}
-                                disabled={isRejecting}
-                                className="gap-2 bg-violet-600 hover:bg-violet-700"
-                            >
-                                <CheckCircle2 className="h-4 w-4" />
-                                Verify
-                            </Button>
-                        </>
+                    {/* Details / Modals for Reject */}
+                    {showReject && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowRejectDialog(true)}
+                            disabled={isRejecting || isApproving}
+                            className="gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+                        >
+                            <X className="h-4 w-4" />
+                            Reject
+                        </Button>
                     )}
-                    {/* Admin: publish verified exam */}
-                    {showAdminPublish && (
+                    {/* Approvers */}
+                    {(showHodApprove || showSchoolOfficerApprove) && (
+                        <Button
+                            onClick={handleApprove}
+                            isLoading={isApproving}
+                            disabled={isRejecting}
+                            className="gap-2 bg-violet-600 hover:bg-violet-700"
+                        >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Approve
+                        </Button>
+                    )}
+                    {/* CBT: publish exam */}
+                    {showCbtPublish && (
                         <Button
                             onClick={handlePublish}
                             isLoading={isPublishing}
                             className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                         >
                             <Send className="h-4 w-4" />
-                            Publish Exam
+                            Setup &amp; Publish
                         </Button>
                     )}
                 </div>
@@ -611,16 +658,22 @@ export default function ExamDetailPage() {
                                     Edit
                                 </Button>
                             )}
-                            {exam.status === 'pending_review' && (
+                            {exam.status === 'hod_review' && (
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                                     <Loader2 className="h-3 w-3 animate-spin" />
                                     Awaiting HOD review
                                 </span>
                             )}
-                            {exam.status === 'verified' && (
+                            {exam.status === 'school_officer_review' && (
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    Verified — awaiting publish
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Awaiting School Officer review
+                                </span>
+                            )}
+                            {exam.status === 'cbt_setup' && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Awaiting CBT Setup
                                 </span>
                             )}
                         </div>
@@ -656,7 +709,7 @@ export default function ExamDetailPage() {
                                         onChange={(e) => setEditData(prev => ({ ...prev, exam_type: e.target.value as UpdateExamData['exam_type'] }))}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
-                                        {['quiz', 'midterm', 'final', 'practice', 'makeup'].map(t => (
+                                        {['semester', 'practical'].map(t => (
                                             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                                         ))}
                                     </select>
@@ -1069,6 +1122,75 @@ export default function ExamDetailPage() {
                         </Card>
                     ) : (
                         <>
+                            {/* Manual Grading Banner */}
+                            {results.needs_manual_grading && (
+                                <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-950/30">
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Manual Grading Required</p>
+                                            <p className="text-sm text-amber-700 dark:text-amber-400">
+                                                {results.ungraded_answers_count} answer{results.ungraded_answers_count !== 1 ? 's' : ''} (fill-in-blank / essay) need manual grading. Scores shown are partial.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Link href={`/lecturer/exams/${examId}/grading`}>
+                                        <Button size="sm" className="gap-2 bg-amber-600 hover:bg-amber-700 shrink-0">
+                                            <Pencil className="h-3.5 w-3.5" />
+                                            Grade Answers
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+                            {/* Submit Grading Banner — show when all graded but not yet submitted */}
+                            {results.completed > 0 && !results.needs_manual_grading && (results.results_status === 'pending_grading' || !results.results_status) && (
+                                <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800/50 dark:bg-emerald-950/30">
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">All answers graded</p>
+                                            <p className="text-sm text-emerald-700 dark:text-emerald-400">Submit grading for HOD verification to proceed with publishing.</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleSubmitGrading}
+                                        isLoading={isSubmittingGrading}
+                                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 shrink-0"
+                                    >
+                                        <Send className="h-3.5 w-3.5" />
+                                        Submit Grading
+                                    </Button>
+                                </div>
+                            )}
+                            {/* Grading Submitted — awaiting HOD verification */}
+                            {results.results_status === 'grading_submitted' && (
+                                <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800/50 dark:bg-blue-950/30">
+                                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                                    <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                                        Grading submitted. Awaiting HOD verification.
+                                    </p>
+                                </div>
+                            )}
+                            {/* Results Verified — awaiting admin publish */}
+                            {results.results_status === 'results_verified' && (
+                                <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 p-4 dark:border-violet-800/50 dark:bg-violet-950/30">
+                                    <CheckCircle2 className="h-5 w-5 text-violet-600 dark:text-violet-400 shrink-0" />
+                                    <p className="text-sm font-medium text-violet-800 dark:text-violet-300">
+                                        Results verified by HOD. Awaiting admin to publish results to students.
+                                    </p>
+                                </div>
+                            )}
+                            {/* Results Published */}
+                            {results.results_status === 'results_published' && (
+                                <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800/50 dark:bg-emerald-950/30">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                                        Results have been published to students.
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Stats */}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <StatCard label="Total Students" value={results.total_students} color="blue" />

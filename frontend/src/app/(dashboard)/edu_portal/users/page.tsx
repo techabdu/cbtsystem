@@ -21,9 +21,11 @@ import {
 /* ------------------------------------------------------------------ */
 
 const roleBadge: Record<string, { label: string; classes: string }> = {
-    admin: { label: 'Admin', classes: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
+    admin: { label: 'System Admin', classes: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
     lecturer: { label: 'Lecturer', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
     student: { label: 'Student', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
+    edu_portal: { label: 'Edu Portal', classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
+    cbt: { label: 'CBT Admin', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
 };
 
 const statusBadge = {
@@ -35,7 +37,7 @@ const statusBadge = {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function AdminUsersPage() {
+export default function UsersPage() {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, per_page: 15, total: 0 });
@@ -166,7 +168,7 @@ export default function AdminUsersPage() {
                         Manage all system users — admins, lecturers, and students.
                     </p>
                 </div>
-                <Link href="/admin/users/create">
+                <Link href="/edu_portal/users/create">
                     <Button className="gap-2">
                         <Plus className="h-4 w-4" />
                         Add User
@@ -239,7 +241,9 @@ export default function AdminUsersPage() {
                             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <option value="">All Roles</option>
-                            <option value="admin">Admin</option>
+                            <option value="admin">System Admin</option>
+                            <option value="edu_portal">Edu Portal Admin</option>
+                            <option value="cbt">CBT Admin</option>
                             <option value="lecturer">Lecturer</option>
                             <option value="student">Student</option>
                         </select>
@@ -376,13 +380,13 @@ export default function AdminUsersPage() {
                                                                     <>
                                                                         <button
                                                                             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
-                                                                            onClick={() => { setOpenMenuId(null); router.push(`/admin/users/${user.id}`); }}
+                                                                            onClick={() => { setOpenMenuId(null); router.push(`/edu_portal/users/${user.id}`); }}
                                                                         >
                                                                             <Eye className="h-4 w-4" /> View Details
                                                                         </button>
                                                                         <button
                                                                             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
-                                                                            onClick={() => { setOpenMenuId(null); router.push(`/admin/users/${user.id}?edit=true`); }}
+                                                                            onClick={() => { setOpenMenuId(null); router.push(`/edu_portal/users/${user.id}?edit=true`); }}
                                                                         >
                                                                             <Pencil className="h-4 w-4" /> Edit User
                                                                         </button>
