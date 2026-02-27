@@ -1,7 +1,7 @@
 # CBT System — Master Project Plan
 
-> **Last Updated:** 2026-02-21
-> **Status:** Phase 1 — ✅ COMPLETE (Verified 2026-02-13)
+> **Last Updated:** 2026-02-27
+> **Status:** Phase 5 — IN PROGRESS (Phase 1–4 complete; Phase 5.1 & 5.2 partially complete as of 2026-02-27)
 > **Reference Guides:** `/guides/01–08` (Architecture, DB Schema, API Spec, Backend, Frontend, Security, Deployment, Coding Standards)
 
 ---
@@ -524,20 +524,20 @@
 > **Goal:** Dashboards, charts, exportable reports
 
 ### Stage 5.1 — Analytics Backend
-- [ ] Endpoint: Student performance statistics
-- [ ] Endpoint: Course-level analytics (avg scores, pass rates, trends)
-- [ ] Endpoint: Exam-level statistics (detailed question analysis)
-- [ ] Endpoint: Question difficulty analysis (avg score per question)
-- [ ] Endpoint: Admin system-wide statistics (total users, exams, completion rates)
+- [x] 2026-02-27 Endpoint: Student performance statistics
+- [x] 2026-02-27 Endpoint: Course-level analytics (avg scores, pass rates, trends)
+- [x] 2026-02-27 Endpoint: Exam-level statistics (detailed question analysis)
+- [x] 2026-02-27 Endpoint: Question difficulty analysis (avg score per question)
+- [x] 2026-02-27 Endpoint: Admin system-wide statistics (total users, exams, completion rates)
 
 ### Stage 5.2 — Dashboard UI
-- [ ] Install chart library (Recharts or Chart.js)
-- [ ] Frontend: Student dashboard — stats cards (upcoming exams, avg score, completed count)
-- [ ] Frontend: Student performance chart (score trends over time)
-- [ ] Frontend: Lecturer dashboard — course stats, recent exam results
-- [ ] Frontend: Lecturer analytics page (question difficulty, class performance)
-- [ ] Frontend: Admin dashboard — system overview (users count, active exams, daily activity)
-- [ ] Frontend: Admin analytics page (system-wide metrics)
+- [x] 2026-02-27 Install chart library (Recharts or Chart.js)
+- [x] 2026-02-27 Frontend: Student dashboard — stats cards (upcoming exams, avg score, completed count)
+- [x] 2026-02-27 Frontend: Student performance chart (score trends over time)
+- [x] 2026-02-27 Frontend: Lecturer dashboard — course stats, recent exam results
+- [x] 2026-02-27 Frontend: Lecturer analytics page (question difficulty, class performance)
+- [x] 2026-02-27 Frontend: Admin dashboard — system overview (users count, active exams, daily activity)
+- [~] 2026-02-27 — Partial: metrics on /admin; dedicated /admin/analytics page in progress Frontend: Admin analytics page (system-wide metrics)
 
 ### Stage 5.3 — Reports & Export
 - [ ] Backend: Generate PDF reports (student transcript, exam results)

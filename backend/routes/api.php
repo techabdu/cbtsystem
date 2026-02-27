@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Course\CourseController;
 use App\Http\Controllers\Api\V1\Course\EnrollmentController;
 use App\Http\Controllers\Api\V1\Course\CourseLecturerController;
 use App\Http\Controllers\Api\V1\Combination\CombinationController;
+use App\Http\Controllers\Api\V1\School\SchoolController;
 use App\Http\Controllers\Api\V1\Level\LevelController;
 use App\Http\Controllers\Api\V1\StudentCourseController;
 use App\Http\Controllers\Api\V1\Question\QuestionController;
@@ -69,7 +70,7 @@ Route::prefix('v1')->group(function () {
         /* -------------------------------------------------------------- */
         /*  User Management — Admin Only                                   */
         /* -------------------------------------------------------------- */
-        Route::prefix('users')->middleware('role:admin')->group(function () {
+        Route::prefix('users')->middleware('role:admin,edu_portal')->group(function () {
             Route::get('/', [UserController::class, 'index'])->name('users.index');
             Route::post('/', [UserController::class, 'store'])->name('users.store');
             Route::get('/{id}', [UserController::class, 'show'])->name('users.show');
@@ -86,8 +87,8 @@ Route::prefix('v1')->group(function () {
         /* Active departments list (for dropdowns, any authenticated user) */
         Route::get('/departments/active', [DepartmentController::class, 'allActive'])->name('departments.active');
 
-        /* Admin CRUD */
-        Route::prefix('departments')->middleware('role:admin')->group(function () {
+        /* Admin & Edu Portal CRUD */
+        Route::prefix('departments')->middleware('role:admin,edu_portal')->group(function () {
             Route::get('/', [DepartmentController::class, 'index'])->name('departments.index');
             Route::post('/', [DepartmentController::class, 'store'])->name('departments.store');
             Route::get('/{id}', [DepartmentController::class, 'show'])->name('departments.show');
@@ -103,8 +104,8 @@ Route::prefix('v1')->group(function () {
         /* Active combinations list (for dropdowns, any authenticated user) */
         Route::get('/combinations/active', [CombinationController::class, 'allActive'])->name('combinations.active');
 
-        /* Admin CRUD */
-        Route::prefix('combinations')->middleware('role:admin')->group(function () {
+        /* Admin & Edu Portal CRUD */
+        Route::prefix('combinations')->middleware('role:admin,edu_portal')->group(function () {
             Route::get('/', [CombinationController::class, 'index'])->name('combinations.index');
             Route::post('/', [CombinationController::class, 'store'])->name('combinations.store');
             Route::get('/{id}', [CombinationController::class, 'show'])->name('combinations.show');
@@ -114,14 +115,31 @@ Route::prefix('v1')->group(function () {
         });
 
         /* -------------------------------------------------------------- */
+        /*  School Management                                              */
+        /* -------------------------------------------------------------- */
+
+        /* Active schools list (for dropdowns, any authenticated user) */
+        Route::get('/schools/active', [SchoolController::class, 'allActive'])->name('schools.active');
+
+        /* Admin & Edu Portal CRUD */
+        Route::prefix('schools')->middleware('role:admin,edu_portal')->group(function () {
+            Route::get('/', [SchoolController::class, 'index'])->name('schools.index');
+            Route::post('/', [SchoolController::class, 'store'])->name('schools.store');
+            Route::get('/{id}', [SchoolController::class, 'show'])->name('schools.show');
+            Route::put('/{id}', [SchoolController::class, 'update'])->name('schools.update');
+            Route::delete('/{id}', [SchoolController::class, 'destroy'])->name('schools.destroy');
+            Route::post('/{id}/restore', [SchoolController::class, 'restore'])->name('schools.restore');
+        });
+
+        /* -------------------------------------------------------------- */
         /*  Level Management                                                */
         /* -------------------------------------------------------------- */
 
         /* Active levels list (for dropdowns, any authenticated user) */
         Route::get('/levels/active', [LevelController::class, 'allActive'])->name('levels.active');
 
-        /* Admin CRUD */
-        Route::prefix('levels')->middleware('role:admin')->group(function () {
+        /* Admin & Edu Portal CRUD */
+        Route::prefix('levels')->middleware('role:admin,edu_portal')->group(function () {
             Route::get('/', [LevelController::class, 'index'])->name('levels.index');
             Route::post('/', [LevelController::class, 'store'])->name('levels.store');
             Route::get('/{id}', [LevelController::class, 'show'])->name('levels.show');
@@ -138,8 +156,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
         Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
 
-        /* Course CRUD — Admin Only */
-        Route::prefix('courses')->middleware('role:admin')->group(function () {
+        /* Course CRUD — Admin & Edu Portal */
+        Route::prefix('courses')->middleware('role:admin,edu_portal')->group(function () {
             Route::post('/', [CourseController::class, 'store'])->name('courses.store');
             Route::put('/{id}', [CourseController::class, 'update'])->name('courses.update');
             Route::delete('/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
@@ -152,15 +170,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/lecturers', [CourseController::class, 'lecturers'])->name('courses.lecturers');
         });
 
-        /* Enrollment management — Admin Only */
-        Route::prefix('courses')->middleware('role:admin')->group(function () {
+        /* Enrollment management — Admin & Edu Portal */
+        Route::prefix('courses')->middleware('role:admin,edu_portal')->group(function () {
             Route::post('/{id}/enroll', [EnrollmentController::class, 'enroll'])->name('courses.enroll');
             Route::delete('/{id}/enroll/{studentId}', [EnrollmentController::class, 'unenroll'])->name('courses.unenroll');
             Route::post('/{id}/enroll/bulk', [EnrollmentController::class, 'bulkEnroll'])->name('courses.enroll.bulk');
         });
 
-        /* Lecturer assignment — Admin Only */
-        Route::prefix('courses')->middleware('role:admin')->group(function () {
+        /* Lecturer assignment — Admin & Edu Portal */
+        Route::prefix('courses')->middleware('role:admin,edu_portal')->group(function () {
             Route::post('/{id}/lecturers', [CourseLecturerController::class, 'assign'])->name('courses.lecturers.assign');
             Route::delete('/{id}/lecturers/{lecturerId}', [CourseLecturerController::class, 'unassign'])->name('courses.lecturers.unassign');
         });
@@ -211,17 +229,26 @@ Route::prefix('v1')->group(function () {
         /* -------------------------------------------------------------- */
         /*  Exam Management — Admin & Lecturer                             */
         /* -------------------------------------------------------------- */
-        Route::prefix('exams')->middleware('role:admin,lecturer')->group(function () {
+
+        /* Exam READ routes — Admin, Lecturer, CBT */
+        Route::prefix('exams')->middleware('role:admin,lecturer,cbt')->group(function () {
             Route::get('/', [ExamController::class, 'index'])->name('exams.index');
             Route::get('/stats', [ExamController::class, 'stats'])->name('exams.stats');
-            Route::post('/', [ExamController::class, 'store'])->name('exams.store');
             Route::get('/{id}', [ExamController::class, 'show'])->name('exams.show');
+            Route::get('/{id}/results', [ExamController::class, 'results'])->name('exams.results');
+            Route::get('/{id}/manual-grading', [ManualGradingController::class, 'index'])->name('exams.manual-grading');
+            Route::get('/{id}/grading-summary', [ManualGradingController::class, 'summary'])->name('exams.grading-summary');
+        });
+
+        /* Exam WRITE routes — Admin & Lecturer only */
+        Route::prefix('exams')->middleware('role:admin,lecturer')->group(function () {
+            Route::post('/', [ExamController::class, 'store'])->name('exams.store');
             Route::put('/{id}', [ExamController::class, 'update'])->name('exams.update');
             Route::delete('/{id}', [ExamController::class, 'destroy'])->name('exams.destroy');
             Route::post('/{id}/restore', [ExamController::class, 'restore'])->name('exams.restore');
             Route::post('/{id}/questions', [ExamController::class, 'addQuestions'])->name('exams.questions.add');
             Route::delete('/{id}/questions/{questionId}', [ExamController::class, 'removeQuestion'])->name('exams.questions.remove');
-            
+
             // Workflow Routes — Lecturer/Admin actions
             Route::post('/{exam}/submit-hod', [ExamWorkflowController::class, 'submitHod'])->name('exams.workflow.submit-hod');
             Route::post('/{exam}/hod-approve', [ExamWorkflowController::class, 'hodApprove'])->name('exams.workflow.hod-approve');
@@ -231,10 +258,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/{exam}/submit-grading', [ExamWorkflowController::class, 'submitGrading'])->name('exams.workflow.submit-grading');
             Route::post('/{exam}/dept-officer-approve', [ExamWorkflowController::class, 'deptOfficerApprove'])->name('exams.workflow.dept-officer-approve');
             Route::post('/{exam}/dept-officer-reject', [ExamWorkflowController::class, 'deptOfficerReject'])->name('exams.workflow.dept-officer-reject');
-
-            Route::get('/{id}/results', [ExamController::class, 'results'])->name('exams.results');
-            Route::get('/{id}/manual-grading', [ManualGradingController::class, 'index'])->name('exams.manual-grading');
-            Route::get('/{id}/grading-summary', [ManualGradingController::class, 'summary'])->name('exams.grading-summary');
         });
 
         /* -------------------------------------------------------------- */
