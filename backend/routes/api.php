@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\Exam\ManualGradingController;
 use App\Http\Controllers\Api\V1\ExamSession\OfflineEntryController;
 use App\Http\Controllers\Api\V1\ExamSession\ExamSessionController;
 use App\Http\Controllers\Api\V1\ExamWorkflowController;
+use App\Http\Controllers\Api\V1\Analytics\AnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -278,6 +279,36 @@ Route::prefix('v1')->group(function () {
             Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
             Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
             Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Analytics — Role-based dashboards & stats                      */
+        /* -------------------------------------------------------------- */
+        Route::prefix('analytics')->group(function () {
+            // Student performance
+            Route::get('/student/performance', [AnalyticsController::class, 'studentPerformance'])
+                ->middleware('role:student')
+                ->name('analytics.student.performance');
+
+            // Lecturer dashboard
+            Route::get('/lecturer/dashboard', [AnalyticsController::class, 'lecturerDashboard'])
+                ->middleware('role:lecturer')
+                ->name('analytics.lecturer.dashboard');
+
+            // Course analytics (lecturer + admin)
+            Route::get('/courses/{id}', [AnalyticsController::class, 'courseAnalytics'])
+                ->middleware('role:admin,lecturer')
+                ->name('analytics.courses');
+
+            // Exam analytics (lecturer + admin)
+            Route::get('/exams/{id}', [AnalyticsController::class, 'examAnalytics'])
+                ->middleware('role:admin,lecturer')
+                ->name('analytics.exams');
+
+            // System-wide analytics (admin only)
+            Route::get('/system', [AnalyticsController::class, 'systemAnalytics'])
+                ->middleware('role:admin')
+                ->name('analytics.system');
         });
 
         /* -------------------------------------------------------------- */

@@ -100,6 +100,12 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.LECTURER],
         },
         {
+            href: '/lecturer/analytics',
+            label: 'Analytics',
+            icon: BarChart3,
+            roles: [ROLES.LECTURER],
+        },
+        {
             href: '/lecturer/course-assignments',
             label: 'Course Assignments',
             icon: ClipboardList,

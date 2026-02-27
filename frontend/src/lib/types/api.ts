@@ -747,3 +747,149 @@ export interface StudentExamResult {
         points_possible: number;
     }>;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Analytics                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface StudentPerformanceData {
+    total_exams_taken: number;
+    total_exams_passed: number;
+    average_score: number | null;
+    highest_score: number | null;
+    lowest_score: number | null;
+    pass_rate: number | null;
+    enrolled_courses: number;
+    upcoming_exams: number;
+    recent_results: Array<{
+        exam_id: number;
+        exam_title: string;
+        course_code: string;
+        score: number;
+        total_marks: number;
+        percentage: number;
+        passed: boolean;
+        submitted_at: string;
+    }>;
+    score_trend: Array<{
+        exam_id: number;
+        exam_title: string;
+        score: number;
+        total_marks: number;
+        date: string;
+    }>;
+    by_course: Array<{
+        course_id: number;
+        course_code: string;
+        course_title: string;
+        avg_score: number | null;
+        exams_taken: number;
+        exams_passed: number;
+    }>;
+}
+
+export interface LecturerDashboardData {
+    total_courses: number;
+    total_questions: number;
+    total_exams: number;
+    total_students: number;
+    published_exams: number;
+    pending_grading: number;
+    recent_exams: Array<{
+        id: number;
+        title: string;
+        status: string;
+        results_status: string | null;
+        created_at: string;
+    }>;
+    course_performance: Array<{
+        course_id: number;
+        course_code: string;
+        course_title: string;
+        students: number;
+        avg_score: number | null;
+        exams_count: number;
+    }>;
+}
+
+export interface CourseAnalyticsData {
+    course_id: number;
+    course_code: string;
+    course_title: string;
+    department: string | null;
+    enrolled_students: number;
+    total_questions: number;
+    total_exams: number;
+    total_sessions: number;
+    average_score: number | null;
+    pass_rate: number | null;
+    score_distribution: Array<{ range: string; count: number }>;
+    exams: Array<{
+        exam_id: number;
+        exam_title: string;
+        exam_type: string;
+        status: string;
+        sessions: number;
+        avg_score: number | null;
+        pass_rate: number | null;
+    }>;
+}
+
+export interface ExamAnalyticsData {
+    exam_id: number;
+    exam_title: string;
+    course_code: string | null;
+    course_title: string | null;
+    exam_type: string;
+    total_marks: number;
+    passing_marks: number;
+    total_sessions: number;
+    average_score: number | null;
+    highest_score: number | null;
+    lowest_score: number | null;
+    pass_count: number;
+    fail_count: number;
+    pass_rate: number | null;
+    score_distribution: Array<{ range: string; count: number }>;
+    question_analysis: Array<{
+        question_id: number;
+        question_text: string;
+        question_type: string;
+        difficulty_level: string | null;
+        max_points: number;
+        total_attempts: number;
+        correct_count: number;
+        accuracy_rate: number;
+        avg_points: number;
+        avg_time_seconds: number | null;
+    }>;
+}
+
+export interface SystemAnalyticsData {
+    total_users: number;
+    total_students: number;
+    total_lecturers: number;
+    total_admins: number;
+    active_users: number;
+    total_courses: number;
+    total_exams: number;
+    total_questions: number;
+    total_sessions: number;
+    exams_by_status: Record<string, number>;
+    completion_rate: number | null;
+    average_score: number | null;
+    daily_activity: Array<{
+        date: string;
+        logins: number;
+        exams_taken: number;
+    }>;
+    recent_activity: Array<{
+        id: number;
+        action: string;
+        user_name: string;
+        user_role: string | null;
+        entity_type: string | null;
+        created_at: string;
+    }>;
+}
+

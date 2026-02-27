@@ -18,6 +18,8 @@ const ROLE_PATHS: Record<string, string> = {
     admin: '/admin',
     lecturer: '/lecturer',
     student: '/student',
+    cbt: '/cbt',
+    edu_portal: '/edu_portal',
 };
 
 function getDashboardForRole(role: string): string {
