@@ -206,6 +206,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/stats', [QuestionController::class, 'stats'])->name('questions.stats');
             Route::post('/', [QuestionController::class, 'store'])->name('questions.store');
             Route::post('/bulk-upload', [QuestionController::class, 'bulkUpload'])->name('questions.bulk-upload');
+            Route::post('/bulk-upload-excel', [QuestionController::class, 'bulkUploadExcel'])->name('questions.bulk-upload-excel');
             Route::get('/{id}', [QuestionController::class, 'show'])->name('questions.show');
             Route::put('/{id}', [QuestionController::class, 'update'])->name('questions.update');
             Route::delete('/{id}', [QuestionController::class, 'destroy'])->name('questions.destroy');
@@ -237,8 +238,8 @@ Route::prefix('v1')->group(function () {
         /*  Exam Management — Admin & Lecturer                             */
         /* -------------------------------------------------------------- */
 
-        /* Exam READ routes — Admin, Lecturer, CBT */
-        Route::prefix('exams')->middleware('role:admin,lecturer,cbt')->group(function () {
+        /* Exam READ routes — Admin, Lecturer, CBT, Edu Portal */
+        Route::prefix('exams')->middleware('role:admin,lecturer,cbt,edu_portal')->group(function () {
             Route::get('/', [ExamController::class, 'index'])->name('exams.index');
             Route::get('/stats', [ExamController::class, 'stats'])->name('exams.stats');
             Route::get('/{id}', [ExamController::class, 'show'])->name('exams.show');

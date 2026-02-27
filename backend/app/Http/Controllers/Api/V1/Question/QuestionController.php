@@ -200,6 +200,53 @@ class QuestionController extends Controller
     }
 
     /* ------------------------------------------------------------------ */
+    /*  Bulk Upload (Excel) — Import questions from .xlsx file            */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * POST /api/v1/questions/bulk-upload-excel
+     *
+     * Accepts an Excel file and bulk-creates questions.
+     * Column headers: Question, Option A, Option B, Option C, Option D,
+     *                 Correct Answer, Question Type, Difficulty Level, Topic, Course Code
+     */
+    public function bulkUploadExcel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:10240'],
+        ]);
+
+        $import = new QuestionImport($request->user());
+
+        try {
+            Excel::import($import, $request->file('file'));
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            return ResponseHelper::error(
+                message: 'Validation failed while processing the Excel file.',
+                statusCode: 422,
+                errors: collect($e->failures())->map(fn ($f) => [
+                    'row'     => $f->row(),
+                    'message' => implode(', ', $f->errors()),
+                ])->toArray(),
+            );
+        } catch (\Throwable $e) {
+            return ResponseHelper::error(
+                message: 'Failed to process the uploaded file: ' . $e->getMessage(),
+                statusCode: 500,
+            );
+        }
+
+        $results    = $import->getResults();
+        $statusCode = $results['skipped'] > 0 ? 207 : 201;
+
+        return ResponseHelper::success(
+            data: $results,
+            message: "Excel import completed. {$results['created']} question(s) created, {$results['skipped']} skipped.",
+            statusCode: $statusCode,
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Stats — Question statistics                                        */
     /* ------------------------------------------------------------------ */
 

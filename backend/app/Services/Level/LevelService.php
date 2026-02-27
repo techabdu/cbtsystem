@@ -24,13 +24,6 @@ class LevelService
     {
         $query = Level::withCount(['students', 'courses']);
 
-        // --- Include soft-deleted ---
-        if (! empty($filters['trashed']) && $filters['trashed'] === 'only') {
-            $query->onlyTrashed();
-        } elseif (! empty($filters['trashed']) && $filters['trashed'] === 'with') {
-            $query->withTrashed();
-        }
-
         // --- Active status filter ---
         if (isset($filters['is_active'])) {
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
@@ -171,7 +164,6 @@ class LevelService
         }
 
         $level->update(['is_active' => false]);
-        $level->delete();
 
         $this->logActivity($admin, 'level_deleted', $level->id, oldValues: [
             'code' => $level->code,
@@ -192,8 +184,7 @@ class LevelService
      */
     public function restore(int $id, User $admin): Level
     {
-        $level = Level::onlyTrashed()->findOrFail($id);
-        $level->restore();
+        $level = Level::findOrFail($id);
         $level->update(['is_active' => true]);
 
         $this->logActivity($admin, 'level_restored', $level->id);

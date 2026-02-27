@@ -103,14 +103,17 @@ export interface BulkUploadQuestionsFileResult {
 
 /**
  * Bulk upload questions from an Excel file (.xlsx / .xls).
+ * Uses the dedicated Excel import endpoint (not the JSON bulk-upload).
  */
 export const bulkUploadQuestionsFile = async (file: File): Promise<BulkUploadQuestionsFileResult> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await client.post<BulkUploadQuestionsFileResult>('/questions/bulk-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
+    const response = await client.post<ApiResponse<BulkUploadQuestionsFileResult>>(
+        '/questions/bulk-upload-excel',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data.data;
 };
 
 /* ------------------------------------------------------------------ */
