@@ -539,11 +539,32 @@
 - [x] 2026-02-27 Frontend: Admin dashboard — system overview (users count, active exams, daily activity)
 - [~] 2026-02-27 — Partial: metrics on /admin; dedicated /admin/analytics page in progress Frontend: Admin analytics page (system-wide metrics)
 
-### Stage 5.3 — Reports & Export
-- [ ] Backend: Generate PDF reports (student transcript, exam results)
-- [ ] Backend: Generate Excel export (student list, results data)
-- [ ] Frontend: Export buttons on results pages (PDF, Excel download)
-- [ ] Frontend: Student exam history page (all past exams with scores)
+### Stage 5.3 — Reports, Exports & Bulk Uploads
+> **Goal:** PDF/Excel generation, new role permissions (Edu Portal, Exam Officers), and bulk Excel uploads for Users & Questions.
+
+**1. Role Permissions & Dashboards (Edu Portal & Exam Officers)**
+- [x] Backend: Update middleware/policies to allow `edu_portal` role full access to all `admin` routes. (analytics.system now allows edu_portal) — 2026-02-27
+- [x] Backend: Update policies so `is_department_exam_officer` can view/export all exams and results for their `department_id`. (ExamOfficerController + ExportController officer checks) — 2026-02-27
+- [x] Backend: Update policies so `is_school_exam_officer` can view/export all exams and results for all departments under their `school_id`. — 2026-02-27
+- [x] Frontend: Ensure `edu_portal` users see the Admin Dashboard layout and sidebar. (already implemented via role-prefix routing) — 2026-02-27
+- [x] Frontend: Add "Department Exams" and "School Exams" views/sidebar links for Exam Officers, showing an aggregated list of exams with export options. — 2026-02-27
+
+**2. Bulk Data Uploads via Excel**
+- [x] Backend & Frontend: Provide static `.xlsx` templates (stored in `public/templates/`) for Bulk Users and Bulk Questions. — 2026-02-27
+- [x] Backend: Endpoint for `edu_portal` to upload Users Excel (creates Student/Lecturer accounts from rows). (`POST /api/v1/users/bulk-upload`) — 2026-02-27
+- [x] Backend: Endpoint for Lecturers to upload Questions Excel using standardized columns (`Question`, `Option A`, `Option B`, `Option C`, `Option D`, `Correct Answer`). (existing `POST /api/v1/questions/bulk-upload`) — 2026-02-27
+- [x] Frontend: Edu Portal "Bulk Install Users" UI with drag-and-drop and progress/error reporting. (`/edu_portal/users/bulk-upload`) — 2026-02-27
+- [x] Frontend: Lecturer "Bulk Upload Questions" UI integrated into the Question Bank page. — 2026-02-27
+
+**3. Question Media Uploads**
+- [x] Backend: Endpoint to handle image uploads for Questions. Securely store files locally in `storage/app/public/questions` (ready for offline/online syncing). (`POST/DELETE /api/v1/questions/{id}/image`) — 2026-02-27
+- [x] Frontend: Add an image upload button/preview to the Question creation and edit forms. (`QuestionImageUpload` component) — 2026-02-27
+
+**4. PDF & Excel Reports**
+- [x] Backend: Generate PDF reports (Student transcript, aggregated Exam results per course/dept). (DomPDF, `ExportController`, Blade views) — 2026-02-27
+- [x] Backend: Generate Excel export (Student enrollment lists, raw Results data). (Maatwebsite Excel, `EnrollmentListExport`, `ResultsExport`) — 2026-02-27
+- [x] Frontend: Export buttons on results pages (visibility properly scoped by role/officer status). (lecturer exam detail page) — 2026-02-27
+- [x] Frontend: Student exam history page (`/student/exam-history`) with a downloadable PDF transcript. — 2026-02-27
 
 ---
 

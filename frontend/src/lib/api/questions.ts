@@ -90,3 +90,55 @@ export const bulkUploadQuestions = async (data: BulkUploadData): Promise<ApiResp
     const response = await client.post<ApiResponse<BulkUploadResult>>('/questions/bulk-upload', data);
     return response.data;
 };
+
+/* ------------------------------------------------------------------ */
+/*  File-based Bulk Upload                                             */
+/* ------------------------------------------------------------------ */
+
+export interface BulkUploadQuestionsFileResult {
+    created: number;
+    skipped: number;
+    errors: Array<{ row: number; message: string }>;
+}
+
+/**
+ * Bulk upload questions from an Excel file (.xlsx / .xls).
+ */
+export const bulkUploadQuestionsFile = async (file: File): Promise<BulkUploadQuestionsFileResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await client.post<BulkUploadQuestionsFileResult>('/questions/bulk-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+};
+
+/* ------------------------------------------------------------------ */
+/*  Question Image Upload                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Upload an image for a question. Replaces any existing image.
+ * Accepted formats: jpg, png, gif, webp (max 2 MB enforced server-side).
+ */
+export const uploadQuestionImage = async (
+    questionId: number,
+    file: File
+): Promise<ApiResponse<{ image_url: string }>> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await client.post<ApiResponse<{ image_url: string }>>(
+        `/questions/${questionId}/image`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+};
+
+/**
+ * Delete the image associated with a question.
+ */
+export const deleteQuestionImage = async (questionId: number): Promise<ApiResponse<null>> => {
+    const response = await client.delete<ApiResponse<null>>(`/questions/${questionId}/image`);
+    return response.data;
+};

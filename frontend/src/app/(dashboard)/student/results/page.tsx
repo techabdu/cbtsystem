@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { getStudentExams } from '@/lib/api/exams';
+import { downloadStudentTranscript } from '@/lib/api/exports';
+import { useAuthStore } from '@/lib/store/authStore';
 import type { Exam } from '@/lib/types/models';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,7 @@ import {
     AlertCircle,
     GraduationCap,
     Clock,
+    Download,
 } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import Link from 'next/link';
@@ -19,9 +22,19 @@ import Link from 'next/link';
 /* ------------------------------------------------------------------ */
 
 export default function StudentResultsPage() {
+    const { user } = useAuthStore();
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const handleDownloadTranscript = async () => {
+        if (!user) return;
+        try {
+            await downloadStudentTranscript(user.id);
+        } catch {
+            setError('Failed to download transcript. Please try again.');
+        }
+    };
 
     useEffect(() => {
         (async () => {
@@ -52,11 +65,21 @@ export default function StudentResultsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">My Results</h1>
-                <p className="text-muted-foreground">
-                    View your exam results. Results are available once published by the admin.
-                </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">My Results</h1>
+                    <p className="text-muted-foreground">
+                        View your exam results. Results are available once published by the admin.
+                    </p>
+                </div>
+                <Button
+                    onClick={handleDownloadTranscript}
+                    variant="outline"
+                    className="gap-2 shrink-0"
+                >
+                    <Download className="h-4 w-4" />
+                    Download Transcript
+                </Button>
             </div>
 
             {error && (

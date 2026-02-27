@@ -22,6 +22,8 @@ import {
     FileText,
     KeyRound,
     RefreshCw,
+    School,
+    Upload,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -33,6 +35,8 @@ interface SidebarLink {
     icon: React.ElementType;
     roles: User['role'][];
     hodOnly?: boolean;
+    deptOfficerOnly?: boolean;
+    schoolOfficerOnly?: boolean;
 }
 
 export function Sidebar({ className }: SidebarProps) {
@@ -71,6 +75,12 @@ export function Sidebar({ className }: SidebarProps) {
             href: '/student/results',
             label: 'Results',
             icon: GraduationCap,
+            roles: [ROLES.STUDENT],
+        },
+        {
+            href: '/student/exam-history',
+            label: 'Exam History',
+            icon: ClipboardList,
             roles: [ROLES.STUDENT],
         },
 
@@ -125,6 +135,20 @@ export function Sidebar({ className }: SidebarProps) {
             icon: ClipboardCheck,
             roles: [ROLES.LECTURER],
             hodOnly: true,
+        },
+        {
+            href: '/lecturer/department-exams',
+            label: 'Department Exams',
+            icon: Building2,
+            roles: [ROLES.LECTURER],
+            deptOfficerOnly: true,
+        },
+        {
+            href: '/lecturer/school-exams',
+            label: 'School Exams',
+            icon: School,
+            roles: [ROLES.LECTURER],
+            schoolOfficerOnly: true,
         },
         {
             href: '/notifications',
@@ -188,6 +212,12 @@ export function Sidebar({ className }: SidebarProps) {
             icon: FileText,
             roles: [ROLES.EDU_PORTAL],
         },
+        {
+            href: '/edu_portal/users/bulk-upload',
+            label: 'Bulk Install Users',
+            icon: Upload,
+            roles: [ROLES.EDU_PORTAL],
+        },
 
         // CBT Links
         {
@@ -245,6 +275,8 @@ export function Sidebar({ className }: SidebarProps) {
     const filteredLinks = links.filter((link) => {
         if (!role || !link.roles.includes(role)) return false;
         if (link.hodOnly && !user?.is_hod) return false;
+        if (link.deptOfficerOnly && !user?.is_department_exam_officer) return false;
+        if (link.schoolOfficerOnly && !user?.is_school_exam_officer) return false;
         return true;
     });
 

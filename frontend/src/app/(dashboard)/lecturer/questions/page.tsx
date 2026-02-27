@@ -8,6 +8,8 @@ import {
     deleteQuestion,
     verifyQuestion,
     getQuestionStats,
+    bulkUploadQuestionsFile,
+    type BulkUploadQuestionsFileResult,
 } from '@/lib/api/questions';
 import { getCourses } from '@/lib/api/courses';
 import type { Question, Course } from '@/lib/types/models';
@@ -16,12 +18,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { FileDropzone } from '@/components/ui/FileDropzone';
+import { BACKEND_URL } from '@/lib/constants';
 import {
     Plus, Search, ChevronLeft, ChevronRight,
     Pencil, Trash2, X, FileQuestion,
     Loader2, CheckCircle2, AlertCircle,
     ToggleLeft, ToggleRight, Shield, Eye, EyeOff,
     MinusCircle, PlusCircle, BarChart3,
+    Upload, Download, ChevronDown, ChevronUp, RotateCcw,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -109,6 +114,14 @@ export default function LecturerQuestionsPage() {
 
     // Preview state
     const [previewId, setPreviewId] = useState<number | null>(null);
+
+    // Bulk upload modal state
+    const [showBulkModal, setShowBulkModal] = useState(false);
+    const [bulkFile, setBulkFile] = useState<File | null>(null);
+    const [isBulkUploading, setIsBulkUploading] = useState(false);
+    const [bulkResult, setBulkResult] = useState<BulkUploadQuestionsFileResult | null>(null);
+    const [bulkError, setBulkError] = useState('');
+    const [showBulkErrors, setShowBulkErrors] = useState(false);
 
     // Ref for scroll-to-form
     const formRef = useRef<HTMLDivElement>(null);
@@ -326,6 +339,48 @@ export default function LecturerQuestionsPage() {
     const getError = (field: string) => fieldErrors[field]?.[0] || '';
 
     /* ------------------------------------------------------------------ */
+    /*  Bulk Upload handlers                                                */
+    /* ------------------------------------------------------------------ */
+
+    const openBulkModal = () => {
+        setBulkFile(null);
+        setBulkResult(null);
+        setBulkError('');
+        setShowBulkErrors(false);
+        setShowBulkModal(true);
+    };
+
+    const closeBulkModal = () => {
+        setShowBulkModal(false);
+    };
+
+    const handleBulkUpload = async () => {
+        if (!bulkFile) return;
+        setIsBulkUploading(true);
+        setBulkError('');
+        setBulkResult(null);
+        try {
+            const res = await bulkUploadQuestionsFile(bulkFile);
+            setBulkResult(res);
+            // Refresh questions list and stats after upload
+            await fetchQuestions();
+            await refreshStats();
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setBulkError(error.response?.data?.message || 'Upload failed. Please check the file format and try again.');
+        } finally {
+            setIsBulkUploading(false);
+        }
+    };
+
+    const handleBulkReset = () => {
+        setBulkFile(null);
+        setBulkResult(null);
+        setBulkError('');
+        setShowBulkErrors(false);
+    };
+
+    /* ------------------------------------------------------------------ */
     /*  Render                                                             */
     /* ------------------------------------------------------------------ */
 
@@ -339,11 +394,183 @@ export default function LecturerQuestionsPage() {
                         Create and manage exam questions for your courses.
                     </p>
                 </div>
-                <Button className="gap-2" onClick={openCreateForm}>
-                    <Plus className="h-4 w-4" />
-                    New Question
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" className="gap-2" onClick={openBulkModal}>
+                        <Upload className="h-4 w-4" />
+                        Bulk Upload
+                    </Button>
+                    <Button className="gap-2" onClick={openCreateForm}>
+                        <Plus className="h-4 w-4" />
+                        New Question
+                    </Button>
+                </div>
             </div>
+
+            {/* Bulk Upload Modal */}
+            {showBulkModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={closeBulkModal} />
+                    {/* Dialog */}
+                    <div className="relative z-10 w-full max-w-2xl rounded-xl border bg-card shadow-xl">
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b px-6 py-4">
+                            <div>
+                                <h2 className="text-lg font-semibold">Bulk Upload Questions</h2>
+                                <p className="text-sm text-muted-foreground">Upload an Excel file to import multiple questions at once.</p>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={closeBulkModal}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        {/* Body */}
+                        <div className="space-y-5 p-6">
+                            {/* Template download */}
+                            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Download className="h-4 w-4 text-primary" />
+                                    <p className="text-sm font-medium">Step 1 — Download &amp; fill the template</p>
+                                </div>
+                                <a
+                                    href={`${BACKEND_URL}/templates/bulk-questions-template.xlsx`}
+                                    download
+                                    className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                    bulk-questions-template.xlsx
+                                </a>
+                                {/* Column guide */}
+                                <div className="overflow-x-auto rounded-md border">
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="border-b bg-muted/50">
+                                                {['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer', 'Type', 'Difficulty', 'Topic', 'Course Code'].map((h) => (
+                                                    <th key={h} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                {['Question text...', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'A/B/C/D', 'multiple_choice', 'medium', 'Algorithms', 'CS101'].map((v, i) => (
+                                                    <td key={i} className="px-2 py-1 text-muted-foreground italic">{v}</td>
+                                                ))}
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Correct Answer: A, B, C, or D. Type: multiple_choice, true_false, fill_in_blank, essay. Difficulty: easy, medium, hard.
+                                </p>
+                            </div>
+
+                            {/* Upload dropzone (only if no result yet) */}
+                            {!bulkResult && (
+                                <div className="space-y-3">
+                                    <p className="text-sm font-medium flex items-center gap-2">
+                                        <Upload className="h-4 w-4 text-primary" />
+                                        Step 2 — Upload your file
+                                    </p>
+                                    <FileDropzone
+                                        onFile={(f) => setBulkFile(f)}
+                                        onClear={() => setBulkFile(null)}
+                                        selectedFile={bulkFile}
+                                        accept={{
+                                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+                                            'application/vnd.ms-excel': ['.xls'],
+                                        }}
+                                        label="Drag & drop your Excel file, or click to browse"
+                                        helpText="Accepts .xlsx and .xls files — max 500 rows"
+                                        isLoading={isBulkUploading}
+                                    />
+                                    {bulkError && (
+                                        <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                            {bulkError}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Results */}
+                            {bulkResult && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="h-5 w-5" />
+                                        <p className="font-medium text-sm">Upload Complete</p>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="rounded-lg border bg-green-50 dark:bg-green-950/20 p-3 text-center">
+                                            <p className="text-xl font-bold text-green-700 dark:text-green-300">{bulkResult.created}</p>
+                                            <p className="text-xs text-muted-foreground">Created</p>
+                                        </div>
+                                        <div className="rounded-lg border bg-yellow-50 dark:bg-yellow-950/20 p-3 text-center">
+                                            <p className="text-xl font-bold text-yellow-700 dark:text-yellow-300">{bulkResult.skipped}</p>
+                                            <p className="text-xs text-muted-foreground">Skipped</p>
+                                        </div>
+                                        <div className="rounded-lg border bg-red-50 dark:bg-red-950/20 p-3 text-center">
+                                            <p className="text-xl font-bold text-red-700 dark:text-red-300">{bulkResult.errors.length}</p>
+                                            <p className="text-xs text-muted-foreground">Errors</p>
+                                        </div>
+                                    </div>
+                                    {bulkResult.errors.length > 0 && (
+                                        <div className="rounded-md border border-destructive/20 bg-destructive/5">
+                                            <button
+                                                type="button"
+                                                className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-destructive"
+                                                onClick={() => setShowBulkErrors((v) => !v)}
+                                            >
+                                                <span className="flex items-center gap-1.5">
+                                                    <AlertCircle className="h-3.5 w-3.5" />
+                                                    {bulkResult.errors.length} row error{bulkResult.errors.length !== 1 ? 's' : ''}
+                                                </span>
+                                                {showBulkErrors ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                            </button>
+                                            {showBulkErrors && (
+                                                <div className="border-t max-h-48 overflow-y-auto">
+                                                    {bulkResult.errors.map((err, idx) => (
+                                                        <div key={idx} className="flex items-start gap-2 border-b last:border-0 px-3 py-1.5 text-xs">
+                                                            <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 font-mono font-medium text-destructive">Row {err.row}</span>
+                                                            <span className="text-muted-foreground">{err.message}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
+                            {bulkResult ? (
+                                <>
+                                    <Button variant="outline" onClick={handleBulkReset} className="gap-2">
+                                        <RotateCcw className="h-4 w-4" />
+                                        Upload Another
+                                    </Button>
+                                    <Button onClick={closeBulkModal}>Done</Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button variant="outline" onClick={closeBulkModal}>Cancel</Button>
+                                    <Button
+                                        onClick={handleBulkUpload}
+                                        disabled={!bulkFile || isBulkUploading}
+                                        className="gap-2"
+                                    >
+                                        {isBulkUploading ? (
+                                            <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</>
+                                        ) : (
+                                            <><Upload className="h-4 w-4" /> Upload &amp; Import</>
+                                        )}
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Cards */}
             {stats && (

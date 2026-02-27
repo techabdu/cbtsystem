@@ -40,8 +40,10 @@ import {
     X,
     Save,
     Clock,
+    Download,
 } from 'lucide-react';
 import Link from 'next/link';
+import { downloadExamResultsPdf, downloadResultsExport } from '@/lib/api/exports';
 
 /* ------------------------------------------------------------------ */
 /*  Badge helpers                                                       */
@@ -1202,7 +1204,29 @@ export default function ExamDetailPage() {
                             {/* Results table */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Student Results</CardTitle>
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <CardTitle>Student Results</CardTitle>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-1.5"
+                                                onClick={() => downloadExamResultsPdf(examId)}
+                                            >
+                                                <Download className="h-3.5 w-3.5" />
+                                                Export PDF
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-1.5"
+                                                onClick={() => downloadResultsExport({ exam_id: examId })}
+                                            >
+                                                <Download className="h-3.5 w-3.5" />
+                                                Export Excel
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <div className="overflow-x-auto">

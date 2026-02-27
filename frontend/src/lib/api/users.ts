@@ -69,3 +69,25 @@ export async function toggleUserActive(id: number): Promise<ApiResponse<{ user: 
     const response = await apiClient.patch<ApiResponse<{ user: User }>>(`/users/${id}/toggle-active`);
     return response.data;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Bulk Upload                                                         */
+/* ------------------------------------------------------------------ */
+
+export interface BulkUploadUsersResult {
+    created: number;
+    skipped: number;
+    errors: Array<{ row: number; message: string }>;
+}
+
+/**
+ * Bulk upload users from an Excel file (.xlsx / .xls).
+ */
+export async function bulkUploadUsers(file: File): Promise<BulkUploadUsersResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<BulkUploadUsersResult>>('/users/bulk-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
+}

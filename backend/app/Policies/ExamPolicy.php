@@ -119,4 +119,34 @@ class ExamPolicy
     {
         return false;
     }
+
+    /**
+     * Department Exam Officer can view exams in their own department.
+     */
+    public function viewForDepartmentOfficer(User $user, Exam $exam): bool
+    {
+        return $user->is_department_exam_officer
+            && $exam->course !== null
+            && $exam->course->department_id === $user->department_id;
+    }
+
+    /**
+     * School Exam Officer can view exams for any department in their school.
+     */
+    public function viewForSchoolOfficer(User $user, Exam $exam): bool
+    {
+        if (! $user->is_school_exam_officer) {
+            return false;
+        }
+
+        $schoolId = $user->school_id ?? optional($user->department)->school_id;
+
+        if (! $schoolId) {
+            return false;
+        }
+
+        return $exam->course !== null
+            && $exam->course->department !== null
+            && $exam->course->department->school_id === $schoolId;
+    }
 }

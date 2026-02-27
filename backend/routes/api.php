@@ -28,6 +28,10 @@ use App\Http\Controllers\Api\V1\ExamSession\OfflineEntryController;
 use App\Http\Controllers\Api\V1\ExamSession\ExamSessionController;
 use App\Http\Controllers\Api\V1\ExamWorkflowController;
 use App\Http\Controllers\Api\V1\Analytics\AnalyticsController;
+use App\Http\Controllers\Api\V1\User\BulkUserUploadController;
+use App\Http\Controllers\Api\V1\Question\QuestionImageController;
+use App\Http\Controllers\Api\V1\ExamOfficer\ExamOfficerController;
+use App\Http\Controllers\Api\V1\Export\ExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +77,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('users')->middleware('role:admin,edu_portal')->group(function () {
             Route::get('/', [UserController::class, 'index'])->name('users.index');
             Route::post('/', [UserController::class, 'store'])->name('users.store');
+            Route::post('/bulk-upload', [BulkUserUploadController::class, 'store'])->name('users.bulk-upload');
             Route::get('/{id}', [UserController::class, 'show'])->name('users.show');
             Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
             Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
@@ -206,6 +211,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [QuestionController::class, 'destroy'])->name('questions.destroy');
             Route::post('/{id}/restore', [QuestionController::class, 'restore'])->name('questions.restore');
             Route::patch('/{id}/verify', [QuestionController::class, 'verify'])->name('questions.verify');
+            Route::post('/{id}/image', [QuestionImageController::class, 'store'])->name('questions.image.upload');
+            Route::delete('/{id}/image', [QuestionImageController::class, 'destroy'])->name('questions.image.delete');
         });
 
         /* -------------------------------------------------------------- */
@@ -328,10 +335,39 @@ Route::prefix('v1')->group(function () {
                 ->middleware('role:admin,lecturer')
                 ->name('analytics.exams');
 
-            // System-wide analytics (admin only)
+            // System-wide analytics (admin + edu_portal)
             Route::get('/system', [AnalyticsController::class, 'systemAnalytics'])
-                ->middleware('role:admin')
+                ->middleware('role:admin,edu_portal')
                 ->name('analytics.system');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Exam Officers — Scoped exam access for dept/school officers    */
+        /* -------------------------------------------------------------- */
+        Route::prefix('officer')->middleware('role:lecturer')->group(function () {
+            Route::get('/department-exams', [ExamOfficerController::class, 'departmentExams'])->name('officer.department-exams');
+            Route::get('/school-exams', [ExamOfficerController::class, 'schoolExams'])->name('officer.school-exams');
+        });
+
+        /* -------------------------------------------------------------- */
+        /*  Exports — PDF & Excel downloads                                */
+        /* -------------------------------------------------------------- */
+        Route::prefix('exports')->group(function () {
+            Route::get('/students/{id}/transcript', [ExportController::class, 'studentTranscript'])
+                ->middleware('role:admin,edu_portal,student')
+                ->name('exports.student.transcript');
+
+            Route::get('/exams/{id}/results/pdf', [ExportController::class, 'examResultsPdf'])
+                ->middleware('role:admin,edu_portal,lecturer')
+                ->name('exports.exam.results.pdf');
+
+            Route::get('/enrollments', [ExportController::class, 'enrollmentList'])
+                ->middleware('role:admin,edu_portal')
+                ->name('exports.enrollments');
+
+            Route::get('/results', [ExportController::class, 'resultsExport'])
+                ->middleware('role:admin,edu_portal,lecturer')
+                ->name('exports.results');
         });
 
         /* -------------------------------------------------------------- */
