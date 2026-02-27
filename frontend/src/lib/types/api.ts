@@ -105,6 +105,8 @@ export interface UserFilters {
     sort_by?: string;
     sort_dir?: 'asc' | 'desc';
     trashed?: 'only' | 'with';
+    department_id?: number;
+    level_id?: number;
 }
 
 /* ------------------------------------------------------------------ */

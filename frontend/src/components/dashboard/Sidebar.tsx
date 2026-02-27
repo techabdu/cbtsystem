@@ -195,13 +195,13 @@ export function Sidebar({ className }: SidebarProps) {
             roles: [ROLES.EDU_PORTAL],
         },
         {
-            href: '/edu_portal/users?role=student',
+            href: '/edu_portal/students',
             label: 'Students',
             icon: GraduationCap,
             roles: [ROLES.EDU_PORTAL],
         },
         {
-            href: '/edu_portal/users?role=lecturer',
+            href: '/edu_portal/lecturers',
             label: 'Lecturers',
             icon: Users,
             roles: [ROLES.EDU_PORTAL],
