@@ -14,7 +14,7 @@ import {
     Plus, Search, ChevronLeft, ChevronRight,
     MoreHorizontal, Eye, Pencil, Trash2, ToggleLeft, ToggleRight,
     Users, UserCheck, UserX, BookOpen,
-    Loader2, RotateCcw, Archive
+    Loader2, RotateCcw, Archive, Upload
 } from 'lucide-react';
 
 const statusBadge = {
@@ -143,12 +143,20 @@ export default function LecturersPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Lecturers</h1>
                     <p className="text-muted-foreground">Manage all lecturer accounts.</p>
                 </div>
-                <Link href="/edu_portal/lecturers/create">
-                    <Button className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add Lecturer
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link href="/edu_portal/lecturers/bulk-upload">
+                        <Button variant="outline" className="gap-2">
+                            <Upload className="h-4 w-4" />
+                            Bulk Upload
+                        </Button>
+                    </Link>
+                    <Link href="/edu_portal/lecturers/create">
+                        <Button className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Add Lecturer
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Cards */}

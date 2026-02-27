@@ -54,6 +54,11 @@ Route::prefix('v1')->group(function () {
     });
 
     /* ------------------------------------------------------------------ */
+    /*  Template Downloads — Public (no auth required)                    */
+    /* ------------------------------------------------------------------ */
+    Route::get('/templates/{name}', [BulkUserUploadController::class, 'downloadTemplate'])->name('templates.download');
+
+    /* ------------------------------------------------------------------ */
     /*  Offline Exam Entry — Public (no auth required)                     */
     /* ------------------------------------------------------------------ */
     Route::post('/offline-exams/start', [OfflineEntryController::class, 'start'])->name('offline-exams.start');

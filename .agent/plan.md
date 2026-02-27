@@ -607,30 +607,62 @@
 ## PHASE 7: Offline Exam Infrastructure (Weeks 17–18)
 > **Goal:** Air-gapped exam server, data sync, network isolation
 
+### Architecture Decision — Same Codebase, Local Deployment
+> The offline onsite server is **NOT a separate project**. It runs the same Laravel backend + Next.js frontend deployed on a local Windows Server machine. Students connect to `http://192.168.1.x:3000/exams` (LAN, no internet). The offline exam entry flow is already implemented (Stage 4.1.1) at `/exams`. Synchronization is a database-level export/import operation. The CBT role in the online portal manages both handoffs.
+
 ### Stage 7.1 — Offline Server Setup
 > **Guide Reference:** `07_DEPLOYMENT_AND_PHASES.md` (Offline Exam Server section)
 
-- [ ] Document offline server hardware requirements
-- [ ] Create installation script/guide for Windows Server (XAMPP + MySQL + Redis)
-- [ ] Network configuration (static IP, VLAN, no internet)
-- [ ] Windows Firewall configuration (block outbound, allow LAN only)
-- [ ] MySQL optimization for high concurrent writes (custom `my.ini`)
-- [ ] Deploy Laravel application to offline server
-- [ ] Configure IIS or Apache for serving
+- [ ] Document offline server hardware requirements (CPU, RAM, storage for 500 concurrent sessions)
+- [ ] Create installation script/guide for Windows Server (XAMPP + MySQL + Redis + Node.js)
+- [ ] Network configuration (static IP, VLAN, no internet — LAN only)
+- [ ] Windows Firewall configuration (block outbound, allow LAN port 3000 + 8000 only)
+- [ ] MySQL optimization for high concurrent writes (custom `my.ini` — innodb_buffer_pool, max_connections)
+- [ ] Deploy Laravel backend to offline server (clone repo, configure `.env` for offline DB)
+- [ ] Deploy Next.js frontend to offline server (build + serve with PM2 or IIS)
+- [ ] Configure Apache/IIS to serve both (backend on :8000, frontend on :3000)
+- [ ] Verify `/exams` page accessible on LAN: `http://192.168.1.x:3000/exams`
 
-### Stage 7.2 — Data Synchronization
-- [ ] Create sync script: Export questions, users, exam configs from online DB
-- [ ] Create sync script: Import to offline exam DB
-- [ ] Create sync script: Post-exam export (results, answers) from offline → online
-- [ ] Test sync integrity (data completeness verification)
-- [ ] Document sync procedure (step-by-step for operations team)
+### Stage 7.2 — Pre-Exam Sync: Online → Offline (CBT Handoff)
+> **Trigger:** CBT officer publishes exams on the online portal. Before exam day, they run the pre-exam sync to push all published exams + enrolled students to the offline server.
 
-### Stage 7.3 — Offline Testing
+- [ ] Backend: `ExamSyncExportController@exportPackage` — `GET /api/v1/sync/export-exam-package`
+  - Returns JSON package: `{ exams[], questions[], exam_questions[], users[] (students+lecturers), access_codes[], courses[], combinations[], levels[] }`
+  - Filtered to `status=published` exams within the upcoming window
+- [ ] Backend: Route registered (auth: `role:cbt,admin`)
+- [ ] Offline server: `ImportExamPackageController@import` — `POST /api/v1/sync/import-exam-package`
+  - Accepts the JSON package, upserts all records into the offline DB
+  - Idempotent (safe to run multiple times)
+- [ ] Frontend (CBT portal): "Export Exam Package" button on `/cbt/exams` (published tab)
+  - Downloads JSON file: `exam-package-{date}.json`
+  - CBT officer carries file to offline server (USB or LAN copy)
+- [ ] Frontend (offline server admin): "Import Exam Package" upload page
+  - Upload the JSON file → backend imports it
+- [ ] Document: Step-by-step pre-exam sync procedure
+
+### Stage 7.3 — Post-Exam Sync: Offline → Online (CBT Handoff)
+> **Trigger:** All students finish on offline server. CBT officer exports results and brings them back to the online system for lecturer grading.
+
+- [ ] Offline server backend: `ResultsSyncExportController@export` — `GET /api/v1/sync/export-results`
+  - Returns JSON: `{ exam_sessions[], student_answers[], session_snapshots[] }`
+  - Filtered to completed sessions
+- [ ] Online backend: `ResultsSyncImportController@import` — `POST /api/v1/sync/import-results`
+  - Accepts the JSON file, upserts exam_sessions + student_answers into online DB
+  - After successful import: sets `results_status = pending_grading` on affected exams
+  - Returns: `{ synced_sessions, synced_answers, exams_unlocked[] }`
+- [ ] Frontend (CBT portal): Replace simple "Sync Results" button with "Upload Results File" on `/cbt/exams`
+  - File input (accepts `.json`) + upload button
+  - On success: shows `{ synced_sessions, exams_unlocked }` summary
+  - The current `POST /exams/{id}/sync-results` endpoint stays for manual override
+- [ ] Document: Step-by-step post-exam sync procedure
+- [ ] Test sync integrity (row counts, answer completeness, no duplicates)
+
+### Stage 7.4 — Offline Testing
 - [ ] Load test: 500 concurrent sessions on offline server
-- [ ] Failover/recovery testing (simulated power loss)
+- [ ] Failover/recovery testing (simulated power loss mid-exam)
 - [ ] UPS integration testing
-- [ ] Network isolation verification (zero external connectivity)
-- [ ] Backup systems verification
+- [ ] Network isolation verification (zero external connectivity from offline server)
+- [ ] Full end-to-end dry run: export package → offline exam → export results → import online → grade
 
 ---
 

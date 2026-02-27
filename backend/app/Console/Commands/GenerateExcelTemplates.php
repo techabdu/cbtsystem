@@ -39,6 +39,8 @@ class GenerateExcelTemplates extends Command
         }
 
         $this->generateBulkUsersTemplate($templateDir);
+        $this->generateBulkStudentsTemplate($templateDir);
+        $this->generateBulkLecturersTemplate($templateDir);
         $this->generateBulkQuestionsTemplate($templateDir);
 
         $this->info('Excel templates generated successfully.');
@@ -116,6 +118,140 @@ class GenerateExcelTemplates extends Command
         $writer->save("{$dir}/bulk-users-template.xlsx");
 
         $this->line("  <fg=green>✓</> Generated: bulk-users-template.xlsx");
+    }
+
+    /**
+     * Generate the student-specific bulk upload template.
+     * Columns: Full Name, Identifier (matric), Email, Role, Combination Code, Level Code, Phone
+     */
+    private function generateBulkStudentsTemplate(string $dir): void
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Students');
+
+        $headers = [
+            'A1' => 'Full Name',
+            'B1' => 'Identifier',
+            'C1' => 'Email',
+            'D1' => 'Role',
+            'E1' => 'Combination Code',
+            'F1' => 'Level Code',
+            'G1' => 'Phone',
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+        }
+
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1D7A4A']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ];
+        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+
+        // Sample data rows
+        $sampleRows = [
+            ['Jane Doe',   'CSC/2024/001', 'jane@college.edu',  'student', 'CSC/MTH', '100L', '08012345678'],
+            ['John Smith', 'ENG/2024/002', '',                  'student', 'ENG/PHY', '200L', ''],
+        ];
+
+        foreach ($sampleRows as $i => $row) {
+            $sheet->fromArray($row, null, 'A' . ($i + 2));
+        }
+
+        // Helper notes
+        $sheet->setCellValue('D4', 'Must be exactly: student');
+        $sheet->setCellValue('E4', 'e.g. CSC/MTH  (combination code)');
+        $sheet->setCellValue('F4', 'e.g. 100L  (level code)');
+
+        // Column widths
+        foreach (['A' => 25, 'B' => 20, 'C' => 30, 'D' => 12, 'E' => 22, 'F' => 14, 'G' => 18] as $col => $width) {
+            $sheet->getColumnDimension($col)->setWidth($width);
+        }
+
+        // Role dropdown validation
+        $validation = $sheet->getCell('D2')->getDataValidation();
+        $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
+        $validation->setAllowBlank(false);
+        $validation->setShowDropDown(true);
+        $validation->setFormula1('"student"');
+        $sheet->setDataValidation('D2:D501', $validation);
+
+        $sheet->freezePane('A2');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save("{$dir}/bulk-students-template.xlsx");
+        $this->line("  <fg=green>✓</> Generated: bulk-students-template.xlsx");
+    }
+
+    /**
+     * Generate the lecturer-specific bulk upload template.
+     * Columns: Full Name, Identifier (file no), Email, Role, Department Code, Phone
+     */
+    private function generateBulkLecturersTemplate(string $dir): void
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Lecturers');
+
+        $headers = [
+            'A1' => 'Full Name',
+            'B1' => 'Identifier',
+            'C1' => 'Email',
+            'D1' => 'Role',
+            'E1' => 'Department Code',
+            'F1' => 'Phone',
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+        }
+
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1B4F9A']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ];
+        $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
+
+        // Sample data rows
+        $sampleRows = [
+            ['Dr. John Doe',   'STF/2024/001', 'john@college.edu', 'lecturer', 'CSC', '08012345678'],
+            ['Mrs. Jane Smith', 'STF/2024/002', '',                'lecturer', 'MTH', ''],
+        ];
+
+        foreach ($sampleRows as $i => $row) {
+            $sheet->fromArray($row, null, 'A' . ($i + 2));
+        }
+
+        // Helper notes
+        $sheet->setCellValue('D4', 'Must be exactly: lecturer');
+        $sheet->setCellValue('E4', 'e.g. CSC  (department code)');
+
+        // Column widths
+        foreach (['A' => 25, 'B' => 20, 'C' => 30, 'D' => 12, 'E' => 20, 'F' => 18] as $col => $width) {
+            $sheet->getColumnDimension($col)->setWidth($width);
+        }
+
+        // Role dropdown validation
+        $validation = $sheet->getCell('D2')->getDataValidation();
+        $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
+        $validation->setAllowBlank(false);
+        $validation->setShowDropDown(true);
+        $validation->setFormula1('"lecturer"');
+        $sheet->setDataValidation('D2:D501', $validation);
+
+        $sheet->freezePane('A2');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save("{$dir}/bulk-lecturers-template.xlsx");
+        $this->line("  <fg=green>✓</> Generated: bulk-lecturers-template.xlsx");
     }
 
     /**

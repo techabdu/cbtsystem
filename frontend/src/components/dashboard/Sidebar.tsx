@@ -23,7 +23,6 @@ import {
     KeyRound,
     RefreshCw,
     School,
-    Upload,
 } from 'lucide-react';
 import { User } from '@/lib/types/models';
 
@@ -210,12 +209,6 @@ export function Sidebar({ className }: SidebarProps) {
             href: '/edu_portal/results',
             label: 'Results & Reports',
             icon: FileText,
-            roles: [ROLES.EDU_PORTAL],
-        },
-        {
-            href: '/edu_portal/users/bulk-upload',
-            label: 'Bulk Install Users',
-            icon: Upload,
             roles: [ROLES.EDU_PORTAL],
         },
 

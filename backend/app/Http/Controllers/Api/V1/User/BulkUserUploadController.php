@@ -8,9 +8,44 @@ use App\Imports\UserImport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BulkUserUploadController extends Controller
 {
+    /**
+     * GET /api/v1/templates/{name}
+     *
+     * Serves an Excel template file for download with proper CORS-friendly headers.
+     * Allowed names: bulk-students-template, bulk-lecturers-template, bulk-users-template, bulk-questions-template
+     *
+     * @param  string  $name  Filename without .xlsx extension
+     * @return BinaryFileResponse|JsonResponse
+     */
+    public function downloadTemplate(string $name): BinaryFileResponse|JsonResponse
+    {
+        $allowed = [
+            'bulk-students-template',
+            'bulk-lecturers-template',
+            'bulk-users-template',
+            'bulk-questions-template',
+        ];
+
+        if (! in_array($name, $allowed, true)) {
+            return ResponseHelper::error('Template not found.', 404);
+        }
+
+        $path = public_path("templates/{$name}.xlsx");
+
+        if (! file_exists($path)) {
+            return ResponseHelper::error('Template file not found. Run php artisan templates:generate.', 404);
+        }
+
+        return response()->download($path, "{$name}.xlsx", [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$name}.xlsx\"",
+        ]);
+    }
+
     /**
      * POST /api/v1/users/bulk-upload
      *

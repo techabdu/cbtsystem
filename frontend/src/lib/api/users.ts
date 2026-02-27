@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { API_BASE_URL } from '@/lib/constants';
 import type { ApiResponse, PaginatedResponse, CreateUserData, UpdateUserData, UserFilters } from '@/lib/types/api';
 import type { User } from '@/lib/types/models';
 
@@ -78,6 +79,30 @@ export interface BulkUploadUsersResult {
     created: number;
     skipped: number;
     errors: Array<{ row: number; message: string }>;
+}
+
+/**
+ * Download an Excel template file by name (e.g. 'bulk-students-template').
+ * Uses fetch so CORS headers apply and the download works cross-origin.
+ */
+export async function downloadTemplate(name: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/templates/${name}`, {
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to download template: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 /**

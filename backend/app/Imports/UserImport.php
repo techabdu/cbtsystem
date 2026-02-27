@@ -2,14 +2,13 @@
 
 namespace App\Imports;
 
+use App\Models\Combination;
 use App\Models\Department;
+use App\Models\Level;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 
 class UserImport implements ToCollection, WithHeadingRow
 {
@@ -35,19 +34,21 @@ class UserImport implements ToCollection, WithHeadingRow
     }
 
     /**
-     * Process a single row: validate, look up department, create user.
+     * Process a single row: validate, look up references, create user.
      *
      * @param  array<string, mixed>  $row
      */
     private function processRow(array $row, int $rowNumber): void
     {
-        // Normalize keys from heading row (WithHeadingRow lowercases + snakes them)
-        $fullName       = trim((string) ($row['full_name'] ?? ''));
-        $identifier     = trim((string) ($row['identifier'] ?? ''));
-        $email          = trim((string) ($row['email'] ?? ''));
-        $role           = strtolower(trim((string) ($row['role'] ?? '')));
-        $departmentName = trim((string) ($row['department_name'] ?? ''));
-        $phone          = trim((string) ($row['phone'] ?? ''));
+        // Normalize keys (WithHeadingRow lowercases + snake_cases them)
+        $fullName        = trim((string) ($row['full_name']        ?? ''));
+        $identifier      = trim((string) ($row['identifier']       ?? ''));
+        $email           = trim((string) ($row['email']            ?? ''));
+        $role            = strtolower(trim((string) ($row['role']  ?? '')));
+        $combinationCode = strtoupper(trim((string) ($row['combination_code'] ?? '')));
+        $levelCode       = strtoupper(trim((string) ($row['level_code']       ?? '')));
+        $departmentCode  = strtoupper(trim((string) ($row['department_code']  ?? '')));
+        $phone           = trim((string) ($row['phone']            ?? ''));
 
         // ---- Required field validation ----
         if (empty($fullName)) {
@@ -90,16 +91,61 @@ class UserImport implements ToCollection, WithHeadingRow
             return;
         }
 
-        // ---- Look up department ----
-        $departmentId = null;
-        if (! empty($departmentName)) {
-            $department = Department::whereRaw('LOWER(name) = ?', [strtolower($departmentName)])->first();
-            if (! $department) {
-                $this->errors[] = ['row' => $rowNumber, 'message' => "Department '{$departmentName}' not found (skipped)."];
-                $this->skipped++;
-                return;
+        // ---- Role-specific reference lookups ----
+        $combinationId = null;
+        $levelId       = null;
+        $departmentId  = null;
+        $schoolId      = null;
+
+        if ($role === 'student') {
+            // Look up combination by code, auto-derive school from its first department
+            if (! empty($combinationCode)) {
+                $combination = Combination::with('firstDepartment')
+                    ->whereRaw('UPPER(code) = ?', [$combinationCode])
+                    ->first();
+
+                if (! $combination) {
+                    $this->errors[] = ['row' => $rowNumber, 'message' => "Combination code '{$combinationCode}' not found (skipped)."];
+                    $this->skipped++;
+                    return;
+                }
+
+                $combinationId = $combination->id;
+
+                // Auto-derive school from the combination's first department
+                if ($combination->firstDepartment) {
+                    $schoolId = $combination->firstDepartment->school_id;
+                }
             }
-            $departmentId = $department->id;
+
+            // Look up level by code
+            if (! empty($levelCode)) {
+                $level = Level::whereRaw('UPPER(code) = ?', [$levelCode])->first();
+
+                if (! $level) {
+                    $this->errors[] = ['row' => $rowNumber, 'message' => "Level code '{$levelCode}' not found (skipped)."];
+                    $this->skipped++;
+                    return;
+                }
+
+                $levelId = $level->id;
+            }
+        }
+
+        if ($role === 'lecturer') {
+            // Look up department by code, auto-derive school
+            if (! empty($departmentCode)) {
+                $department = Department::whereRaw('UPPER(code) = ?', [$departmentCode])->first();
+
+                if (! $department) {
+                    $this->errors[] = ['row' => $rowNumber, 'message' => "Department code '{$departmentCode}' not found (skipped)."];
+                    $this->skipped++;
+                    return;
+                }
+
+                $departmentId = $department->id;
+                $schoolId     = $department->school_id;
+            }
         }
 
         // ---- Parse full name into parts ----
@@ -111,17 +157,20 @@ class UserImport implements ToCollection, WithHeadingRow
         // ---- Create user ----
         try {
             User::create([
-                'first_name'    => $firstName,
-                'last_name'     => $lastName,
-                'middle_name'   => $middleName,
-                'email'         => ! empty($email) ? strtolower($email) : strtolower($identifier) . '@placeholder.local',
-                'password'      => null, // user activates via /auth/activate
-                'role'          => $role,
-                $idColumn       => $identifier,
-                'department_id' => $departmentId,
-                'phone'         => ! empty($phone) ? $phone : null,
-                'is_active'     => false,
-                'is_verified'   => false,
+                'first_name'     => $firstName,
+                'last_name'      => $lastName,
+                'middle_name'    => $middleName,
+                'email'          => ! empty($email) ? strtolower($email) : strtolower($identifier) . '@placeholder.local',
+                'password'       => null, // user activates via /auth/activate
+                'role'           => $role,
+                $idColumn        => $identifier,
+                'combination_id' => $combinationId,
+                'level_id'       => $levelId,
+                'department_id'  => $departmentId,
+                'school_id'      => $schoolId,
+                'phone'          => ! empty($phone) ? $phone : null,
+                'is_active'      => false,
+                'is_verified'    => false,
             ]);
 
             $this->created++;
