@@ -20,6 +20,9 @@ return new class extends Migration
                   ->constrained('users')
                   ->nullOnDelete();
 
+            // Session reference for exam activity logs
+            $table->unsignedBigInteger('session_id')->nullable();
+
             $table->string('action', 100);
             $table->string('entity_type', 100)->nullable();  // e.g. "exam", "user"
             $table->unsignedBigInteger('entity_id')->nullable();
@@ -37,6 +40,7 @@ return new class extends Migration
 
             // Indexes
             $table->index('user_id', 'idx_logs_user');
+            $table->index('session_id', 'idx_actlogs_session');
             $table->index('action', 'idx_logs_action');
             $table->index(['entity_type', 'entity_id'], 'idx_logs_entity');
             $table->index('created_at', 'idx_logs_created');

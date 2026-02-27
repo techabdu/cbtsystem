@@ -20,7 +20,8 @@ return new class extends Migration
                   ->constrained('exam_sessions')
                   ->onDelete('cascade');
 
-            $table->enum('type', ['auto', 'manual', 'pre_submit'])->default('auto');
+            // Column name matches the SessionSnapshot model's fillable
+            $table->string('snapshot_type', 50)->default('auto_save');
             $table->json('snapshot_data'); // Full answers state
             $table->integer('question_count')->default(0);
             $table->integer('answers_count')->default(0);
@@ -28,7 +29,7 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
             // No updated_at — snapshots are immutable
 
-            $table->index(['session_id', 'type'], 'idx_snapshots_session');
+            $table->index(['session_id', 'snapshot_type'], 'idx_snapshots_session');
             $table->index('created_at', 'idx_snapshots_created');
         });
     }

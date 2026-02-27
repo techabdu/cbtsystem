@@ -23,14 +23,14 @@ return new class extends Migration
                   ->constrained('questions')
                   ->onDelete('cascade');
 
-            $table->integer('order')->unsigned()->default(0);
+            $table->integer('question_order')->unsigned()->default(0);
             $table->decimal('points', 5, 2)->nullable(); // Per-question marks override
 
             $table->timestamp('created_at')->useCurrent();
             // No updated_at: pivot records are immutable once created
 
             $table->unique(['exam_id', 'question_id'], 'unique_exam_question');
-            $table->index(['exam_id', 'order'], 'idx_eq_exam_order');
+            $table->index(['exam_id', 'question_order'], 'idx_eq_exam_order');
         });
     }
 

@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\DB;
 class SessionService
 {
     public function __construct(
-        private GradingService $gradingService,
+        private GradingService  $gradingService,
+        private RecoveryService $recoveryService,
     ) {}
 
     /* ------------------------------------------------------------------ */
@@ -23,16 +24,25 @@ class SessionService
     {
         $session->load('exam.course');
 
-        $answeredIds = StudentAnswer::where('session_id', $session->id)
-            ->where('is_final', true)
-            ->pluck('question_id')
-            ->toArray();
+        // If this is an interrupted session being resumed, attempt answer recovery
+        // from the latest snapshot before returning status to the client.
+        $recoveredCount = 0;
+        if ($session->status === 'interrupted') {
+            $recoveredCount = $this->recoveryService->restoreFromSnapshot($session);
+            $session->refresh();
+        }
 
-        $flaggedIds = StudentAnswer::where('session_id', $session->id)
+        // Single query for answered + flagged IDs (avoids two separate DB round-trips)
+        $finalAnswers = StudentAnswer::where('session_id', $session->id)
             ->where('is_final', true)
-            ->where('is_flagged', true)
-            ->pluck('question_id')
-            ->toArray();
+            ->get(['question_id', 'is_flagged']);
+
+        $answeredIds = $finalAnswers->pluck('question_id')->toArray();
+        $flaggedIds  = $finalAnswers->where('is_flagged', true)->pluck('question_id')->toArray();
+
+        $recovery = $recoveredCount > 0
+            ? $this->recoveryService->getRecoverySummary($session)
+            : null;
 
         return [
             'session_id'             => $session->id,
@@ -44,6 +54,8 @@ class SessionService
             'questions_answered'     => count($answeredIds),
             'answered_question_ids'  => $answeredIds,
             'flagged_question_ids'   => $flaggedIds,
+            'recovered_answers'      => $recoveredCount,
+            'recovery_summary'       => $recovery,
             'exam' => [
                 'id'               => $session->exam->id,
                 'title'            => $session->exam->title,
@@ -166,58 +178,67 @@ class SessionService
 
     public function saveAnswer(ExamSession $session, int $questionId, ?string $answer, bool $isFlagged = false): StudentAnswer
     {
-        // Determine if answer is text or selected option based on question type
-        $question = Question::find($questionId);
-        $isOptionType = $question && in_array($question->question_type, ['multiple_choice', 'true_false']);
+        // Wrap in transaction + pessimistic row-level lock to prevent race conditions
+        // when a student's browser fires two auto-save requests for the same question.
+        return DB::transaction(function () use ($session, $questionId, $answer, $isFlagged) {
 
-        // Mark any previous final answer for this question as non-final
-        StudentAnswer::where('session_id', $session->id)
-            ->where('question_id', $questionId)
-            ->where('is_final', true)
-            ->update(['is_final' => false]);
+            // Lock this session row to serialize concurrent writes
+            $session = ExamSession::lockForUpdate()->find($session->id);
 
-        // Get version number
-        $version = StudentAnswer::where('session_id', $session->id)
-            ->where('question_id', $questionId)
-            ->max('version') ?? 0;
+            // Determine answer type from question — single query with select
+            $question = Question::select('id', 'question_type')->find($questionId);
+            $isOptionType = $question && in_array($question->question_type, ['multiple_choice', 'true_false']);
 
-        $studentAnswer = StudentAnswer::create([
-            'session_id'      => $session->id,
-            'question_id'     => $questionId,
-            'answer_text'     => $isOptionType ? null : $answer,
-            'selected_option' => $isOptionType ? ($answer ? [$answer] : null) : null,
-            'is_flagged'      => $isFlagged,
-            'version'         => $version + 1,
-            'is_final'        => true,
-            'first_answered_at' => $version === 0 ? now() : StudentAnswer::where('session_id', $session->id)
+            // Fetch current state in ONE query: max version + first_answered_at
+            $currentState = DB::selectOne(
+                'SELECT MAX(version) as max_version, MIN(first_answered_at) as first_at
+                 FROM student_answers
+                 WHERE session_id = ? AND question_id = ?',
+                [$session->id, $questionId]
+            );
+
+            $version         = $currentState->max_version ?? 0;
+            $firstAnsweredAt = $currentState->first_at ?? now();
+
+            // Mark any previous final answer as non-final (atomic within this transaction)
+            StudentAnswer::where('session_id', $session->id)
                 ->where('question_id', $questionId)
-                ->min('first_answered_at') ?? now(),
-            'last_updated_at' => now(),
-        ]);
+                ->where('is_final', true)
+                ->update(['is_final' => false]);
 
-        // Update session counters
-        $answeredCount = StudentAnswer::where('session_id', $session->id)
-            ->where('is_final', true)
-            ->whereNotNull('answer_text')
-            ->orWhere(function ($q) use ($session) {
-                $q->where('session_id', $session->id)
-                  ->where('is_final', true)
-                  ->whereNotNull('selected_option');
-            })
-            ->distinct('question_id')
-            ->count('question_id');
+            $studentAnswer = StudentAnswer::create([
+                'session_id'        => $session->id,
+                'question_id'       => $questionId,
+                'answer_text'       => $isOptionType ? null : $answer,
+                'selected_option'   => $isOptionType ? ($answer ? [$answer] : null) : null,
+                'is_flagged'        => $isFlagged,
+                'version'           => $version + 1,
+                'is_final'          => true,
+                'first_answered_at' => $version === 0 ? now() : $firstAnsweredAt,
+                'last_updated_at'   => now(),
+            ]);
 
-        $session->update([
-            'questions_answered' => $answeredCount,
-            'last_activity_at'   => now(),
-        ]);
+            // Efficient answered count — single aggregate
+            $answeredCount = DB::selectOne(
+                'SELECT COUNT(DISTINCT question_id) AS cnt
+                 FROM student_answers
+                 WHERE session_id = ? AND is_final = 1
+                   AND (answer_text IS NOT NULL OR selected_option IS NOT NULL)',
+                [$session->id]
+            )->cnt ?? 0;
 
-        // Auto-snapshot every 10 answers
-        if ($answeredCount > 0 && $answeredCount % 10 === 0) {
-            $this->createSnapshot($session, 'auto_save');
-        }
+            $session->update([
+                'questions_answered' => $answeredCount,
+                'last_activity_at'   => now(),
+            ]);
 
-        return $studentAnswer;
+            // Auto-snapshot every 10 answers
+            if ($answeredCount > 0 && $answeredCount % 10 === 0) {
+                $this->createSnapshot($session, 'auto_save');
+            }
+
+            return $studentAnswer;
+        });
     }
 
     /* ------------------------------------------------------------------ */
