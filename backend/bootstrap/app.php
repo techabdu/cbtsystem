@@ -19,10 +19,21 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom middleware aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         // Sanctum stateful middleware for SPA authentication
         $middleware->statefulApi();
+
+        // Apply security headers to all API responses
+        $middleware->appendToGroup('api', [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        // Use Redis for rate limiting when available
+        if (config('cache.default') === 'redis') {
+            $middleware->throttleWithRedis();
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Return JSON for API authentication failures (instead of redirect)

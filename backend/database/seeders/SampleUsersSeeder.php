@@ -30,7 +30,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'lecturer1@cbt.edu',
-                'password' => Hash::make('Lecturer@123'),
+                'password' => Hash::make(env('SEED_LECTURER_PASSWORD', Str::random(24))),
                 'first_name' => 'John',
                 'last_name' => 'Smith',
                 'middle_name' => null,
@@ -56,7 +56,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'lecturer2@cbt.edu',
-                'password' => Hash::make('Lecturer@123'),
+                'password' => Hash::make(env('SEED_LECTURER_PASSWORD', Str::random(24))),
                 'first_name' => 'Sarah',
                 'last_name' => 'Johnson',
                 'middle_name' => 'A.',
@@ -87,7 +87,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'student1@cbt.edu',
-                'password' => Hash::make('Student@123'),
+                'password' => Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24))),
                 'first_name' => 'Ahmed',
                 'last_name' => 'Ibrahim',
                 'middle_name' => null,
@@ -109,7 +109,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'student2@cbt.edu',
-                'password' => Hash::make('Student@123'),
+                'password' => Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24))),
                 'first_name' => 'Fatima',
                 'last_name' => 'Ali',
                 'middle_name' => 'B.',
@@ -134,7 +134,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'student3@cbt.edu',
-                'password' => Hash::make('Student@123'),
+                'password' => Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24))),
                 'first_name' => 'Michael',
                 'last_name' => 'Okafor',
                 'middle_name' => null,
@@ -159,7 +159,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'student4@cbt.edu',
-                'password' => Hash::make('Student@123'),
+                'password' => Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24))),
                 'first_name' => 'Aisha',
                 'last_name' => 'Mohammed',
                 'middle_name' => null,
@@ -184,7 +184,7 @@ class SampleUsersSeeder extends Seeder
             $users[] = [
                 'uuid' => Str::uuid()->toString(),
                 'email' => 'student5@cbt.edu',
-                'password' => Hash::make('Student@123'),
+                'password' => Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24))),
                 'first_name' => 'David',
                 'last_name' => 'Eze',
                 'middle_name' => 'C.',
@@ -210,7 +210,7 @@ class SampleUsersSeeder extends Seeder
         $users[] = [
             'uuid' => Str::uuid()->toString(),
             'email' => 'eduportal@cbt.edu',
-            'password' => Hash::make('EduPortal@123'),
+            'password' => Hash::make(env('SEED_ADMIN_PASSWORD', Str::random(24))),
             'first_name' => 'Edu',
             'last_name' => 'Portal',
             'middle_name' => 'Manager',
@@ -227,7 +227,7 @@ class SampleUsersSeeder extends Seeder
         $users[] = [
             'uuid' => Str::uuid()->toString(),
             'email' => 'cbt@cbt.edu',
-            'password' => Hash::make('CbtAdmin@123'),
+            'password' => Hash::make(env('SEED_ADMIN_PASSWORD', Str::random(24))),
             'first_name' => 'CBT',
             'last_name' => 'Center',
             'middle_name' => 'Admin',

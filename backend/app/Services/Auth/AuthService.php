@@ -58,6 +58,9 @@ class AuthService
             'password_changed_at' => now(),
         ]);
 
+        // Revoke any existing tokens for this user (defense-in-depth)
+        $user->tokens()->delete();
+
         // Auto-login: issue a Sanctum token
         $expiresInMinutes = (int) config('sanctum.expiration', 1440);
         $token = $user->createToken(
