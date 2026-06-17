@@ -77,11 +77,12 @@ class UserService
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function find(int $id): User
+    public function find(string $id): User
     {
         return User::withTrashed()
             ->with(['department', 'combination', 'level'])
-            ->findOrFail($id);
+            ->where('uuid', $id)
+            ->firstOrFail();
     }
 
     /* ------------------------------------------------------------------ */
@@ -239,9 +240,9 @@ class UserService
      * @param  User  $admin
      * @return User
      */
-    public function restore(int $id, User $admin): User
+    public function restore(string $id, User $admin): User
     {
-        $user = User::onlyTrashed()->findOrFail($id);
+        $user = User::onlyTrashed()->where('uuid', $id)->firstOrFail();
         $user->restore();
         $user->update(['is_active' => true]);
 

@@ -8,6 +8,7 @@ use App\Http\Requests\Exam\AddExamQuestionsRequest;
 use App\Http\Requests\Exam\CreateExamRequest;
 use App\Http\Requests\Exam\UpdateExamRequest;
 use App\Http\Resources\ExamResource;
+use App\Models\Question;
 use App\Services\Exam\ExamService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class ExamController extends Controller
     /*  Show — Single exam                                                 */
     /* ------------------------------------------------------------------ */
 
-    public function show(int $id, Request $request): JsonResponse
+    public function show(string $id, Request $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
@@ -83,7 +84,7 @@ class ExamController extends Controller
     /*  Update — Modify exam                                               */
     /* ------------------------------------------------------------------ */
 
-    public function update(int $id, UpdateExamRequest $request): JsonResponse
+    public function update(string $id, UpdateExamRequest $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
@@ -109,7 +110,7 @@ class ExamController extends Controller
     /*  Destroy — Soft-delete exam                                         */
     /* ------------------------------------------------------------------ */
 
-    public function destroy(int $id, Request $request): JsonResponse
+    public function destroy(string $id, Request $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
@@ -132,7 +133,7 @@ class ExamController extends Controller
     /*  Restore — Restore soft-deleted exam                                */
     /* ------------------------------------------------------------------ */
 
-    public function restore(int $id, Request $request): JsonResponse
+    public function restore(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -153,7 +154,7 @@ class ExamController extends Controller
     /*  Add Questions — Attach questions to an exam                        */
     /* ------------------------------------------------------------------ */
 
-    public function addQuestions(int $id, AddExamQuestionsRequest $request): JsonResponse
+    public function addQuestions(string $id, AddExamQuestionsRequest $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
@@ -176,7 +177,7 @@ class ExamController extends Controller
     /*  Remove Question — Detach a question from an exam                   */
     /* ------------------------------------------------------------------ */
 
-    public function removeQuestion(int $examId, int $questionId, Request $request): JsonResponse
+    public function removeQuestion(string $examId, string $questionId, Request $request): JsonResponse
     {
         $exam = $this->examService->find($examId);
         $user = $request->user();
@@ -186,7 +187,8 @@ class ExamController extends Controller
             return ResponseHelper::error('You can only modify your own exams.', 403);
         }
 
-        $result = $this->examService->removeQuestion($exam, $questionId, $user);
+        $question = Question::where('uuid', $questionId)->firstOrFail();
+        $result = $this->examService->removeQuestion($exam, $question->id, $user);
 
         $message = $result['status_reset']
             ? 'Question removed. Exam has been reset to draft — please re-submit for review.'
@@ -199,7 +201,7 @@ class ExamController extends Controller
     /*  Results — Get exam results and statistics                          */
     /* ------------------------------------------------------------------ */
 
-    public function results(int $id, Request $request): JsonResponse
+    public function results(string $id, Request $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
@@ -218,7 +220,7 @@ class ExamController extends Controller
     /*  Submit Grading — Lecturer submits grading for HOD verification     */
     /* ------------------------------------------------------------------ */
 
-    public function submitGrading(int $id, Request $request): JsonResponse
+    public function submitGrading(string $id, Request $request): JsonResponse
     {
         $exam = $this->examService->find($id);
         $user = $request->user();
@@ -243,7 +245,7 @@ class ExamController extends Controller
     /*  Reject Grading — HOD rejects grading back to lecturer             */
     /* ------------------------------------------------------------------ */
 
-    public function rejectGrading(int $id, Request $request): JsonResponse
+    public function rejectGrading(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
 

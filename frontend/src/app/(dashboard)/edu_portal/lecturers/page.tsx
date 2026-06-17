@@ -90,7 +90,7 @@ export default function LecturersPage() {
         if (!confirm(`Are you sure you want to delete ${user.full_name}?\nThis will soft-delete and deactivate the account.`)) return;
         setActionLoadingId(user.id);
         try {
-            await deleteUser(user.id);
+            await deleteUser(user.uuid);
             await fetchLecturers();
             await fetchStats();
         } catch (err) {
@@ -104,7 +104,7 @@ export default function LecturersPage() {
     const handleToggleActive = async (user: User) => {
         setActionLoadingId(user.id);
         try {
-            await toggleUserActive(user.id);
+            await toggleUserActive(user.uuid);
             await fetchLecturers();
         } catch (err) {
             console.error('Toggle active failed:', err);
@@ -118,7 +118,7 @@ export default function LecturersPage() {
         if (!confirm(`Restore ${user.full_name}? This will reactivate their account.`)) return;
         setActionLoadingId(user.id);
         try {
-            await restoreUser(user.id);
+            await restoreUser(user.uuid);
             await fetchLecturers();
             await fetchStats();
         } catch (err) {

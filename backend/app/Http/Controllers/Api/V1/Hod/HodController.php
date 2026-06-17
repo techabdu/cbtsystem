@@ -141,15 +141,15 @@ class HodController extends Controller
         if ($denied = $this->authorizeHod($request)) return $denied;
 
         $request->validate([
-            'lecturer_id' => 'required|integer|exists:users,id',
-            'course_id'   => 'required|integer|exists:courses,id',
+            'lecturer_id' => 'required|string|exists:users,uuid',
+            'course_id'   => 'required|string|exists:courses,uuid',
             'role'        => 'sometimes|string|in:lecturer,coordinator,assistant',
         ]);
 
         $hod = $request->user();
 
         // Verify the lecturer belongs to the HOD's department
-        $lecturer = User::where('id', $request->lecturer_id)
+        $lecturer = User::where('uuid', $request->lecturer_id)
             ->where('role', 'lecturer')
             ->where('department_id', $hod->department_id)
             ->first();
@@ -159,7 +159,7 @@ class HodController extends Controller
         }
 
         // Verify the course belongs to the HOD's department
-        $course = Course::where('id', $request->course_id)
+        $course = Course::where('uuid', $request->course_id)
             ->where('department_id', $hod->department_id)
             ->first();
 
@@ -220,14 +220,16 @@ class HodController extends Controller
     /*  Unassign a lecturer from a course (scoped to HOD's department)      */
     /* ------------------------------------------------------------------ */
 
-    public function unassignCourse(Request $request, int $lecturerId, int $courseId): JsonResponse
+    public function unassignCourse(Request $request, string $lecturerId, string $courseId): JsonResponse
     {
         if ($denied = $this->authorizeHod($request)) return $denied;
 
         $hod = $request->user();
 
+        $lecturer = User::where('uuid', $lecturerId)->firstOrFail();
+
         // Verify the course belongs to the HOD's department
-        $course = Course::where('id', $courseId)
+        $course = Course::where('uuid', $courseId)
             ->where('department_id', $hod->department_id)
             ->first();
 
@@ -235,8 +237,8 @@ class HodController extends Controller
             return ResponseHelper::error('Course not found in your department.', 422);
         }
 
-        $assignment = CourseLecturer::where('lecturer_id', $lecturerId)
-            ->where('course_id', $courseId)
+        $assignment = CourseLecturer::where('lecturer_id', $lecturer->id)
+            ->where('course_id', $course->id)
             ->first();
 
         if (! $assignment) {
@@ -249,11 +251,11 @@ class HodController extends Controller
         ActivityLog::log(
             action: 'hod_unassigned_course',
             entityType: 'course_lecturer',
-            entityId: $lecturerId,
+            entityId: $lecturer->id,
             extra: [
                 'hod_id'      => $hod->id,
-                'lecturer_id' => $lecturerId,
-                'course_id'   => $courseId,
+                'lecturer_id' => $lecturer->id,
+                'course_id'   => $course->id,
                 'course_code' => $course->code,
             ],
         );

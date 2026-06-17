@@ -173,6 +173,7 @@ export interface ExamQuestion {
     is_required: boolean;
     question?: {
         id: number;
+        uuid: string;
         question_text: string;
         question_type: 'multiple_choice' | 'true_false' | 'fill_in_blank' | 'essay';
         options?: Array<{ key: string; value: string }>;

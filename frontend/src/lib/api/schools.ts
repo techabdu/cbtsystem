@@ -32,7 +32,7 @@ export async function getActiveSchools(): Promise<ApiResponse<{ schools: School[
 /**
  * Get a single school by ID.
  */
-export async function getSchool(id: number): Promise<ApiResponse<{ school: School }>> {
+export async function getSchool(id: string): Promise<ApiResponse<{ school: School }>> {
     const response = await apiClient.get<ApiResponse<{ school: School }>>(`/schools/${id}`);
     return response.data;
 }
@@ -48,7 +48,7 @@ export async function createSchool(data: CreateSchoolData): Promise<ApiResponse<
 /**
  * Update an existing school.
  */
-export async function updateSchool(id: number, data: UpdateSchoolData): Promise<ApiResponse<{ school: School }>> {
+export async function updateSchool(id: string, data: UpdateSchoolData): Promise<ApiResponse<{ school: School }>> {
     const response = await apiClient.put<ApiResponse<{ school: School }>>(`/schools/${id}`, data);
     return response.data;
 }
@@ -56,7 +56,7 @@ export async function updateSchool(id: number, data: UpdateSchoolData): Promise<
 /**
  * Delete a school.
  */
-export async function deleteSchool(id: number): Promise<ApiResponse<null>> {
+export async function deleteSchool(id: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/schools/${id}`);
     return response.data;
 }
@@ -64,7 +64,7 @@ export async function deleteSchool(id: number): Promise<ApiResponse<null>> {
 /**
  * Restore a soft-deleted school.
  */
-export async function restoreSchool(id: number): Promise<ApiResponse<{ school: School }>> {
+export async function restoreSchool(id: string): Promise<ApiResponse<{ school: School }>> {
     const response = await apiClient.post<ApiResponse<{ school: School }>>(`/schools/${id}/restore`);
     return response.data;
 }

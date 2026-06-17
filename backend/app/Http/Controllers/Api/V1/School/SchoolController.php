@@ -45,7 +45,7 @@ class SchoolController extends Controller
     /*  Show                                                               */
     /* ------------------------------------------------------------------ */
 
-    public function show(int $id): JsonResponse
+    public function show(string $id): JsonResponse
     {
         $school = $this->schoolService->find($id);
 
@@ -74,7 +74,7 @@ class SchoolController extends Controller
     /*  Update                                                             */
     /* ------------------------------------------------------------------ */
 
-    public function update(UpdateSchoolRequest $request, int $id): JsonResponse
+    public function update(UpdateSchoolRequest $request, string $id): JsonResponse
     {
         $school = $this->schoolService->find($id);
 
@@ -93,7 +93,7 @@ class SchoolController extends Controller
     /*  Delete                                                             */
     /* ------------------------------------------------------------------ */
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         $school = $this->schoolService->find($id);
 
@@ -110,7 +110,7 @@ class SchoolController extends Controller
     /*  Restore                                                            */
     /* ------------------------------------------------------------------ */
 
-    public function restore(Request $request, int $id): JsonResponse
+    public function restore(Request $request, string $id): JsonResponse
     {
         $school = $this->schoolService->restore($id, $request->user());
 

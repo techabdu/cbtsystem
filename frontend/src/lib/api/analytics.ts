@@ -39,7 +39,7 @@ export async function getLecturerDashboard(): Promise<ApiResponse<LecturerDashbo
 /**
  * Get detailed analytics for a specific course.
  */
-export async function getCourseAnalytics(courseId: number): Promise<ApiResponse<CourseAnalyticsData>> {
+export async function getCourseAnalytics(courseId: string): Promise<ApiResponse<CourseAnalyticsData>> {
     const response = await apiClient.get<ApiResponse<CourseAnalyticsData>>(
         `/analytics/courses/${courseId}`
     );
@@ -49,7 +49,7 @@ export async function getCourseAnalytics(courseId: number): Promise<ApiResponse<
 /**
  * Get detailed analytics for a specific exam, including per-question analysis.
  */
-export async function getExamAnalytics(examId: number): Promise<ApiResponse<ExamAnalyticsData>> {
+export async function getExamAnalytics(examId: string): Promise<ApiResponse<ExamAnalyticsData>> {
     const response = await apiClient.get<ApiResponse<ExamAnalyticsData>>(
         `/analytics/exams/${examId}`
     );

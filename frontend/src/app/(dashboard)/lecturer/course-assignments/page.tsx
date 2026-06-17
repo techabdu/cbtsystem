@@ -32,8 +32,8 @@ export default function HodCourseAssignmentsPage() {
 
     // Assign form state
     const [showAssignForm, setShowAssignForm] = useState(false);
-    const [selectedLecturer, setSelectedLecturer] = useState<number | ''>('');
-    const [selectedCourse, setSelectedCourse] = useState<number | ''>('');
+    const [selectedLecturer, setSelectedLecturer] = useState<string>('');
+    const [selectedCourse, setSelectedCourse] = useState<string>('');
     const [assignRole, setAssignRole] = useState<'lecturer' | 'coordinator' | 'assistant'>('lecturer');
 
     // Search/filter
@@ -90,8 +90,8 @@ export default function HodCourseAssignmentsPage() {
         setSuccess('');
         try {
             await hodAssignCourse({
-                lecturer_id: selectedLecturer as number,
-                course_id: selectedCourse as number,
+                lecturer_id: selectedLecturer,
+                course_id: selectedCourse,
                 role: assignRole,
             });
             setSuccess('Lecturer assigned to course successfully.');
@@ -108,7 +108,7 @@ export default function HodCourseAssignmentsPage() {
         }
     };
 
-    const handleUnassign = async (lecturerId: number, courseId: number, lecturerName: string, courseCode: string) => {
+    const handleUnassign = async (lecturerId: string, courseId: string, lecturerName: string, courseCode: string) => {
         if (!confirm(`Unassign ${lecturerName} from ${courseCode}?`)) return;
         setActionLoading(`unassign-${lecturerId}-${courseId}`);
         setError('');
@@ -264,12 +264,12 @@ export default function HodCourseAssignmentsPage() {
                                 <label className="text-sm font-medium">Lecturer *</label>
                                 <select
                                     value={selectedLecturer}
-                                    onChange={(e) => setSelectedLecturer(e.target.value ? parseInt(e.target.value) : '')}
+                                    onChange={(e) => setSelectedLecturer(e.target.value)}
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                     <option value="">Select lecturer...</option>
                                     {lecturers.map((l) => (
-                                        <option key={l.id} value={l.id}>
+                                        <option key={l.id} value={l.uuid}>
                                             {l.full_name} {l.staff_id ? `(${l.staff_id})` : ''} {l.is_hod ? '[HOD]' : ''}
                                         </option>
                                     ))}
@@ -279,12 +279,12 @@ export default function HodCourseAssignmentsPage() {
                                 <label className="text-sm font-medium">Course *</label>
                                 <select
                                     value={selectedCourse}
-                                    onChange={(e) => setSelectedCourse(e.target.value ? parseInt(e.target.value) : '')}
+                                    onChange={(e) => setSelectedCourse(e.target.value)}
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                     <option value="">Select course...</option>
                                     {courses.map((c) => (
-                                        <option key={c.id} value={c.id}>
+                                        <option key={c.id} value={c.uuid}>
                                             {c.code} — {c.title}
                                         </option>
                                     ))}
@@ -429,7 +429,7 @@ export default function HodCourseAssignmentsPage() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1"
-                                                                onClick={() => handleUnassign(lecturer.id, course.id, lecturer.full_name, course.code)}
+                                                                onClick={() => handleUnassign(String(lecturer.id), String(course.id), lecturer.full_name, course.code)}
                                                                 isLoading={actionLoading === `unassign-${lecturer.id}-${course.id}`}
                                                             >
                                                                 <Trash2 className="h-3.5 w-3.5" /> Remove

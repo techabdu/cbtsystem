@@ -84,14 +84,14 @@ class PracticeExamController extends Controller
     /*  Show — Single practice exam with questions (no correct_answer)     */
     /* ------------------------------------------------------------------ */
 
-    public function show(int $id, Request $request): JsonResponse
+    public function show(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
 
         $exam = Exam::with(['course', 'examQuestions.question'])
             ->where('status', 'published')
             ->where('is_practice', true)
-            ->findOrFail($id);
+            ->where('uuid', $id)->firstOrFail();
 
         // Verify student is enrolled in the course
         $enrolled = CourseEnrollment::where('course_id', $exam->course_id)
@@ -145,7 +145,7 @@ class PracticeExamController extends Controller
     /*  Submit — Submit answers for a practice exam and get results        */
     /* ------------------------------------------------------------------ */
 
-    public function submit(int $id, Request $request): JsonResponse
+    public function submit(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -158,7 +158,7 @@ class PracticeExamController extends Controller
         $exam = Exam::with(['examQuestions.question'])
             ->where('status', 'published')
             ->where('is_practice', true)
-            ->findOrFail($id);
+            ->where('uuid', $id)->firstOrFail();
 
         // Verify student is enrolled in the course
         $enrolled = CourseEnrollment::where('course_id', $exam->course_id)

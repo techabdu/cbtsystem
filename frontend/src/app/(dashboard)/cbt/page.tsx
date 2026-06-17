@@ -347,8 +347,8 @@ export default function CbtDashboard() {
         const examId = scheduleTarget.id;
         setProcessingId(examId);
         try {
-            await updateExam(examId, { start_time: startIso, end_time: endIso });
-            await cbtPublish(examId);
+            await updateExam(scheduleTarget.uuid, { start_time: startIso, end_time: endIso });
+            await cbtPublish(scheduleTarget.uuid);
             setScheduleTarget(null);
             setActionSuccess('Exam scheduled and published successfully.');
             setTimeout(() => setActionSuccess(''), 5000);
@@ -368,7 +368,7 @@ export default function CbtDashboard() {
         setProcessingId(exam.id);
         setActionError('');
         try {
-            const res = await syncResults(exam.id);
+            const res = await syncResults(exam.uuid);
             const synced = res.data?.synced_sessions ?? 0;
             setActionSuccess(`Synced ${synced} session(s) for "${exam.title}".`);
             setTimeout(() => setActionSuccess(''), 5000);

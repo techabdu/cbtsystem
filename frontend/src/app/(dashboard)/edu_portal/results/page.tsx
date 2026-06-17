@@ -55,7 +55,7 @@ export default function ResultsPublishingPage() {
             await Promise.all(
                 res.data.map(async (exam: Exam) => {
                     try {
-                        const r = await getExamResults(exam.id);
+                        const r = await getExamResults(exam.uuid);
                         resultsMap[exam.id] = r.data;
                     } catch { /* ignore */ }
                 })

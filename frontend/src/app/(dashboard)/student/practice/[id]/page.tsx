@@ -24,7 +24,7 @@ import Link from 'next/link';
 export default function PracticeExamPage() {
     const params = useParams();
     const router = useRouter();
-    const examId = Number(params.id);
+    const examId = params.id as string;
 
     const [exam, setExam] = useState<Exam | null>(null);
     const [isLoading, setIsLoading] = useState(true);

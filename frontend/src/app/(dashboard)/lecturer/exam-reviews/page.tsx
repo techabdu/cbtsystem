@@ -71,14 +71,14 @@ export default function ExamReviewsPage() {
         );
     }
 
-    const handleApprove = async (examId: number, status: string) => {
-        setProcessingId(examId);
+    const handleApprove = async (exam: Exam) => {
+        setProcessingId(exam.id);
         setActionError('');
         try {
-            if (status === 'hod_review') {
-                await hodApprove(examId);
+            if (exam.status === 'hod_review') {
+                await hodApprove(exam.uuid);
             } else {
-                await schoolOfficerApprove(examId);
+                await schoolOfficerApprove(exam.uuid);
             }
             setActionSuccess('Exam approved successfully.');
             setTimeout(() => setActionSuccess(''), 4000);
@@ -106,9 +106,9 @@ export default function ExamReviewsPage() {
         setActionError('');
         try {
             if (exam.status === 'hod_review') {
-                await hodReject(examId, rejectReason);
+                await hodReject(exam.uuid, rejectReason);
             } else {
-                await schoolOfficerReject(examId, rejectReason);
+                await schoolOfficerReject(exam.uuid, rejectReason);
             }
             setRejectReason('');
             setActionSuccess('Exam rejected and returned to draft.');
@@ -230,7 +230,7 @@ export default function ExamReviewsPage() {
                                     </Button>
                                     <Button
                                         size="sm"
-                                        onClick={() => handleApprove(exam.id, exam.status)}
+                                        onClick={() => handleApprove(exam)}
                                         disabled={processingId !== null}
                                         isLoading={processingId === exam.id}
                                         className="gap-1.5 bg-violet-600 hover:bg-violet-700"

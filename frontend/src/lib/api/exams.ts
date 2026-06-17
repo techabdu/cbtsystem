@@ -38,7 +38,7 @@ export async function getExams(filters?: ExamFilters): Promise<PaginatedResponse
 /**
  * Get a single exam by ID (includes questions and course details).
  */
-export async function getExam(id: number): Promise<ApiResponse<Exam>> {
+export async function getExam(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.get<ApiResponse<Exam>>(`/exams/${id}`);
     return response.data;
 }
@@ -54,7 +54,7 @@ export async function createExam(data: CreateExamData): Promise<ApiResponse<Exam
 /**
  * Update an existing exam.
  */
-export async function updateExam(id: number, data: UpdateExamData): Promise<ApiResponse<Exam>> {
+export async function updateExam(id: string, data: UpdateExamData): Promise<ApiResponse<Exam>> {
     const response = await apiClient.put<ApiResponse<Exam>>(`/exams/${id}`, data);
     return response.data;
 }
@@ -62,7 +62,7 @@ export async function updateExam(id: number, data: UpdateExamData): Promise<ApiR
 /**
  * Delete an exam (soft-delete).
  */
-export async function deleteExam(id: number): Promise<ApiResponse<null>> {
+export async function deleteExam(id: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/exams/${id}`);
     return response.data;
 }
@@ -70,7 +70,7 @@ export async function deleteExam(id: number): Promise<ApiResponse<null>> {
 /**
  * Restore a soft-deleted exam.
  */
-export async function restoreExam(id: number): Promise<ApiResponse<Exam>> {
+export async function restoreExam(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/restore`);
     return response.data;
 }
@@ -79,7 +79,7 @@ export async function restoreExam(id: number): Promise<ApiResponse<Exam>> {
  * Add questions to an exam from the question bank.
  */
 export async function addExamQuestions(
-    id: number,
+    id: string,
     data: AddExamQuestionsData
 ): Promise<ApiResponse<{ total_questions: number; total_marks: number; status_reset: boolean }>> {
     const response = await apiClient.post<ApiResponse<{ total_questions: number; total_marks: number; status_reset: boolean }>>(
@@ -93,8 +93,8 @@ export async function addExamQuestions(
  * Remove a question from an exam.
  */
 export async function removeExamQuestion(
-    examId: number,
-    questionId: number
+    examId: string,
+    questionId: string
 ): Promise<ApiResponse<{ status_reset: boolean } | null>> {
     const response = await apiClient.delete<ApiResponse<{ status_reset: boolean } | null>>(
         `/exams/${examId}/questions/${questionId}`
@@ -105,7 +105,7 @@ export async function removeExamQuestion(
 /**
  * Submit a draft exam for HOD review.
  */
-export async function submitForHodReview(id: number): Promise<ApiResponse<Exam>> {
+export async function submitForHodReview(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/submit-hod`);
     return response.data;
 }
@@ -113,7 +113,7 @@ export async function submitForHodReview(id: number): Promise<ApiResponse<Exam>>
 /**
  * HOD Approve
  */
-export async function hodApprove(id: number): Promise<ApiResponse<Exam>> {
+export async function hodApprove(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/hod-approve`);
     return response.data;
 }
@@ -121,7 +121,7 @@ export async function hodApprove(id: number): Promise<ApiResponse<Exam>> {
 /**
  * HOD Reject
  */
-export async function hodReject(id: number, reason: string): Promise<ApiResponse<Exam>> {
+export async function hodReject(id: string, reason: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/hod-reject`, { reason });
     return response.data;
 }
@@ -129,7 +129,7 @@ export async function hodReject(id: number, reason: string): Promise<ApiResponse
 /**
  * School Officer Approve
  */
-export async function schoolOfficerApprove(id: number): Promise<ApiResponse<Exam>> {
+export async function schoolOfficerApprove(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/school-officer-approve`);
     return response.data;
 }
@@ -137,7 +137,7 @@ export async function schoolOfficerApprove(id: number): Promise<ApiResponse<Exam
 /**
  * School Officer Reject
  */
-export async function schoolOfficerReject(id: number, reason: string): Promise<ApiResponse<Exam>> {
+export async function schoolOfficerReject(id: string, reason: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/school-officer-reject`, { reason });
     return response.data;
 }
@@ -145,7 +145,7 @@ export async function schoolOfficerReject(id: number, reason: string): Promise<A
 /**
  * CBT Publish
  */
-export async function cbtPublish(id: number): Promise<ApiResponse<Exam>> {
+export async function cbtPublish(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/cbt-publish`);
     return response.data;
 }
@@ -153,7 +153,7 @@ export async function cbtPublish(id: number): Promise<ApiResponse<Exam>> {
 /**
  * Sync exam results from the offline server back into the system.
  */
-export async function syncResults(id: number): Promise<ApiResponse<{ synced_sessions: number }>> {
+export async function syncResults(id: string): Promise<ApiResponse<{ synced_sessions: number }>> {
     const response = await apiClient.post<ApiResponse<{ synced_sessions: number }>>(`/exams/${id}/sync-results`);
     return response.data;
 }
@@ -162,7 +162,7 @@ export async function syncResults(id: number): Promise<ApiResponse<{ synced_sess
  * Publish a practice exam (lecturer direct-publish) or a CBT-setup exam.
  * Both cases use the cbt-publish workflow route.
  */
-export async function publishExam(id: number): Promise<ApiResponse<Exam>> {
+export async function publishExam(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/cbt-publish`);
     return response.data;
 }
@@ -170,7 +170,7 @@ export async function publishExam(id: number): Promise<ApiResponse<Exam>> {
 /**
  * Get results for a published/completed exam.
  */
-export async function getExamResults(id: number): Promise<ApiResponse<ExamResults>> {
+export async function getExamResults(id: string): Promise<ApiResponse<ExamResults>> {
     const response = await apiClient.get<ApiResponse<ExamResults>>(`/exams/${id}/results`);
     return response.data;
 }
@@ -208,7 +208,7 @@ export async function getStudentExams(
 /**
  * Get a single exam for a student.
  */
-export async function getStudentExam(id: number): Promise<ApiResponse<Exam>> {
+export async function getStudentExam(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.get<ApiResponse<Exam>>(`/student/exams/${id}`);
     return response.data;
 }
@@ -228,7 +228,7 @@ export async function getPracticeExams(): Promise<PaginatedResponse<Exam>> {
 /**
  * Get a single practice exam with its questions.
  */
-export async function getPracticeExam(id: number): Promise<ApiResponse<Exam>> {
+export async function getPracticeExam(id: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.get<ApiResponse<Exam>>(`/student/practice-exams/${id}`);
     return response.data;
 }
@@ -237,7 +237,7 @@ export async function getPracticeExam(id: number): Promise<ApiResponse<Exam>> {
  * Submit answers for a practice exam and get results immediately.
  */
 export async function submitPracticeExam(
-    id: number,
+    id: string,
     data: PracticeAnswerData
 ): Promise<ApiResponse<PracticeSubmitResult>> {
     const response = await apiClient.post<ApiResponse<PracticeSubmitResult>>(
@@ -254,7 +254,7 @@ export async function submitPracticeExam(
 /**
  * Get all sessions with ungraded answers for an exam.
  */
-export async function getManualGrading(examId: number): Promise<ApiResponse<ManualGradingResponse>> {
+export async function getManualGrading(examId: string): Promise<ApiResponse<ManualGradingResponse>> {
     const response = await apiClient.get<ApiResponse<ManualGradingResponse>>(
         `/exams/${examId}/manual-grading`
     );
@@ -264,7 +264,7 @@ export async function getManualGrading(examId: number): Promise<ApiResponse<Manu
 /**
  * Get grading summary for an exam.
  */
-export async function getGradingSummary(examId: number): Promise<ApiResponse<GradingSummary>> {
+export async function getGradingSummary(examId: string): Promise<ApiResponse<GradingSummary>> {
     const response = await apiClient.get<ApiResponse<GradingSummary>>(
         `/exams/${examId}/grading-summary`
     );
@@ -292,7 +292,7 @@ export async function gradeAnswer(
 /**
  * Submit grading for HOD verification (lecturer action).
  */
-export async function submitGrading(examId: number): Promise<ApiResponse<Exam>> {
+export async function submitGrading(examId: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(
         `/exams/${examId}/submit-grading`
     );
@@ -302,7 +302,7 @@ export async function submitGrading(examId: number): Promise<ApiResponse<Exam>> 
 /**
  * Reject grading back to lecturer (Department Exam Officer action).
  */
-export async function deptOfficerReject(examId: number, reason: string): Promise<ApiResponse<Exam>> {
+export async function deptOfficerReject(examId: string, reason: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(
         `/exams/${examId}/dept-officer-reject`,
         { reason }
@@ -313,7 +313,7 @@ export async function deptOfficerReject(examId: number, reason: string): Promise
 /**
  * Verify results and publish them to Edu Portal (Department Exam Officer action).
  */
-export async function deptOfficerApprove(examId: number): Promise<ApiResponse<Exam>> {
+export async function deptOfficerApprove(examId: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(
         `/exams/${examId}/dept-officer-approve`
     );
@@ -323,7 +323,7 @@ export async function deptOfficerApprove(examId: number): Promise<ApiResponse<Ex
 /**
  * Get student's individual exam results (published only).
  */
-export async function getStudentExamResults(examId: number): Promise<ApiResponse<StudentExamResult>> {
+export async function getStudentExamResults(examId: string): Promise<ApiResponse<StudentExamResult>> {
     const response = await apiClient.get<ApiResponse<StudentExamResult>>(
         `/student/exams/${examId}/results`
     );

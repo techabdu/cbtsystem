@@ -107,9 +107,11 @@ class ExamService
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function find(int $id): Exam
+    public function find(string $id): Exam
     {
-        return Exam::with(['course', 'creator', 'examQuestions.question'])->findOrFail($id);
+        return Exam::with(['course', 'creator', 'examQuestions.question'])
+            ->where('uuid', $id)
+            ->firstOrFail();
     }
 
     /* ------------------------------------------------------------------ */
@@ -243,9 +245,9 @@ class ExamService
      * @param  User  $user
      * @return Exam
      */
-    public function restore(int $id, User $user): Exam
+    public function restore(string $id, User $user): Exam
     {
-        $exam = Exam::onlyTrashed()->findOrFail($id);
+        $exam = Exam::onlyTrashed()->where('uuid', $id)->firstOrFail();
         $exam->restore();
         $exam->update(['status' => 'draft']);
 

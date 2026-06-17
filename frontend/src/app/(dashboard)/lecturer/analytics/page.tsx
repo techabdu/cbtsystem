@@ -70,7 +70,7 @@ export default function LecturerAnalyticsPage() {
         setExamData(null);
         setSelectedExamId(null);
         try {
-            const res = await getCourseAnalytics(courseId);
+            const res = await getCourseAnalytics(String(courseId));
             if (res.success) {
                 setCourseData(res.data);
             }
@@ -91,7 +91,7 @@ export default function LecturerAnalyticsPage() {
     const fetchExam = useCallback(async (examId: number) => {
         setExamLoading(true);
         try {
-            const res = await getExamAnalytics(examId);
+            const res = await getExamAnalytics(String(examId));
             if (res.success) {
                 setExamData(res.data);
             }

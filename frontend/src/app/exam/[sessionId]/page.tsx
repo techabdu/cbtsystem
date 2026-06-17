@@ -90,7 +90,7 @@ function useTimer(initialSeconds: number, onExpire: () => void) {
 
 export default function ExamPage() {
     const params = useParams();
-    const sessionId = Number(params.sessionId);
+    const sessionId = params.sessionId as string;
 
     // State
     const [status, setStatus] = useState<ExamSessionStatus | null>(null);
@@ -128,7 +128,7 @@ export default function ExamPage() {
             const cached = sessionStorage.getItem('exam_session');
             if (cached) {
                 const data = JSON.parse(cached);
-                if (data.session_id === sessionId) {
+                if (data.session_uuid === sessionId) {
                     setTimeRemaining(data.time_remaining_seconds);
                 }
             }

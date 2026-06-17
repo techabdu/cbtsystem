@@ -29,8 +29,8 @@ export default function ResultsVerificationPage() {
     const [error, setError] = useState('');
     const [actionError, setActionError] = useState('');
     const [actionSuccess, setActionSuccess] = useState('');
-    const [processingId, setProcessingId] = useState<number | null>(null);
-    const [showRejectDialog, setShowRejectDialog] = useState<number | null>(null);
+    const [processingId, setProcessingId] = useState<string | null>(null);
+    const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
     const [rejectDialogError, setRejectDialogError] = useState('');
 
@@ -46,7 +46,7 @@ export default function ResultsVerificationPage() {
             await Promise.all(
                 res.data.map(async (exam: Exam) => {
                     try {
-                        const r = await getExamResults(exam.id);
+                        const r = await getExamResults(exam.uuid);
                         resultsMap[exam.id] = r.data;
                     } catch { /* ignore */ }
                 })
@@ -74,7 +74,7 @@ export default function ResultsVerificationPage() {
         );
     }
 
-    const handleApprove = async (examId: number) => {
+    const handleApprove = async (examId: string) => {
         setProcessingId(examId);
         setActionError('');
         try {
@@ -91,7 +91,7 @@ export default function ResultsVerificationPage() {
         }
     };
 
-    const handleReject = async (examId: number) => {
+    const handleReject = async (examId: string) => {
         if (!rejectReason.trim()) {
             setRejectDialogError('A reason for rejection is required.');
             return;
@@ -205,8 +205,8 @@ export default function ResultsVerificationPage() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => { setShowRejectDialog(exam.id); setRejectReason(''); setRejectDialogError(''); }}
-                                            disabled={processingId === exam.id}
+                                            onClick={() => { setShowRejectDialog(exam.uuid); setRejectReason(''); setRejectDialogError(''); }}
+                                            disabled={processingId === exam.uuid}
                                             className="gap-1.5 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
                                         >
                                             <X className="h-3.5 w-3.5" />
@@ -214,9 +214,9 @@ export default function ResultsVerificationPage() {
                                         </Button>
                                         <Button
                                             size="sm"
-                                            onClick={() => handleApprove(exam.id)}
+                                            onClick={() => handleApprove(exam.uuid)}
                                             disabled={processingId !== null}
-                                            isLoading={processingId === exam.id}
+                                            isLoading={processingId === exam.uuid}
                                             className="gap-1.5 bg-violet-600 hover:bg-violet-700"
                                         >
                                             <CheckCircle2 className="h-3.5 w-3.5" />

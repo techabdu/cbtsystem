@@ -40,7 +40,7 @@ class QuestionController extends Controller
     /*  Show — Single question                                             */
     /* ------------------------------------------------------------------ */
 
-    public function show(int $id, Request $request): JsonResponse
+    public function show(string $id, Request $request): JsonResponse
     {
         $question = $this->questionService->find($id);
 
@@ -88,7 +88,7 @@ class QuestionController extends Controller
     /*  Update — Modify question                                           */
     /* ------------------------------------------------------------------ */
 
-    public function update(int $id, UpdateQuestionRequest $request): JsonResponse
+    public function update(string $id, UpdateQuestionRequest $request): JsonResponse
     {
         $question = $this->questionService->find($id);
         $user = $request->user();
@@ -110,7 +110,7 @@ class QuestionController extends Controller
     /*  Destroy — Soft-delete question                                     */
     /* ------------------------------------------------------------------ */
 
-    public function destroy(int $id, Request $request): JsonResponse
+    public function destroy(string $id, Request $request): JsonResponse
     {
         $question = $this->questionService->find($id);
         $user = $request->user();
@@ -133,7 +133,7 @@ class QuestionController extends Controller
     /*  Restore — Restore soft-deleted question                            */
     /* ------------------------------------------------------------------ */
 
-    public function restore(int $id, Request $request): JsonResponse
+    public function restore(string $id, Request $request): JsonResponse
     {
         $question = $this->questionService->restore($id, $request->user());
 
@@ -147,7 +147,7 @@ class QuestionController extends Controller
     /*  Verify — Mark question as verified                                 */
     /* ------------------------------------------------------------------ */
 
-    public function verify(int $id, Request $request): JsonResponse
+    public function verify(string $id, Request $request): JsonResponse
     {
         $question = $this->questionService->find($id);
         $user = $request->user();

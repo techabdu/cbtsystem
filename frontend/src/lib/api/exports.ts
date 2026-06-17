@@ -83,7 +83,7 @@ export function downloadEnrollmentList(params?: { course_id?: number; department
 /**
  * Download a results export as Excel.
  */
-export function downloadResultsExport(params?: { exam_id?: number; department_id?: number }): Promise<void> {
+export function downloadResultsExport(params?: { exam_id?: string; department_id?: number }): Promise<void> {
     const query = params ? '?' + new URLSearchParams(
         Object.fromEntries(
             Object.entries(params)

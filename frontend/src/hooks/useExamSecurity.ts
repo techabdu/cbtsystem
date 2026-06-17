@@ -6,7 +6,7 @@ import apiClient from '@/lib/api/client';
 type ViolationType = 'tab_switch' | 'copy_paste' | 'right_click' | 'devtools' | 'window_blur' | 'screenshot_attempt';
 
 interface UseExamSecurityOptions {
-    sessionId: number;
+    sessionId: string;
     enabled?: boolean;
     onViolation?: (type: ViolationType, count: number) => void;
 }

@@ -97,7 +97,8 @@ type TabType = 'overview' | 'questions' | 'results';
 export default function ExamDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
-    const examId = Number(params.id);
+    const examId = params.id as string;
+    const examSlug = params.id as string;
     const currentUser = useAuthStore(s => s.user);
 
     const initialTab = (searchParams.get('tab') as TabType) || 'overview';
@@ -147,7 +148,7 @@ export default function ExamDetailPage() {
         setIsLoading(true);
         setError('');
         try {
-            const res = await getExam(examId);
+            const res = await getExam(examSlug);
             setExam(res.data);
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } } };
@@ -197,7 +198,7 @@ export default function ExamDetailPage() {
         if (!exam || !['published', 'completed', 'ongoing'].includes(exam.status)) return;
         setLoadingResults(true);
         try {
-            const res = await getExamResults(examId);
+            const res = await getExamResults(examSlug);
             setResults(res.data);
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } } };
@@ -270,7 +271,7 @@ export default function ExamDetailPage() {
                 delete submitData.start_time;
                 delete submitData.end_time;
             }
-            const res = await updateExam(examId, submitData);
+            const res = await updateExam(examSlug, submitData);
             setExam(res.data);
             setSaveSuccess('Exam updated successfully.');
             setIsEditing(false);
@@ -457,7 +458,7 @@ export default function ExamDetailPage() {
         setQuestionActionMsg('');
         setQuestionActionError('');
         try {
-            const res = await removeExamQuestion(examId, examQuestion.question_id);
+            const res = await removeExamQuestion(examId, examQuestion.question!.uuid);
             const msg = (res.data as { status_reset?: boolean } | null)?.status_reset
                 ? 'Question removed. Exam reset to draft — please re-submit for HOD review.'
                 : 'Question removed from exam.';

@@ -207,15 +207,15 @@ export interface CourseFilters {
 }
 
 export interface EnrollStudentData {
-    student_id: number;
+    student_id: string;
 }
 
 export interface BulkEnrollData {
-    student_ids: number[];
+    student_ids: string[];
 }
 
 export interface AssignLecturerData {
-    lecturer_id: number;
+    lecturer_id: string;
     role?: 'lecturer' | 'coordinator' | 'assistant';
 }
 
@@ -237,6 +237,7 @@ export interface EnrolledStudent {
 
 export interface CourseLecturer {
     id: number;
+    uuid: string;
     full_name: string;
     email: string;
     staff_id?: string;
@@ -416,8 +417,8 @@ export interface QuestionStats {
 /* ------------------------------------------------------------------ */
 
 export interface HodAssignCourseData {
-    lecturer_id: number;
-    course_id: number;
+    lecturer_id: string;
+    course_id: string;
     role?: 'lecturer' | 'coordinator' | 'assistant';
 }
 

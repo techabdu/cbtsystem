@@ -68,7 +68,7 @@ export default function ManualGradingPage() {
         setIsLoading(true);
         setError('');
         try {
-            const res = await getManualGrading(examId);
+            const res = await getManualGrading(String(examId));
             setData(res.data);
             // Auto-expand first session
             if (res.data.sessions.length > 0) {

@@ -19,7 +19,7 @@ class ExamSessionController extends Controller
     /*  GET /exam-sessions/{id}/status                                     */
     /* ------------------------------------------------------------------ */
 
-    public function status(int $id): JsonResponse
+    public function status(string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -45,7 +45,7 @@ class ExamSessionController extends Controller
     /*  GET /exam-sessions/{id}/questions                                  */
     /* ------------------------------------------------------------------ */
 
-    public function questions(int $id): JsonResponse
+    public function questions(string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -75,7 +75,7 @@ class ExamSessionController extends Controller
     /*  GET /exam-sessions/{id}/questions/{index}                          */
     /* ------------------------------------------------------------------ */
 
-    public function question(int $id, int $index): JsonResponse
+    public function question(string $id, int $index): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -104,7 +104,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/answers                                   */
     /* ------------------------------------------------------------------ */
 
-    public function saveAnswer(Request $request, int $id): JsonResponse
+    public function saveAnswer(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -150,7 +150,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/answers/batch                             */
     /* ------------------------------------------------------------------ */
 
-    public function saveAnswersBatch(Request $request, int $id): JsonResponse
+    public function saveAnswersBatch(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -204,7 +204,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/flag                                      */
     /* ------------------------------------------------------------------ */
 
-    public function toggleFlag(Request $request, int $id): JsonResponse
+    public function toggleFlag(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -231,7 +231,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/submit                                    */
     /* ------------------------------------------------------------------ */
 
-    public function submit(int $id): JsonResponse
+    public function submit(string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -251,7 +251,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/violations                                */
     /* ------------------------------------------------------------------ */
 
-    public function recordViolation(Request $request, int $id): JsonResponse
+    public function recordViolation(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -278,14 +278,14 @@ class ExamSessionController extends Controller
     /*  Helper: Find session and verify ownership                          */
     /* ------------------------------------------------------------------ */
 
-    private function findAuthorizedSession(int $id): ?ExamSession
+    private function findAuthorizedSession(string $id): ?ExamSession
     {
         $user = auth()->user();
         if (! $user) {
             return null;
         }
 
-        return ExamSession::where('id', $id)
+        return ExamSession::where('uuid', $id)
             ->where('student_id', $user->id)
             ->with('exam')
             ->first();

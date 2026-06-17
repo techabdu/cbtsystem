@@ -129,13 +129,13 @@ class AnalyticsService
      * @param  User  $user
      * @return array
      */
-    public function getCourseAnalytics(int $courseId, User $user): array
+    public function getCourseAnalytics(string $courseId, User $user): array
     {
-        $course = Course::with('department:id,code,name')->findOrFail($courseId);
+        $course = Course::with('department:id,code,name')->where('uuid', $courseId)->firstOrFail();
 
         // Ownership check for lecturers
         if ($user->role === 'lecturer') {
-            $isAssigned = CourseLecturer::where('course_id', $courseId)
+            $isAssigned = CourseLecturer::where('course_id', $course->id)
                 ->where('lecturer_id', $user->id)
                 ->exists();
             if (!$isAssigned) {
@@ -143,13 +143,13 @@ class AnalyticsService
             }
         }
 
-        $enrolledStudents = CourseEnrollment::where('course_id', $courseId)
+        $enrolledStudents = CourseEnrollment::where('course_id', $course->id)
             ->where('status', 'active')
             ->count();
 
-        $totalQuestions = Question::where('course_id', $courseId)->where('is_active', true)->count();
+        $totalQuestions = Question::where('course_id', $course->id)->where('is_active', true)->count();
 
-        $exams = Exam::where('course_id', $courseId)
+        $exams = Exam::where('course_id', $course->id)
             ->where('is_practice', false)
             ->get();
 
@@ -227,16 +227,16 @@ class AnalyticsService
      * @param  User  $user
      * @return array
      */
-    public function getExamAnalytics(int $examId, User $user): array
+    public function getExamAnalytics(string $examId, User $user): array
     {
-        $exam = Exam::with(['course:id,code,title'])->findOrFail($examId);
+        $exam = Exam::with(['course:id,code,title'])->where('uuid', $examId)->firstOrFail();
 
         // Ownership check for lecturers
         if ($user->role === 'lecturer' && $exam->created_by !== $user->id) {
             abort(403, 'Access denied.');
         }
 
-        $sessions = ExamSession::where('exam_id', $examId)
+        $sessions = ExamSession::where('exam_id', $exam->id)
             ->whereIn('status', ['submitted', 'auto_submitted'])
             ->get();
 
@@ -246,11 +246,11 @@ class AnalyticsService
         $questionAnalysis = DB::table('student_answers')
             ->join('exam_sessions', 'student_answers.session_id', '=', 'exam_sessions.id')
             ->join('questions', 'student_answers.question_id', '=', 'questions.id')
-            ->join('exam_questions', function ($join) use ($examId) {
+            ->join('exam_questions', function ($join) use ($exam) {
                 $join->on('student_answers.question_id', '=', 'exam_questions.question_id')
-                     ->where('exam_questions.exam_id', '=', $examId);
+                     ->where('exam_questions.exam_id', '=', $exam->id);
             })
-            ->where('exam_sessions.exam_id', $examId)
+            ->where('exam_sessions.exam_id', $exam->id)
             ->whereIn('exam_sessions.status', ['submitted', 'auto_submitted'])
             ->where('student_answers.is_final', true)
             ->select(

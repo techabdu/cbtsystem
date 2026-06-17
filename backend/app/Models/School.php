@@ -33,6 +33,11 @@ class School extends Model
         static::deleted(fn () => Cache::forget('schools.active'));
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);

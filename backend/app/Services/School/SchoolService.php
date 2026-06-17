@@ -60,9 +60,11 @@ class SchoolService
     /*  Show                                                               */
     /* ------------------------------------------------------------------ */
 
-    public function find(int $id): School
+    public function find(string $id): School
     {
-        return School::withCount('departments')->findOrFail($id);
+        return School::withCount('departments')
+            ->where('uuid', $id)
+            ->firstOrFail();
     }
 
     /* ------------------------------------------------------------------ */
@@ -130,9 +132,9 @@ class SchoolService
     /*  Restore                                                            */
     /* ------------------------------------------------------------------ */
 
-    public function restore(int $id, User $admin): School
+    public function restore(string $id, User $admin): School
     {
-        $school = School::onlyTrashed()->findOrFail($id);
+        $school = School::onlyTrashed()->where('uuid', $id)->firstOrFail();
         $school->restore();
 
         $this->logActivity($admin, 'school_restored', $school->id);

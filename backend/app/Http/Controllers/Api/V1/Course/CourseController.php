@@ -41,7 +41,7 @@ class CourseController extends Controller
     /*  Show                                                               */
     /* ------------------------------------------------------------------ */
 
-    public function show(int $id): JsonResponse
+    public function show(string $id): JsonResponse
     {
         $course = $this->courseService->find($id);
 
@@ -73,7 +73,7 @@ class CourseController extends Controller
     /*  Update                                                             */
     /* ------------------------------------------------------------------ */
 
-    public function update(UpdateCourseRequest $request, int $id): JsonResponse
+    public function update(UpdateCourseRequest $request, string $id): JsonResponse
     {
         $course = $this->courseService->find($id);
 
@@ -92,7 +92,7 @@ class CourseController extends Controller
     /*  Delete                                                             */
     /* ------------------------------------------------------------------ */
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         $course = $this->courseService->find($id);
 
@@ -109,7 +109,7 @@ class CourseController extends Controller
     /*  Restore                                                            */
     /* ------------------------------------------------------------------ */
 
-    public function restore(Request $request, int $id): JsonResponse
+    public function restore(Request $request, string $id): JsonResponse
     {
         $course = $this->courseService->restore($id, $request->user());
 
@@ -122,7 +122,7 @@ class CourseController extends Controller
     /*  Students — list enrolled students                                  */
     /* ------------------------------------------------------------------ */
 
-    public function students(Request $request, int $id): JsonResponse
+    public function students(Request $request, string $id): JsonResponse
     {
         $course = $this->courseService->find($id);
         $students = $this->courseService->getStudents($course, $request->all());
@@ -134,7 +134,7 @@ class CourseController extends Controller
     /*  Lecturers — list assigned lecturers                                */
     /* ------------------------------------------------------------------ */
 
-    public function lecturers(int $id): JsonResponse
+    public function lecturers(string $id): JsonResponse
     {
         $course = $this->courseService->find($id);
         $lecturers = $this->courseService->getLecturers($course);

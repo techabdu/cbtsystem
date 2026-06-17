@@ -102,11 +102,11 @@ export default function AdminExamsPage() {
         setScheduleError('');
         setActionError('');
         try {
-            await updateExam(examId, {
+            await updateExam(showScheduleDialog.uuid, {
                 start_time: new Date(scheduleStart).toISOString(),
                 end_time: new Date(scheduleEnd).toISOString(),
             });
-            await cbtPublish(examId);
+            await cbtPublish(showScheduleDialog.uuid);
             setShowScheduleDialog(null);
             setActionSuccess('Exam scheduled and published successfully! Students can now access it.');
             setTimeout(() => setActionSuccess(''), 4000);

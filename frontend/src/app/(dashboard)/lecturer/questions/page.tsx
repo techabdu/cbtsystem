@@ -247,7 +247,7 @@ export default function LecturerQuestionsPage() {
                 setSuccessMessage('Question created successfully');
             } else if (formMode === 'edit' && editingQuestion) {
                 const updateData: UpdateQuestionData = { ...submitData };
-                await updateQuestion(editingQuestion.id, updateData);
+                await updateQuestion(editingQuestion.uuid, updateData);
                 setSuccessMessage('Question updated successfully');
             }
             closeForm();
@@ -300,7 +300,7 @@ export default function LecturerQuestionsPage() {
         if (!confirm(`Delete this question?\n\n"${q.question_text.substring(0, 100)}..."`)) return;
         setActionLoadingId(q.id);
         try {
-            await deleteQuestion(q.id);
+            await deleteQuestion(q.uuid);
             setSuccessMessage('Question deleted.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchQuestions();
@@ -317,7 +317,7 @@ export default function LecturerQuestionsPage() {
     const handleVerify = async (q: Question) => {
         setActionLoadingId(q.id);
         try {
-            await verifyQuestion(q.id);
+            await verifyQuestion(q.uuid);
             setSuccessMessage('Question verified successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchQuestions();

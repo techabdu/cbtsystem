@@ -30,7 +30,7 @@ export const getQuestions = async (filters?: QuestionFilters): Promise<Paginated
 /**
  * Get a single question by ID.
  */
-export const getQuestion = async (id: number): Promise<ApiResponse<Question>> => {
+export const getQuestion = async (id: string): Promise<ApiResponse<Question>> => {
     const response = await client.get<ApiResponse<Question>>(`/questions/${id}`);
     return response.data;
 };
@@ -54,7 +54,7 @@ export const createQuestion = async (data: CreateQuestionData): Promise<ApiRespo
 /**
  * Update an existing question.
  */
-export const updateQuestion = async (id: number, data: UpdateQuestionData): Promise<ApiResponse<Question>> => {
+export const updateQuestion = async (id: string, data: UpdateQuestionData): Promise<ApiResponse<Question>> => {
     const response = await client.put<ApiResponse<Question>>(`/questions/${id}`, data);
     return response.data;
 };
@@ -62,7 +62,7 @@ export const updateQuestion = async (id: number, data: UpdateQuestionData): Prom
 /**
  * Delete a question (soft-delete).
  */
-export const deleteQuestion = async (id: number): Promise<ApiResponse> => {
+export const deleteQuestion = async (id: string): Promise<ApiResponse> => {
     const response = await client.delete<ApiResponse>(`/questions/${id}`);
     return response.data;
 };
@@ -70,7 +70,7 @@ export const deleteQuestion = async (id: number): Promise<ApiResponse> => {
 /**
  * Restore a soft-deleted question.
  */
-export const restoreQuestion = async (id: number): Promise<ApiResponse<Question>> => {
+export const restoreQuestion = async (id: string): Promise<ApiResponse<Question>> => {
     const response = await client.post<ApiResponse<Question>>(`/questions/${id}/restore`);
     return response.data;
 };
@@ -78,7 +78,7 @@ export const restoreQuestion = async (id: number): Promise<ApiResponse<Question>
 /**
  * Verify a question (admin or different lecturer).
  */
-export const verifyQuestion = async (id: number): Promise<ApiResponse<Question>> => {
+export const verifyQuestion = async (id: string): Promise<ApiResponse<Question>> => {
     const response = await client.patch<ApiResponse<Question>>(`/questions/${id}/verify`);
     return response.data;
 };
@@ -125,7 +125,7 @@ export const bulkUploadQuestionsFile = async (file: File): Promise<BulkUploadQue
  * Accepted formats: jpg, png, gif, webp (max 2 MB enforced server-side).
  */
 export const uploadQuestionImage = async (
-    questionId: number,
+    questionId: string,
     file: File
 ): Promise<ApiResponse<{ image_url: string }>> => {
     const formData = new FormData();
@@ -141,7 +141,7 @@ export const uploadQuestionImage = async (
 /**
  * Delete the image associated with a question.
  */
-export const deleteQuestionImage = async (questionId: number): Promise<ApiResponse<null>> => {
+export const deleteQuestionImage = async (questionId: string): Promise<ApiResponse<null>> => {
     const response = await client.delete<ApiResponse<null>>(`/questions/${questionId}/image`);
     return response.data;
 };

@@ -22,8 +22,8 @@ const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 /* ------------------------------------------------------------------ */
 
 export interface QuestionImageUploadProps {
-    /** The ID of the question this image belongs to. */
-    questionId: number;
+    /** The UUID of the question this image belongs to. */
+    questionId: string;
     /** URL of the currently saved image, if any. */
     currentImageUrl?: string | null;
     /** Called when a new image has been successfully uploaded. */
