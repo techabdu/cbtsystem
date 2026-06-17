@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\V1\User\BulkUserUploadController;
 use App\Http\Controllers\Api\V1\Question\QuestionImageController;
 use App\Http\Controllers\Api\V1\ExamOfficer\ExamOfficerController;
 use App\Http\Controllers\Api\V1\Export\ExportController;
+use App\Http\Controllers\Api\V1\HealthCheckController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,11 @@ use App\Http\Controllers\Api\V1\Export\ExportController;
 */
 
 Route::prefix('v1')->group(function () {
+
+    /* ------------------------------------------------------------------ */
+    /*  Health Check — Public (no auth)                                     */
+    /* ------------------------------------------------------------------ */
+    Route::get('/health', HealthCheckController::class)->name('health');
 
     /* ------------------------------------------------------------------ */
     /*  Authentication — Public Routes (rate-limited)                      */
