@@ -7,6 +7,7 @@ use App\Models\Combination;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class CombinationService
 {
@@ -71,10 +72,12 @@ class CombinationService
      */
     public function allActive(): Collection
     {
-        return Combination::active()
-            ->with(['firstDepartment:id,code,name', 'secondDepartment:id,code,name'])
-            ->orderBy('name')
-            ->get(['id', 'code', 'name', 'first_department_id', 'second_department_id']);
+        return Cache::remember('combinations.active', 3600, fn () =>
+            Combination::active()
+                ->with(['firstDepartment:id,code,name', 'secondDepartment:id,code,name'])
+                ->orderBy('name')
+                ->get(['id', 'code', 'name', 'first_department_id', 'second_department_id'])
+        );
     }
 
     /* ------------------------------------------------------------------ */

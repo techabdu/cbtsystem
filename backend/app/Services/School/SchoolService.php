@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class SchoolService
 {
@@ -50,7 +51,9 @@ class SchoolService
 
     public function allActive(): Collection
     {
-        return School::orderBy('name')->get(['id', 'code', 'name']);
+        return Cache::remember('schools.active', 3600, fn () =>
+            School::orderBy('name')->get(['id', 'code', 'name'])
+        );
     }
 
     /* ------------------------------------------------------------------ */

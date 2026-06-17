@@ -7,6 +7,7 @@ use App\Models\Level;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class LevelService
 {
@@ -63,9 +64,11 @@ class LevelService
      */
     public function allActive(): Collection
     {
-        return Level::active()
-            ->ordered()
-            ->get();
+        return Cache::remember('levels.active', 3600, fn () =>
+            Level::active()
+                ->ordered()
+                ->get()
+        );
     }
 
     /* ------------------------------------------------------------------ */

@@ -642,16 +642,16 @@ class ExamService
             );
         }
 
-        // Verify all answers have been graded
-        $ungradedCount = 0;
-        $submitted = $exam->sessions()->whereIn('status', ['submitted', 'auto_submitted'])->get();
-        foreach ($submitted as $session) {
-            $ungradedCount += \App\Models\StudentAnswer::where('session_id', $session->id)
-                ->where('is_final', true)
-                ->whereNull('is_correct')
-                ->whereHas('question', fn ($q) => $q->whereIn('question_type', ['fill_in_blank', 'essay']))
-                ->count();
-        }
+        // Verify all answers have been graded (single query)
+        $submittedSessionIds = $exam->sessions()
+            ->whereIn('status', ['submitted', 'auto_submitted'])
+            ->pluck('id');
+
+        $ungradedCount = \App\Models\StudentAnswer::whereIn('session_id', $submittedSessionIds)
+            ->where('is_final', true)
+            ->whereNull('is_correct')
+            ->whereHas('question', fn ($q) => $q->whereIn('question_type', ['fill_in_blank', 'essay']))
+            ->count();
 
         if ($ungradedCount > 0) {
             throw new \RuntimeException(
@@ -949,15 +949,12 @@ class ExamService
             ];
         })->values()->toArray();
 
-        // Count ungraded answers across all submitted sessions
-        $ungradedCount = 0;
-        foreach ($submitted as $session) {
-            $ungradedCount += \App\Models\StudentAnswer::where('session_id', $session->id)
-                ->where('is_final', true)
-                ->whereNull('is_correct')
-                ->whereHas('question', fn ($q) => $q->whereIn('question_type', ['fill_in_blank', 'essay']))
-                ->count();
-        }
+        // Count ungraded answers across all submitted sessions (single query)
+        $ungradedCount = \App\Models\StudentAnswer::whereIn('session_id', $submitted->pluck('id'))
+            ->where('is_final', true)
+            ->whereNull('is_correct')
+            ->whereHas('question', fn ($q) => $q->whereIn('question_type', ['fill_in_blank', 'essay']))
+            ->count();
 
         return [
             'exam_id'                => $exam->id,

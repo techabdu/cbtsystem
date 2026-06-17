@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 class Department extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('departments.active'));
+        static::deleted(fn () => Cache::forget('departments.active'));
+    }
 
     /* ------------------------------------------------------------------ */
     /*  Mass Assignment                                                   */

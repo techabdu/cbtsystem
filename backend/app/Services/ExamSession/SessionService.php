@@ -7,6 +7,7 @@ use App\Models\ExamSession;
 use App\Models\Question;
 use App\Models\SessionSnapshot;
 use App\Models\StudentAnswer;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SessionService
@@ -22,17 +23,28 @@ class SessionService
 
     public function getSessionStatus(ExamSession $session): array
     {
+        // Skip cache for interrupted sessions (need fresh recovery logic)
+        if ($session->status === 'interrupted') {
+            return $this->buildSessionStatus($session);
+        }
+
+        return Cache::remember(
+            "session_status.{$session->id}",
+            30,
+            fn () => $this->buildSessionStatus($session)
+        );
+    }
+
+    private function buildSessionStatus(ExamSession $session): array
+    {
         $session->load('exam.course');
 
-        // If this is an interrupted session being resumed, attempt answer recovery
-        // from the latest snapshot before returning status to the client.
         $recoveredCount = 0;
         if ($session->status === 'interrupted') {
             $recoveredCount = $this->recoveryService->restoreFromSnapshot($session);
             $session->refresh();
         }
 
-        // Single query for answered + flagged IDs (avoids two separate DB round-trips)
         $finalAnswers = StudentAnswer::where('session_id', $session->id)
             ->where('is_final', true)
             ->get(['question_id', 'is_flagged']);
@@ -237,6 +249,8 @@ class SessionService
                 $this->createSnapshot($session, 'auto_save');
             }
 
+            Cache::forget("session_status.{$session->id}");
+
             return $studentAnswer;
         });
     }
@@ -255,6 +269,7 @@ class SessionService
         if ($answer) {
             $newFlag = ! $answer->is_flagged;
             $answer->update(['is_flagged' => $newFlag]);
+            Cache::forget("session_status.{$session->id}");
             return $newFlag;
         }
 
@@ -268,6 +283,8 @@ class SessionService
             'first_answered_at' => now(),
             'last_updated_at'  => now(),
         ]);
+
+        Cache::forget("session_status.{$session->id}");
 
         return true;
     }
@@ -296,6 +313,8 @@ class SessionService
                 'actual_end_time' => now(),
                 'last_activity_at' => now(),
             ]);
+
+            Cache::forget("session_status.{$session->id}");
 
             ActivityLog::create([
                 'user_id'     => $session->student_id,
