@@ -836,10 +836,9 @@ function SubmitResultView({ result }: { result: ExamSubmitResult }) {
                 <div className="flex justify-center">
                     <Button
                         onClick={() => {
-                            // Clear auth and redirect to entry
-                            localStorage.removeItem('auth_token');
-                            localStorage.removeItem('auth_user_role');
-                            document.cookie = 'auth_token=; path=/; max-age=0';
+                            // Clear exam auth and redirect to entry
+                            sessionStorage.removeItem('offline_exam_token');
+                            sessionStorage.removeItem('exam_session');
                             document.cookie = 'auth_user_role=; path=/; max-age=0';
                             window.location.href = '/exams';
                         }}

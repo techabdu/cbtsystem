@@ -52,12 +52,10 @@ export default function OfflineExamEntryPage() {
 
             const data = res.data;
 
-            // Store auth credentials for the exam interface
-            localStorage.setItem('auth_token', data.token);
-            localStorage.setItem('auth_user_role', 'student');
+            // Store bearer token for offline exam API calls
+            sessionStorage.setItem('offline_exam_token', data.token);
 
             const maxAge = data.exam.duration_minutes * 60 + 1800;
-            document.cookie = `auth_token=${data.token}; path=/; max-age=${maxAge}`;
             document.cookie = `auth_user_role=student; path=/; max-age=${maxAge}`;
 
             // Store session data for the exam interface

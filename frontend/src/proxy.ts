@@ -28,12 +28,12 @@ function getDashboardForRole(role: string): string {
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const token = request.cookies.get('auth_token')?.value;
     const role = request.cookies.get('auth_user_role')?.value;
+    const isAuthenticated = !!role;
 
     // --- 1. Root path handling ---
     if (pathname === '/') {
-        if (token && role) {
+        if (isAuthenticated) {
             return NextResponse.redirect(new URL(getDashboardForRole(role), request.url));
         }
         return NextResponse.redirect(new URL('/login', request.url));
@@ -42,22 +42,22 @@ export function proxy(request: NextRequest) {
     // --- 2. Public pages ---
     if (PUBLIC_PATHS.includes(pathname)) {
         // Auth pages redirect logged-in users; /exams is always accessible
-        if (pathname !== '/exams' && token && role) {
+        if (pathname !== '/exams' && isAuthenticated) {
             return NextResponse.redirect(new URL(getDashboardForRole(role), request.url));
         }
         return NextResponse.next();
     }
 
-    // --- 2b. Exam taking interface (/exam/*) — requires token but no role guard ---
+    // --- 2b. Exam taking interface (/exam/*) — requires auth but no role guard ---
     if (pathname.startsWith('/exam/')) {
-        if (!token) {
+        if (!isAuthenticated) {
             return NextResponse.redirect(new URL('/exams', request.url));
         }
         return NextResponse.next();
     }
 
     // --- 3. Protected routes — require authentication ---
-    if (!token) {
+    if (!isAuthenticated) {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('callbackUrl', pathname);
         return NextResponse.redirect(loginUrl);
