@@ -46,22 +46,24 @@ use App\Http\Controllers\Api\V1\Export\ExportController;
 Route::prefix('v1')->group(function () {
 
     /* ------------------------------------------------------------------ */
-    /*  Authentication — Public Routes                                     */
+    /*  Authentication — Public Routes (rate-limited)                      */
     /* ------------------------------------------------------------------ */
-    Route::prefix('auth')->group(function () {
+    Route::prefix('auth')->middleware('throttle:public-auth')->group(function () {
         Route::post('/activate', ActivateAccountController::class)->name('auth.activate');
         Route::post('/login', LoginController::class)->name('auth.login');
     });
 
     /* ------------------------------------------------------------------ */
-    /*  Offline Exam Entry — Public (no auth required)                     */
+    /*  Offline Exam Entry — Public (rate-limited, no auth required)       */
     /* ------------------------------------------------------------------ */
-    Route::post('/offline-exams/start', [OfflineEntryController::class, 'start'])->name('offline-exams.start');
+    Route::post('/offline-exams/start', [OfflineEntryController::class, 'start'])
+        ->middleware('throttle:offline-entry')
+        ->name('offline-exams.start');
 
     /* ------------------------------------------------------------------ */
     /*  Authentication — Protected Routes                                  */
     /* ------------------------------------------------------------------ */
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api-read'])->group(function () {
 
         // Auth routes
         Route::prefix('auth')->group(function () {
@@ -372,16 +374,22 @@ Route::prefix('v1')->group(function () {
         });
 
         /* -------------------------------------------------------------- */
-        /*  Exam Sessions — Active exam taking                             */
+        /*  Exam Sessions — Active exam taking (student only)              */
         /* -------------------------------------------------------------- */
-        Route::prefix('exam-sessions')->group(function () {
+        Route::prefix('exam-sessions')->middleware('role:student')->group(function () {
             Route::get('/{id}/status', [ExamSessionController::class, 'status'])->name('exam-sessions.status');
             Route::get('/{id}/questions', [ExamSessionController::class, 'questions'])->name('exam-sessions.questions');
             Route::get('/{id}/questions/{index}', [ExamSessionController::class, 'question'])->name('exam-sessions.question');
-            Route::post('/{id}/answers', [ExamSessionController::class, 'saveAnswer'])->name('exam-sessions.save-answer');
-            Route::post('/{id}/answers/batch', [ExamSessionController::class, 'saveAnswersBatch'])->name('exam-sessions.save-answers-batch');
-            Route::post('/{id}/flag', [ExamSessionController::class, 'toggleFlag'])->name('exam-sessions.toggle-flag');
+
+            // Write operations use tighter rate limiting for auto-save
+            Route::middleware('throttle:exam-autosave')->group(function () {
+                Route::post('/{id}/answers', [ExamSessionController::class, 'saveAnswer'])->name('exam-sessions.save-answer');
+                Route::post('/{id}/answers/batch', [ExamSessionController::class, 'saveAnswersBatch'])->name('exam-sessions.save-answers-batch');
+                Route::post('/{id}/flag', [ExamSessionController::class, 'toggleFlag'])->name('exam-sessions.toggle-flag');
+            });
+
             Route::post('/{id}/submit', [ExamSessionController::class, 'submit'])->name('exam-sessions.submit');
+            Route::post('/{id}/violations', [ExamSessionController::class, 'recordViolation'])->name('exam-sessions.violations');
         });
     });
 });

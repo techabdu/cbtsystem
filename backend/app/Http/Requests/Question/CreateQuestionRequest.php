@@ -2,10 +2,18 @@
 
 namespace App\Http\Requests\Question;
 
+use App\Http\Requests\Concerns\SanitizesHtml;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateQuestionRequest extends FormRequest
 {
+    use SanitizesHtml;
+
+    protected function htmlFields(): array
+    {
+        return ['question_text'];
+    }
+
     public function authorize(): bool
     {
         return in_array($this->user()?->role, ['admin', 'lecturer']);

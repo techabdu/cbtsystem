@@ -872,6 +872,8 @@ export interface SystemAnalyticsData {
     total_students: number;
     total_lecturers: number;
     total_admins: number;
+    total_cbt: number;
+    total_edu_portal: number;
     active_users: number;
     total_courses: number;
     total_exams: number;

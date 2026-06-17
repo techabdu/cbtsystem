@@ -88,13 +88,8 @@ function RoleBadge({ role }: { role: string | null }) {
     );
 }
 
-type ExtendedData = SystemAnalyticsData & {
-    total_cbt?: number;
-    total_edu_portal?: number;
-};
-
 export default function AdminAnalyticsPage() {
-    const [data, setData] = useState<ExtendedData | null>(null);
+    const [data, setData] = useState<SystemAnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -102,7 +97,7 @@ export default function AdminAnalyticsPage() {
             try {
                 const res = await getSystemAnalytics();
                 if (res.success) {
-                    setData(res.data as ExtendedData);
+                    setData(res.data);
                 }
             } catch {
                 // Silently handle
@@ -203,31 +198,27 @@ export default function AdminAnalyticsPage() {
                         </CardContent>
                     </Card>
 
-                    {data?.total_cbt !== undefined && (
-                        <Card className="border-l-4 border-l-violet-500">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">CBT Officers</CardTitle>
-                                <Monitor className="h-4 w-4 text-violet-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{data.total_cbt}</div>
-                                <p className="text-xs text-muted-foreground mt-1">CBT role users</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <Card className="border-l-4 border-l-violet-500">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">CBT Officers</CardTitle>
+                            <Monitor className="h-4 w-4 text-violet-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data?.total_cbt ?? 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">CBT role users</p>
+                        </CardContent>
+                    </Card>
 
-                    {data?.total_edu_portal !== undefined && (
-                        <Card className="border-l-4 border-l-amber-500">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Edu Portal</CardTitle>
-                                <Globe className="h-4 w-4 text-amber-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{data.total_edu_portal}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Portal users</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <Card className="border-l-4 border-l-amber-500">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Edu Portal</CardTitle>
+                            <Globe className="h-4 w-4 text-amber-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data?.total_edu_portal ?? 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">Portal users</p>
+                        </CardContent>
+                    </Card>
                 </div>
             </section>
 

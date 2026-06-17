@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -58,7 +59,13 @@ class AuthService
             'password_changed_at' => now(),
         ]);
 
-        // Auto-login: issue a Sanctum token
+        // Revoke any existing tokens for this user (defense-in-depth)
+        $user->tokens()->delete();
+
+        // Create session for SPA cookie-based auth
+        Auth::guard('web')->login($user);
+
+        // Also issue a Sanctum token (for offline terminals / API consumers)
         $expiresInMinutes = (int) config('sanctum.expiration', 1440);
         $token = $user->createToken(
             'auth_token',
@@ -135,6 +142,10 @@ class AuthService
         // --- Success ---
         $user->recordSuccessfulLogin();
 
+        // Create session for SPA cookie-based auth
+        Auth::guard('web')->login($user);
+
+        // Also issue a Sanctum token (for offline terminals / API consumers)
         $expiresInMinutes = (int) config('sanctum.expiration', 1440);
         $token = $user->createToken(
             'auth_token',
@@ -156,7 +167,7 @@ class AuthService
     /* ------------------------------------------------------------------ */
 
     /**
-     * Revoke the current access token.
+     * Revoke the current access token and invalidate the session.
      */
     public function logout(User $user): void
     {
@@ -165,6 +176,13 @@ class AuthService
 
         if ($token) {
             $token->delete();
+        }
+
+        Auth::guard('web')->logout();
+
+        if ($session = request()->session()) {
+            $session->invalidate();
+            $session->regenerateToken();
         }
 
         $this->logActivity($user, 'user_logout');

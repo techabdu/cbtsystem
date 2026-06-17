@@ -121,6 +121,69 @@ class ExamPolicy
     }
 
     /**
+     * HOD can approve/reject exams pending review in their department.
+     */
+    public function approveAsHod(User $user, Exam $exam): bool
+    {
+        if (! $user->isHod()) {
+            return false;
+        }
+
+        $isSameDept = $user->department_id === optional($exam->creator)->department_id;
+
+        return $isSameDept && $exam->status === 'pending_review';
+    }
+
+    /**
+     * School Exam Officer can approve/reject verified exams in their school.
+     */
+    public function approveAsSchoolOfficer(User $user, Exam $exam): bool
+    {
+        if (! $user->isSchoolExamOfficer()) {
+            return false;
+        }
+
+        $schoolId = $user->school_id ?? optional($user->department)->school_id;
+        if (! $schoolId) {
+            return false;
+        }
+
+        $examSchoolId = optional(optional($exam->creator)->department)->school_id;
+
+        return $schoolId === $examSchoolId && $exam->status === 'verified';
+    }
+
+    /**
+     * CBT Admin can publish verified exams.
+     */
+    public function publishAsCbt(User $user, Exam $exam): bool
+    {
+        return $user->isCbt() && $exam->status === 'verified';
+    }
+
+    /**
+     * Department Exam Officer can approve/reject grading submissions.
+     */
+    public function approveGradingAsDeptOfficer(User $user, Exam $exam): bool
+    {
+        if (! $user->isDepartmentExamOfficer()) {
+            return false;
+        }
+
+        $isSameDept = $user->department_id === optional($exam->creator)->department_id;
+
+        return $isSameDept && $exam->results_status === 'grading_submitted';
+    }
+
+    /**
+     * CBT Admin can sync results for published exams.
+     */
+    public function syncResultsAsCbt(User $user, Exam $exam): bool
+    {
+        return $user->isCbt() && $exam->isPublished();
+    }
+
+    /**
      * Department Exam Officer can view exams in their own department.
      */
     public function viewForDepartmentOfficer(User $user, Exam $exam): bool

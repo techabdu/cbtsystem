@@ -2,10 +2,18 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\SanitizesHtml;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExamFeedbackRequest extends FormRequest
 {
+    use SanitizesHtml;
+
+    protected function htmlFields(): array
+    {
+        return ['comments'];
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

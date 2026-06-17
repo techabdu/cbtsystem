@@ -75,3 +75,7 @@ export async function submitExam(sessionId: number): Promise<ApiResponse<ExamSub
     const res = await apiClient.post<ApiResponse<ExamSubmitResult>>(`/exam-sessions/${sessionId}/submit`);
     return res.data;
 }
+
+export async function reportViolation(sessionId: number, type: string, description?: string): Promise<void> {
+    await apiClient.post(`/exam-sessions/${sessionId}/violations`, { type, description });
+}

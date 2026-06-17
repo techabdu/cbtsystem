@@ -24,7 +24,7 @@ class StudentSeeder extends Seeder
 
         $levels = DB::table('levels')->orderBy('order')->pluck('id', 'code');
 
-        $password = Hash::make('Student@123');
+        $password = Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24)));
         $now      = now();
         $users    = [];
 

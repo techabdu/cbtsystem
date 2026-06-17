@@ -211,16 +211,30 @@ class ExportController extends Controller
         $authUser = $request->user();
         $filters  = $request->only(['exam_id', 'department_id', 'school_id']);
 
-        // Lecturers can only export their own exam results
-        if ($authUser->role === 'lecturer' && ! empty($filters['exam_id'])) {
-            $exam = Exam::find((int) $filters['exam_id']);
-            if ($exam && $exam->created_by !== $authUser->id) {
+        if ($authUser->role === 'lecturer') {
+            if (! empty($filters['exam_id'])) {
+                $exam = Exam::find((int) $filters['exam_id']);
+                if ($exam && $exam->created_by !== $authUser->id) {
+                    $isOfficer = $authUser->is_department_exam_officer || $authUser->is_school_exam_officer;
+                    if (! $isOfficer) {
+                        return ResponseHelper::error(
+                            'You do not have permission to export results for this exam.',
+                            403
+                        );
+                    }
+                }
+            } else {
+                // Lecturers MUST specify exam_id unless they are an officer
                 $isOfficer = $authUser->is_department_exam_officer || $authUser->is_school_exam_officer;
                 if (! $isOfficer) {
                     return ResponseHelper::error(
-                        'You do not have permission to export results for this exam.',
-                        403
+                        'Please specify an exam_id to export results.',
+                        422
                     );
+                }
+                // Officers without exam_id are scoped to their department/school
+                if ($authUser->is_department_exam_officer && empty($filters['department_id'])) {
+                    $filters['department_id'] = $authUser->department_id;
                 }
             }
         }

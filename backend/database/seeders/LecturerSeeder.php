@@ -35,7 +35,7 @@ class LecturerSeeder extends Seeder
             )
             ->get();
 
-        $password = Hash::make('Lecturer@123');
+        $password = Hash::make(env('SEED_LECTURER_PASSWORD', Str::random(24)));
         $now      = now();
         $users    = [];
 
