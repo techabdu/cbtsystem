@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Use Redis for rate limiting when available
-        if (config('cache.default') === 'redis') {
+        if (env('CACHE_STORE', env('CACHE_DRIVER', 'file')) === 'redis') {
             $middleware->throttleWithRedis();
         }
     })
