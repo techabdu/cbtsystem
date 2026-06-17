@@ -423,6 +423,8 @@ class AnalyticsService
         $totalStudents = User::where('role', 'student')->count();
         $totalLecturers = User::where('role', 'lecturer')->count();
         $totalAdmins = User::where('role', 'admin')->count();
+        $totalCbt = User::where('role', 'cbt')->count();
+        $totalEduPortal = User::where('role', 'edu_portal')->count();
         $activeUsers = User::where('is_active', true)->count();
 
         // Content counts
@@ -489,6 +491,8 @@ class AnalyticsService
             'total_students'   => $totalStudents,
             'total_lecturers'  => $totalLecturers,
             'total_admins'     => $totalAdmins,
+            'total_cbt'        => $totalCbt,
+            'total_edu_portal' => $totalEduPortal,
             'active_users'     => $activeUsers,
             'total_courses'    => $totalCourses,
             'total_exams'      => $totalExams,
