@@ -61,7 +61,7 @@ class SessionConcurrencyTest extends TestCase
             ExamQuestion::create([
                 'exam_id'     => $this->exam->id,
                 'question_id' => $q->id,
-                'order'       => $i,
+                'question_order' => $i,
                 'points'      => 3.00,
             ]);
             $this->questions[] = $q;

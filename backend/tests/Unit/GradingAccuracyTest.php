@@ -67,7 +67,7 @@ class GradingAccuracyTest extends TestCase
         ExamQuestion::create([
             'exam_id'     => $this->exam->id,
             'question_id' => $q->id,
-            'order'       => rand(1, 999),
+            'question_order' => rand(1, 999),
             'points'      => $points,
         ]);
         return $q;
@@ -186,7 +186,7 @@ class GradingAccuracyTest extends TestCase
             'correct_answer' => 'photosynthesis',
             'points'         => 3.0,
         ]);
-        ExamQuestion::create(['exam_id' => $this->exam->id, 'question_id' => $q->id, 'order' => 1, 'points' => 3.0]);
+        ExamQuestion::create(['exam_id' => $this->exam->id, 'question_id' => $q->id, 'question_order' => 1, 'points' => 3.0]);
 
         $ans = $this->makeAnswer($q, $answer, false);
         $this->service->gradeAnswer($ans, $this->session);
@@ -214,7 +214,7 @@ class GradingAccuracyTest extends TestCase
     public function test_essay_always_null_is_correct(): void
     {
         $q = Question::factory()->create(['question_type' => 'essay', 'correct_answer' => null, 'points' => 10.0]);
-        ExamQuestion::create(['exam_id' => $this->exam->id, 'question_id' => $q->id, 'order' => 1, 'points' => 10.0]);
+        ExamQuestion::create(['exam_id' => $this->exam->id, 'question_id' => $q->id, 'question_order' => 1, 'points' => 10.0]);
 
         $ans = $this->makeAnswer($q, 'A long essay response that covers all points.', false);
         $this->service->gradeAnswer($ans, $this->session);
@@ -244,13 +244,13 @@ class GradingAccuracyTest extends TestCase
         $correctQuestions = [];
         for ($i = 0; $i < 4; $i++) {
             $q = Question::factory()->create(['question_type' => 'multiple_choice', 'correct_answer' => 'A', 'points' => 2]);
-            ExamQuestion::create(['exam_id' => $exam->id, 'question_id' => $q->id, 'order' => $i + 1, 'points' => 2]);
+            ExamQuestion::create(['exam_id' => $exam->id, 'question_id' => $q->id, 'question_order' => $i + 1, 'points' => 2]);
             $correctQuestions[] = $q;
         }
 
         // 1 essay question, 2 pts — requires manual grading → contributes 0 to auto score
         $essayQ = Question::factory()->create(['question_type' => 'essay', 'correct_answer' => null, 'points' => 2]);
-        ExamQuestion::create(['exam_id' => $exam->id, 'question_id' => $essayQ->id, 'order' => 5, 'points' => 2]);
+        ExamQuestion::create(['exam_id' => $exam->id, 'question_id' => $essayQ->id, 'question_order' => 5, 'points' => 2]);
 
         // Answer: get 3 MCQ correct, 1 MCQ wrong, essay answered
         foreach (array_slice($correctQuestions, 0, 3) as $q) {

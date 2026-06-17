@@ -56,7 +56,7 @@ class AutoSaveIntegrityTest extends TestCase
             ExamQuestion::create([
                 'exam_id'     => $exam->id,
                 'question_id' => $q->id,
-                'order'       => $idx + 1,
+                'question_order' => $idx + 1,
                 'points'      => 2.00,
             ]);
             $questionIds[] = $q->id;

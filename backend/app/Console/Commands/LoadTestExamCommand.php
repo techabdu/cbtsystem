@@ -211,19 +211,19 @@ class LoadTestExamCommand extends Command
         if (! $levelId) {
             $levelId = DB::table('levels')->insertGetId([
                 'code' => 'LT0', 'name' => 'Load Test Level',
-                'order' => 1, 'is_active' => 1,
+                'numeric_order' => 1, 'is_active' => 1,
                 'created_at' => now(), 'updated_at' => now(),
             ]);
         }
 
-        // Course — DB::table avoids $fillable mismatch (model uses 'title', column is 'name')
+        // Course — DB::table insert to avoid nested factory chains
         $courseId = DB::table('courses')->insertGetId([
             'uuid'          => (string) \Illuminate\Support\Str::uuid(),
             'department_id' => $dept->id,
             'level_id'      => $levelId,
             'code'          => '[LT]' . strtoupper(\Illuminate\Support\Str::random(4)),
-            'name'          => '[LoadTest] Course',
-            'credit_units'  => 3,
+            'title'         => '[LoadTest] Course',
+            'credit_hours'  => 3,
             'semester'      => 'first',
             'academic_year' => '2025/2026',
             'is_active'     => 1,

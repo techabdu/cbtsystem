@@ -76,7 +76,7 @@ class ExamWorkflowTest extends TestCase
             \App\Models\ExamQuestion::create([
                 'exam_id'     => $this->exam->id,
                 'question_id' => $q->id,
-                'order'       => 1,
+                'question_order' => 1,
                 'points'      => 2.00,
             ]);
         });

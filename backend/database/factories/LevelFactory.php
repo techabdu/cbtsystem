@@ -19,7 +19,7 @@ class LevelFactory extends Factory
         return [
             'code'          => $order . 'L',
             'name'          => 'Year ' . ($order / 100),
-            'order'         => $order,
+            'numeric_order' => $order,
             'is_active'     => true,
         ];
     }
