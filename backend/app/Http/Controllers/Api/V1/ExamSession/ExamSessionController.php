@@ -248,6 +248,33 @@ class ExamSessionController extends Controller
     }
 
     /* ------------------------------------------------------------------ */
+    /*  POST /exam-sessions/{id}/violations                                */
+    /* ------------------------------------------------------------------ */
+
+    public function recordViolation(Request $request, int $id): JsonResponse
+    {
+        $session = $this->findAuthorizedSession($id);
+        if (! $session) {
+            return ResponseHelper::error('Session not found or unauthorized.', 404);
+        }
+
+        if ($session->isSubmitted()) {
+            return ResponseHelper::error('This exam has already been submitted.', 409);
+        }
+
+        $validated = $request->validate([
+            'type'        => 'required|string|in:tab_switch,copy_paste,right_click,devtools,window_blur,screenshot_attempt',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $session->recordViolation($validated['type'], $validated['description'] ?? null);
+
+        return ResponseHelper::success([
+            'violation_count' => $session->violation_count,
+        ], 'Violation recorded.');
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Helper: Find session and verify ownership                          */
     /* ------------------------------------------------------------------ */
 

@@ -9,6 +9,7 @@ import {
     toggleQuestionFlag,
     submitExam,
 } from '@/lib/api/sessions';
+import { useExamSecurity } from '@/hooks/useExamSecurity';
 import type {
     ExamSessionStatus,
     ExamSessionQuestion,
@@ -104,6 +105,12 @@ export default function ExamPage() {
     const [showConfirm, setShowConfirm] = useState(false);
     const [submitResult, setSubmitResult] = useState<ExamSubmitResult | null>(null);
     const [timeRemaining, setTimeRemaining] = useState(0);
+
+    // Anti-cheating security
+    useExamSecurity({
+        sessionId,
+        enabled: !submitResult && !isLoading,
+    });
 
     // Refs for auto-save
     const saveQueueRef = useRef<Set<number>>(new Set());

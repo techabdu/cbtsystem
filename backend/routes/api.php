@@ -389,6 +389,7 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::post('/{id}/submit', [ExamSessionController::class, 'submit'])->name('exam-sessions.submit');
+            Route::post('/{id}/violations', [ExamSessionController::class, 'recordViolation'])->name('exam-sessions.violations');
         });
     });
 });
