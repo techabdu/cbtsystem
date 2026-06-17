@@ -90,7 +90,7 @@ class ExamWorkflowTest extends TestCase
     public function test_allows_lecturer_to_submit_exam_for_hod_review()
     {
         $this->actingAs($this->lecturer)
-            ->postJson("/api/v1/exams/{$this->exam->id}/submit-hod")
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/submit-hod")
             ->assertSuccessful();
 
         $this->assertEquals('pending_review', $this->exam->fresh()->status);
@@ -102,7 +102,7 @@ class ExamWorkflowTest extends TestCase
         $this->exam->update(['status' => 'pending_review']);
 
         $this->actingAs($this->hod)
-            ->postJson("/api/v1/exams/{$this->exam->id}/hod-approve")
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/hod-approve")
             ->assertSuccessful();
 
         $this->assertEquals('verified', $this->exam->fresh()->status);
@@ -114,7 +114,7 @@ class ExamWorkflowTest extends TestCase
         $this->exam->update(['status' => 'pending_review']);
 
         $this->actingAs($this->hod)
-            ->postJson("/api/v1/exams/{$this->exam->id}/hod-reject", [
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/hod-reject", [
                 'comments' => 'Questions are too simple.',
             ])
             ->assertSuccessful();
@@ -134,7 +134,7 @@ class ExamWorkflowTest extends TestCase
         $this->exam->update(['status' => 'verified']);
 
         $this->actingAs($this->schoolOfficer)
-            ->postJson("/api/v1/exams/{$this->exam->id}/school-officer-approve")
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/school-officer-approve")
             ->assertSuccessful();
 
         $this->assertEquals('published', $this->exam->fresh()->status);
@@ -146,7 +146,7 @@ class ExamWorkflowTest extends TestCase
         $this->exam->update(['status' => 'verified']);
 
         $this->actingAs($this->cbt)
-            ->postJson("/api/v1/exams/{$this->exam->id}/cbt-publish")
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/cbt-publish")
             ->assertSuccessful();
 
         $this->assertEquals('published', $this->exam->fresh()->status);
@@ -162,7 +162,7 @@ class ExamWorkflowTest extends TestCase
         $this->exam->update(['status' => 'published', 'results_status' => 'grading_submitted']);
 
         $this->actingAs($this->deptOfficer)
-            ->postJson("/api/v1/exams/{$this->exam->id}/dept-officer-reject", [
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/dept-officer-reject", [
                 'comments' => 'Please recheck question 4 marking.',
             ])
             ->assertSuccessful();
@@ -173,5 +173,102 @@ class ExamWorkflowTest extends TestCase
         $this->assertNotNull($feedback);
         $this->assertEquals('Please recheck question 4 marking.', $feedback->comments);
         $this->assertEquals('grading_submitted', $feedback->stage);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  AUTHORIZATION DENIAL TESTS                                          */
+    /* ------------------------------------------------------------------ */
+
+    /** Regular lecturer (not HOD) cannot approve exams */
+    public function test_regular_lecturer_cannot_hod_approve()
+    {
+        $this->exam->update(['status' => 'pending_review']);
+
+        $this->actingAs($this->lecturer)
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/hod-approve")
+            ->assertStatus(403);
+
+        $this->assertEquals('pending_review', $this->exam->fresh()->status);
+    }
+
+    /** HOD from a different department cannot approve */
+    public function test_hod_from_different_department_cannot_approve()
+    {
+        $otherDept = Department::factory()->create(['school_id' => School::factory()->create()->id]);
+        $otherHod  = User::factory()->create([
+            'role'          => 'lecturer',
+            'department_id' => $otherDept->id,
+            'is_hod'        => true,
+        ]);
+
+        $this->exam->update(['status' => 'pending_review']);
+
+        $this->actingAs($otherHod)
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/hod-approve")
+            ->assertStatus(403);
+
+        $this->assertEquals('pending_review', $this->exam->fresh()->status);
+    }
+
+    /** School officer from a different school cannot approve */
+    public function test_school_officer_from_different_school_cannot_approve()
+    {
+        $otherSchool   = School::factory()->create();
+        $otherOfficer  = User::factory()->create([
+            'role'                   => 'lecturer',
+            'school_id'              => $otherSchool->id,
+            'is_school_exam_officer' => true,
+        ]);
+
+        $this->exam->update(['status' => 'verified']);
+
+        $this->actingAs($otherOfficer)
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/school-officer-approve")
+            ->assertStatus(403);
+
+        $this->assertEquals('verified', $this->exam->fresh()->status);
+    }
+
+    /** Regular lecturer cannot CBT-publish */
+    public function test_regular_lecturer_cannot_cbt_publish()
+    {
+        $this->exam->update(['status' => 'verified']);
+
+        $this->actingAs($this->lecturer)
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/cbt-publish")
+            ->assertStatus(403);
+
+        $this->assertEquals('verified', $this->exam->fresh()->status);
+    }
+
+    /** Dept officer from different department cannot approve grading */
+    public function test_dept_officer_from_different_dept_cannot_approve_grading()
+    {
+        $otherDept    = Department::factory()->create(['school_id' => School::factory()->create()->id]);
+        $otherOfficer = User::factory()->create([
+            'role'                       => 'lecturer',
+            'department_id'              => $otherDept->id,
+            'is_department_exam_officer' => true,
+        ]);
+
+        $this->exam->update(['status' => 'published', 'results_status' => 'grading_submitted']);
+
+        $this->actingAs($otherOfficer)
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/dept-officer-approve")
+            ->assertStatus(403);
+
+        $this->assertEquals('grading_submitted', $this->exam->fresh()->results_status);
+    }
+
+    /** Student cannot access workflow endpoints */
+    public function test_student_cannot_access_workflow_endpoints()
+    {
+        $student = User::factory()->create(['role' => 'student']);
+
+        $this->exam->update(['status' => 'pending_review']);
+
+        $this->actingAs($student)
+            ->postJson("/api/v1/exams/{$this->exam->uuid}/hod-approve")
+            ->assertStatus(403);
     }
 }
