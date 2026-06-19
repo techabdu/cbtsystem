@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 class Combination extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('combinations.active'));
+        static::deleted(fn () => Cache::forget('combinations.active'));
+    }
 
     /* ------------------------------------------------------------------ */
     /*  Mass Assignment                                                   */

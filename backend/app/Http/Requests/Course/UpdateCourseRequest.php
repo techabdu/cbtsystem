@@ -2,13 +2,21 @@
 
 namespace App\Http\Requests\Course;
 
+use App\Http\Requests\Concerns\SanitizesHtml;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCourseRequest extends FormRequest
 {
+    use SanitizesHtml;
+
+    protected function htmlFields(): array
+    {
+        return ['description'];
+    }
+
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return in_array($this->user()?->role, ['admin', 'edu_portal'], true);
     }
 
     /** @return array<string, mixed> */

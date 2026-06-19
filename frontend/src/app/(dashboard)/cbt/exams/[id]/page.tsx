@@ -73,7 +73,7 @@ type TabType = 'overview' | 'questions';
 
 export default function CbtExamDetailPage() {
     const params = useParams();
-    const examId = Number(params.id);
+    const examId = params.id as string;
 
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [exam, setExam] = useState<Exam | null>(null);
@@ -138,15 +138,15 @@ export default function CbtExamDetailPage() {
         setScheduleError('');
         setActionError('');
         try {
-            await updateExam(exam.id, {
+            await updateExam(exam.uuid, {
                 start_time: new Date(scheduleStart).toISOString(),
                 end_time: new Date(scheduleEnd).toISOString(),
             });
             let res;
             if (exam.status === 'cbt_setup') {
-                res = await cbtPublish(exam.id);
+                res = await cbtPublish(exam.uuid);
             } else {
-                res = await publishExam(exam.id);
+                res = await publishExam(exam.uuid);
             }
             if (res) setExam(res.data);
             setShowScheduleDialog(false);

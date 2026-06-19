@@ -36,7 +36,7 @@ export async function getCourses(filters: CourseFilters = {}): Promise<Paginated
 /**
  * Get a single course by ID (includes lecturers).
  */
-export async function getCourse(id: number): Promise<ApiResponse<{ course: Course }>> {
+export async function getCourse(id: string): Promise<ApiResponse<{ course: Course }>> {
     const response = await apiClient.get<ApiResponse<{ course: Course }>>(`/courses/${id}`);
     return response.data;
 }
@@ -52,7 +52,7 @@ export async function createCourse(data: CreateCourseData): Promise<ApiResponse<
 /**
  * Update an existing course.
  */
-export async function updateCourse(id: number, data: UpdateCourseData): Promise<ApiResponse<{ course: Course }>> {
+export async function updateCourse(id: string, data: UpdateCourseData): Promise<ApiResponse<{ course: Course }>> {
     const response = await apiClient.put<ApiResponse<{ course: Course }>>(`/courses/${id}`, data);
     return response.data;
 }
@@ -60,7 +60,7 @@ export async function updateCourse(id: number, data: UpdateCourseData): Promise<
 /**
  * Delete a course (soft delete).
  */
-export async function deleteCourse(id: number): Promise<ApiResponse<null>> {
+export async function deleteCourse(id: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/courses/${id}`);
     return response.data;
 }
@@ -68,7 +68,7 @@ export async function deleteCourse(id: number): Promise<ApiResponse<null>> {
 /**
  * Restore a soft-deleted course.
  */
-export async function restoreCourse(id: number): Promise<ApiResponse<{ course: Course }>> {
+export async function restoreCourse(id: string): Promise<ApiResponse<{ course: Course }>> {
     const response = await apiClient.post<ApiResponse<{ course: Course }>>(`/courses/${id}/restore`);
     return response.data;
 }
@@ -81,7 +81,7 @@ export async function restoreCourse(id: number): Promise<ApiResponse<{ course: C
  * Get enrolled students for a course.
  */
 export async function getCourseStudents(
-    courseId: number,
+    courseId: string,
     filters: { search?: string; enrollment_status?: string; per_page?: number; page?: number } = {}
 ): Promise<PaginatedResponse<EnrolledStudent>> {
     const params = new URLSearchParams();
@@ -100,7 +100,7 @@ export async function getCourseStudents(
 /**
  * Enroll a student in a course.
  */
-export async function enrollStudent(courseId: number, data: EnrollStudentData): Promise<ApiResponse<unknown>> {
+export async function enrollStudent(courseId: string, data: EnrollStudentData): Promise<ApiResponse<unknown>> {
     const response = await apiClient.post<ApiResponse<unknown>>(`/courses/${courseId}/enroll`, data);
     return response.data;
 }
@@ -108,7 +108,7 @@ export async function enrollStudent(courseId: number, data: EnrollStudentData): 
 /**
  * Unenroll (drop) a student from a course.
  */
-export async function unenrollStudent(courseId: number, studentId: number): Promise<ApiResponse<null>> {
+export async function unenrollStudent(courseId: string, studentId: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/courses/${courseId}/enroll/${studentId}`);
     return response.data;
 }
@@ -116,7 +116,7 @@ export async function unenrollStudent(courseId: number, studentId: number): Prom
 /**
  * Bulk enroll multiple students.
  */
-export async function bulkEnrollStudents(courseId: number, data: BulkEnrollData): Promise<ApiResponse<{
+export async function bulkEnrollStudents(courseId: string, data: BulkEnrollData): Promise<ApiResponse<{
     enrolled: number;
     skipped: number;
     errors: Array<{ student_id: number; error: string }>;
@@ -136,7 +136,7 @@ export async function bulkEnrollStudents(courseId: number, data: BulkEnrollData)
 /**
  * Get lecturers assigned to a course.
  */
-export async function getCourseLecturers(courseId: number): Promise<ApiResponse<{ lecturers: CourseLecturer[] }>> {
+export async function getCourseLecturers(courseId: string): Promise<ApiResponse<{ lecturers: CourseLecturer[] }>> {
     const response = await apiClient.get<ApiResponse<{ lecturers: CourseLecturer[] }>>(`/courses/${courseId}/lecturers`);
     return response.data;
 }
@@ -144,7 +144,7 @@ export async function getCourseLecturers(courseId: number): Promise<ApiResponse<
 /**
  * Assign a lecturer to a course.
  */
-export async function assignLecturer(courseId: number, data: AssignLecturerData): Promise<ApiResponse<unknown>> {
+export async function assignLecturer(courseId: string, data: AssignLecturerData): Promise<ApiResponse<unknown>> {
     const response = await apiClient.post<ApiResponse<unknown>>(`/courses/${courseId}/lecturers`, data);
     return response.data;
 }
@@ -152,7 +152,7 @@ export async function assignLecturer(courseId: number, data: AssignLecturerData)
 /**
  * Unassign a lecturer from a course.
  */
-export async function unassignLecturer(courseId: number, lecturerId: number): Promise<ApiResponse<null>> {
+export async function unassignLecturer(courseId: string, lecturerId: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/courses/${courseId}/lecturers/${lecturerId}`);
     return response.data;
 }

@@ -31,6 +31,7 @@ import {
 
 interface UserOption {
     id: number;
+    uuid: string;
     first_name: string;
     last_name: string;
     full_name: string;
@@ -47,7 +48,7 @@ interface UserOption {
 export default function AdminCourseDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const courseId = Number(params.id);
+    const courseId = params.id as string;
 
     // Course data
     const [course, setCourse] = useState<Course | null>(null);
@@ -192,7 +193,7 @@ export default function AdminCourseDetailPage() {
         setActionLoadingId(-1);
         setErrorMessage('');
         try {
-            await enrollStudent(courseId, { student_id: Number(enrollStudentId) });
+            await enrollStudent(courseId, { student_id: enrollStudentId });
             setSuccessMessage('Student enrolled successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             setShowEnrollForm(false);
@@ -210,11 +211,11 @@ export default function AdminCourseDetailPage() {
         }
     };
 
-    const handleUnenrollStudent = async (studentId: number, studentName: string) => {
+    const handleUnenrollStudent = async (studentUuid: string, studentId: number, studentName: string) => {
         if (!confirm(`Unenroll "${studentName}" from this course?`)) return;
         setActionLoadingId(studentId);
         try {
-            await unenrollStudent(courseId, studentId);
+            await unenrollStudent(courseId, studentUuid);
             setSuccessMessage(`"${studentName}" unenrolled.`);
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchStudents();
@@ -234,7 +235,7 @@ export default function AdminCourseDetailPage() {
         setErrorMessage('');
         try {
             await assignLecturer(courseId, {
-                lecturer_id: Number(assignLecturerId),
+                lecturer_id: assignLecturerId,
                 role: assignRole,
             });
             setSuccessMessage('Lecturer assigned successfully.');
@@ -254,11 +255,11 @@ export default function AdminCourseDetailPage() {
         }
     };
 
-    const handleUnassignLecturer = async (lecturerId: number, lecturerName: string) => {
+    const handleUnassignLecturer = async (lecturerUuid: string, lecturerId: number, lecturerName: string) => {
         if (!confirm(`Unassign "${lecturerName}" from this course?`)) return;
         setActionLoadingId(lecturerId);
         try {
-            await unassignLecturer(courseId, lecturerId);
+            await unassignLecturer(courseId, lecturerUuid);
             setSuccessMessage(`"${lecturerName}" unassigned.`);
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchLecturers();
@@ -462,8 +463,8 @@ export default function AdminCourseDetailPage() {
                                                 <button
                                                     type="button"
                                                     key={s.id}
-                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors border-b last:border-b-0 ${enrollStudentId === String(s.id) ? 'bg-primary/10 font-medium' : ''}`}
-                                                    onClick={() => setEnrollStudentId(String(s.id))}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors border-b last:border-b-0 ${enrollStudentId === s.uuid ? 'bg-primary/10 font-medium' : ''}`}
+                                                    onClick={() => setEnrollStudentId(s.uuid)}
                                                 >
                                                     <p className="font-medium">{s.full_name || `${s.first_name} ${s.last_name}`}</p>
                                                     <p className="text-xs text-muted-foreground">{s.email} {s.student_id && `• ${s.student_id}`}</p>
@@ -568,7 +569,7 @@ export default function AdminCourseDetailPage() {
                                                             variant="ghost"
                                                             size="icon"
                                                             title="Unenroll"
-                                                            onClick={() => handleUnenrollStudent(student.id, student.full_name || `${student.first_name} ${student.last_name}`)}
+                                                            onClick={() => handleUnenrollStudent(student.uuid, student.id, student.full_name || `${student.first_name} ${student.last_name}`)}
                                                             disabled={actionLoadingId === student.id}
                                                         >
                                                             {actionLoadingId === student.id
@@ -662,8 +663,8 @@ export default function AdminCourseDetailPage() {
                                                 <button
                                                     type="button"
                                                     key={l.id}
-                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors border-b last:border-b-0 ${assignLecturerId === String(l.id) ? 'bg-primary/10 font-medium' : ''}`}
-                                                    onClick={() => setAssignLecturerId(String(l.id))}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors border-b last:border-b-0 ${assignLecturerId === l.uuid ? 'bg-primary/10 font-medium' : ''}`}
+                                                    onClick={() => setAssignLecturerId(l.uuid)}
                                                 >
                                                     <p className="font-medium">{l.full_name || `${l.first_name} ${l.last_name}`}</p>
                                                     <p className="text-xs text-muted-foreground">{l.email} {l.staff_id && `• ${l.staff_id}`}</p>
@@ -758,7 +759,7 @@ export default function AdminCourseDetailPage() {
                                                             variant="ghost"
                                                             size="icon"
                                                             title="Unassign"
-                                                            onClick={() => handleUnassignLecturer(lecturer.id, lecturer.full_name)}
+                                                            onClick={() => handleUnassignLecturer(lecturer.uuid, lecturer.id, lecturer.full_name)}
                                                             disabled={actionLoadingId === lecturer.id}
                                                         >
                                                             {actionLoadingId === lecturer.id

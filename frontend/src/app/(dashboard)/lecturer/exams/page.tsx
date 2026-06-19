@@ -171,7 +171,7 @@ export default function LecturerExamsPage() {
         if (!confirm(getDeleteConfirmMessage(exam))) return;
         setActionLoadingId(exam.id);
         try {
-            await deleteExam(exam.id);
+            await deleteExam(exam.uuid);
             setSuccessMessage('Exam deleted successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchExams();
@@ -189,7 +189,7 @@ export default function LecturerExamsPage() {
         if (!confirm(`Publish "${exam.title}" as a practice exam? Students will be able to access it immediately.`)) return;
         setActionLoadingId(exam.id);
         try {
-            await publishExam(exam.id);
+            await publishExam(exam.uuid);
             setSuccessMessage('Practice exam published successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchExams();
@@ -207,7 +207,7 @@ export default function LecturerExamsPage() {
         if (!confirm(`Submit "${exam.title}" for HOD review? The exam will be locked from editing until reviewed.`)) return;
         setActionLoadingId(exam.id);
         try {
-            await submitForHodReview(exam.id);
+            await submitForHodReview(exam.uuid);
             setSuccessMessage('Exam submitted for HOD review successfully.');
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchExams();

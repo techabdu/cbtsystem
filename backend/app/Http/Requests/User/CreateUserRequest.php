@@ -8,11 +8,11 @@ use Illuminate\Validation\Rule;
 class CreateUserRequest extends FormRequest
 {
     /**
-     * Only admins can create users via this endpoint.
+     * Admins and edu_portal admins can create users via this endpoint.
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return in_array($this->user()?->role, ['admin', 'edu_portal'], true);
     }
 
     /**
@@ -29,7 +29,17 @@ class CreateUserRequest extends FormRequest
             'last_name'     => 'required|string|max:100',
             'middle_name'   => 'nullable|string|max:100',
             'email'         => 'required|email|max:255|unique:users,email',
-            'role'          => 'required|string|in:admin,lecturer,student',
+            'role'          => [
+                'required',
+                'string',
+                'in:admin,lecturer,student,edu_portal,cbt',
+                // Only an admin may create/assign the admin role (no privilege escalation by edu_portal).
+                function ($attribute, $value, $fail) {
+                    if ($value === 'admin' && $this->user()?->role !== 'admin') {
+                        $fail('Only administrators can create or assign the admin role.');
+                    }
+                },
+            ],
             'department_id' => [
                 'nullable',
                 'integer',
@@ -56,7 +66,7 @@ class CreateUserRequest extends FormRequest
                 Rule::requiredIf(fn() => $this->role === 'student'),
             ],
             'student_id' => [
-                Rule::requiredIf($this->input('role') === 'student'),
+                Rule::requiredIf(fn() => $this->role === 'student'),
                 'nullable',
                 'string',
                 'max:50',
@@ -67,7 +77,7 @@ class CreateUserRequest extends FormRequest
                 'string',
                 'max:20',
                 Rule::unique('users', 'staff_id'),
-                Rule::requiredIf(fn() => in_array($this->role, ['admin', 'lecturer'])),
+                Rule::requiredIf(fn() => in_array($this->role, ['admin', 'lecturer', 'edu_portal', 'cbt'])),
             ],
             'phone'       => 'nullable|string|max:20',
             'is_active'   => 'nullable|boolean',
@@ -88,7 +98,7 @@ class CreateUserRequest extends FormRequest
             'email.unique'            => 'A user with this email already exists.',
             'staff_id.unique'         => 'This staff ID is already in use.',
             'student_id.unique'       => 'This student ID is already in use.',
-            'role.in'                 => 'Role must be admin, lecturer, or student.',
+            'role.in'                 => 'Role must be one of: admin, lecturer, student, edu_portal, cbt.',
             'department_id.required' => 'Department is required for lecturers.',
             'combination_id.required' => 'Subject combination is required for students.',
             'level_id.required' => 'Level is required for students.',

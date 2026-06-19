@@ -43,7 +43,7 @@ class ExamWorkflowServiceTest extends TestCase
         \App\Models\ExamQuestion::create([
             'exam_id'     => $exam->id,
             'question_id' => $question->id,
-            'order'       => 1,
+            'question_order' => 1,
             'points'      => 2.00,
         ]);
 
@@ -144,7 +144,7 @@ class ExamWorkflowServiceTest extends TestCase
 
         // Add a question so publish() passes the question-count check
         $q = \App\Models\Question::factory()->create();
-        \App\Models\ExamQuestion::create(['exam_id' => $exam->id, 'question_id' => $q->id, 'order' => 1, 'points' => 2]);
+        \App\Models\ExamQuestion::create(['exam_id' => $exam->id, 'question_id' => $q->id, 'question_order' => 1, 'points' => 2]);
 
         $user   = $this->makeUser(['role' => 'cbt']);
         $result = $this->service->publish($exam, $user);

@@ -2,10 +2,18 @@
 
 namespace App\Http\Requests\Exam;
 
+use App\Http\Requests\Concerns\SanitizesHtml;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateExamRequest extends FormRequest
 {
+    use SanitizesHtml;
+
+    protected function htmlFields(): array
+    {
+        return ['description', 'instructions'];
+    }
+
     public function authorize(): bool
     {
         return true; // Role check is handled in the controller

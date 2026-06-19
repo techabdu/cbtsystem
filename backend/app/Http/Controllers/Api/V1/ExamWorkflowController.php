@@ -26,6 +26,7 @@ use Illuminate\Http\JsonResponse;
  *    Lecturer   → submitGrading    → results_status = grading_submitted
  *    Dept Off.  → deptOfficerApprove → results_status = results_verified
  *    Dept Off.  → deptOfficerReject  → results_status = pending_grading  (+ feedback)
+ *    Edu Portal → publishResults     → results_status = results_published
  */
 class ExamWorkflowController extends Controller
 {
@@ -58,7 +59,7 @@ class ExamWorkflowController extends Controller
      */
     public function hodApprove(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('approveAsHod', $exam);
 
         $exam = $this->service->verifyExam($exam, request()->user());
 
@@ -75,13 +76,12 @@ class ExamWorkflowController extends Controller
      */
     public function hodReject(ExamFeedbackRequest $request, Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('approveAsHod', $exam);
 
         $comments = $request->validated('comments');
 
         $exam = $this->service->rejectExam($exam, $request->user(), $comments);
 
-        // Persist feedback so lecturer can see the rejection reason
         ExamFeedback::create([
             'exam_id'      => $exam->id,
             'user_id'      => $request->user()->id,
@@ -98,12 +98,12 @@ class ExamWorkflowController extends Controller
     }
 
     /**
-     * School Officer (or CBT) publishes a verified exam.
+     * School Officer publishes a verified exam.
      * verified → published
      */
     public function schoolOfficerApprove(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('approveAsSchoolOfficer', $exam);
 
         $exam = $this->service->publish($exam, request()->user());
 
@@ -120,7 +120,7 @@ class ExamWorkflowController extends Controller
      */
     public function schoolOfficerReject(ExamFeedbackRequest $request, Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('approveAsSchoolOfficer', $exam);
 
         $comments = $request->validated('comments');
 
@@ -143,11 +143,11 @@ class ExamWorkflowController extends Controller
 
     /**
      * CBT Admin publishes a verified exam.
-     * verified → published  (same as schoolOfficerApprove)
+     * verified → published
      */
     public function cbtPublish(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('publishAsCbt', $exam);
 
         $exam = $this->service->publish($exam, request()->user());
 
@@ -168,14 +168,7 @@ class ExamWorkflowController extends Controller
      */
     public function syncResults(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
-
-        if (! $exam->isPublished()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only published exams can have results synced.',
-            ], 422);
-        }
+        $this->authorize('syncResultsAsCbt', $exam);
 
         $exam->update(['results_status' => 'pending_grading']);
 
@@ -209,7 +202,7 @@ class ExamWorkflowController extends Controller
      */
     public function deptOfficerApprove(Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('approveGradingAsDeptOfficer', $exam);
 
         $exam = $this->service->verifyResults($exam, request()->user());
 
@@ -226,7 +219,7 @@ class ExamWorkflowController extends Controller
      */
     public function deptOfficerReject(ExamFeedbackRequest $request, Exam $exam): JsonResponse
     {
-        $this->authorize('view', $exam);
+        $this->authorize('approveGradingAsDeptOfficer', $exam);
 
         $comments = $request->validated('comments');
 
@@ -243,6 +236,23 @@ class ExamWorkflowController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Grading rejected by Dept Officer. Returned to lecturer.',
+            'data'    => $exam,
+        ]);
+    }
+
+    /**
+     * Edu Portal admin publishes verified results to students.
+     * results_status: results_verified → results_published
+     */
+    public function publishResults(Exam $exam): JsonResponse
+    {
+        $this->authorize('publishResultsAsEduPortal', $exam);
+
+        $exam = $this->service->publishResults($exam, request()->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Results published. Students can now view their scores.',
             'data'    => $exam,
         ]);
     }

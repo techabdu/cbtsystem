@@ -31,7 +31,7 @@ export async function hodAssignCourse(data: HodAssignCourseData): Promise<ApiRes
 }
 
 /** Unassign a lecturer from a course */
-export async function hodUnassignCourse(lecturerId: number, courseId: number): Promise<ApiResponse<null>> {
+export async function hodUnassignCourse(lecturerId: string, courseId: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete(`/hod/unassign-course/${lecturerId}/${courseId}`);
     return response.data;
 }

@@ -109,9 +109,11 @@ class QuestionService
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function find(int $id): Question
+    public function find(string $id): Question
     {
-        return Question::with(['course', 'creator', 'verifier'])->findOrFail($id);
+        return Question::with(['course', 'creator', 'verifier'])
+            ->where('uuid', $id)
+            ->firstOrFail();
     }
 
     /* ------------------------------------------------------------------ */
@@ -237,9 +239,9 @@ class QuestionService
      * @param  User  $user
      * @return Question
      */
-    public function restore(int $id, User $user): Question
+    public function restore(string $id, User $user): Question
     {
-        $question = Question::onlyTrashed()->findOrFail($id);
+        $question = Question::onlyTrashed()->where('uuid', $id)->firstOrFail();
         $question->restore();
         $question->update(['is_active' => true]);
 

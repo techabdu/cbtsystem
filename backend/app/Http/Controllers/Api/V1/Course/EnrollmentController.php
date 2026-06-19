@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Course;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\Course\CourseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,18 +19,19 @@ class EnrollmentController extends Controller
     /*  Enroll a student                                                   */
     /* ------------------------------------------------------------------ */
 
-    public function enroll(Request $request, int $courseId): JsonResponse
+    public function enroll(Request $request, string $courseId): JsonResponse
     {
         $request->validate([
-            'student_id' => 'required|integer|exists:users,id',
+            'student_id' => 'required|string|exists:users,uuid',
         ]);
 
         $course = $this->courseService->find($courseId);
+        $student = User::where('uuid', $request->input('student_id'))->firstOrFail();
 
         try {
             $enrollment = $this->courseService->enrollStudent(
                 $course,
-                $request->input('student_id'),
+                $student->id,
                 $request->user(),
             );
 
@@ -51,12 +53,13 @@ class EnrollmentController extends Controller
     /*  Unenroll a student                                                 */
     /* ------------------------------------------------------------------ */
 
-    public function unenroll(Request $request, int $courseId, int $studentId): JsonResponse
+    public function unenroll(Request $request, string $courseId, string $studentId): JsonResponse
     {
         $course = $this->courseService->find($courseId);
+        $student = User::where('uuid', $studentId)->firstOrFail();
 
         try {
-            $this->courseService->unenrollStudent($course, $studentId, $request->user());
+            $this->courseService->unenrollStudent($course, $student->id, $request->user());
         } catch (\RuntimeException $e) {
             return ResponseHelper::error($e->getMessage(), 422);
         }
@@ -68,18 +71,19 @@ class EnrollmentController extends Controller
     /*  Bulk enroll students                                               */
     /* ------------------------------------------------------------------ */
 
-    public function bulkEnroll(Request $request, int $courseId): JsonResponse
+    public function bulkEnroll(Request $request, string $courseId): JsonResponse
     {
         $request->validate([
             'student_ids'   => 'required|array|min:1',
-            'student_ids.*' => 'integer|exists:users,id',
+            'student_ids.*' => 'string|exists:users,uuid',
         ]);
 
         $course = $this->courseService->find($courseId);
+        $integerIds = User::whereIn('uuid', $request->input('student_ids'))->pluck('id')->toArray();
 
         $result = $this->courseService->bulkEnrollStudents(
             $course,
-            $request->input('student_ids'),
+            $integerIds,
             $request->user(),
         );
 

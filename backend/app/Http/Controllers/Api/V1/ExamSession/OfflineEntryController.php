@@ -12,6 +12,7 @@ use App\Models\ExamAccessCode;
 use App\Models\ExamSession;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class OfflineEntryController extends Controller
 {
@@ -73,14 +74,16 @@ class OfflineEntryController extends Controller
             return ResponseHelper::error('You are not enrolled in any courses.', 403);
         }
 
-        // Find published, non-practice exams currently within their time window
-        $exam = Exam::with('course')
-            ->whereIn('course_id', $enrolledCourseIds)
-            ->where('status', 'published')
-            ->where('is_practice', false)
-            ->where('start_time', '<=', now())
-            ->where('end_time', '>=', now())
-            ->first();
+        $activeExams = Cache::remember('active_published_exams', 60, fn () =>
+            Exam::with('course')
+                ->where('status', 'published')
+                ->where('is_practice', false)
+                ->where('start_time', '<=', now())
+                ->where('end_time', '>=', now())
+                ->get()
+        );
+
+        $exam = $activeExams->whereIn('course_id', $enrolledCourseIds)->first();
 
         if (! $exam) {
             return ResponseHelper::error('No exam is currently available for you. Please confirm with your invigilator.', 404);

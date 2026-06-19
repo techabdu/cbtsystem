@@ -47,7 +47,7 @@ class SessionRecoveryTest extends TestCase
 
         for ($i = 1; $i <= 5; $i++) {
             $q = Question::factory()->create(['question_type' => 'multiple_choice', 'correct_answer' => 'A', 'points' => 4]);
-            ExamQuestion::create(['exam_id' => $this->exam->id, 'question_id' => $q->id, 'order' => $i, 'points' => 4]);
+            ExamQuestion::create(['exam_id' => $this->exam->id, 'question_id' => $q->id, 'question_order' => $i, 'points' => 4]);
             $this->questions[] = $q;
         }
 

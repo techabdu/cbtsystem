@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class DepartmentService
 {
@@ -69,9 +70,11 @@ class DepartmentService
      */
     public function allActive(): Collection
     {
-        return Department::active()
-            ->orderBy('name')
-            ->get(['id', 'code', 'name']);
+        return Cache::remember('departments.active', 3600, fn () =>
+            Department::active()
+                ->orderBy('name')
+                ->get(['id', 'code', 'name'])
+        );
     }
 
     /* ------------------------------------------------------------------ */

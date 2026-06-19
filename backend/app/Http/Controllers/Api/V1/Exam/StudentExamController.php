@@ -96,7 +96,7 @@ class StudentExamController extends Controller
     /*  Show — Single published exam for student                           */
     /* ------------------------------------------------------------------ */
 
-    public function show(int $id, Request $request): JsonResponse
+    public function show(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -104,7 +104,7 @@ class StudentExamController extends Controller
             ->withCount('examQuestions')
             ->where('status', 'published')
             ->where('is_practice', false)
-            ->findOrFail($id);
+            ->where('uuid', $id)->firstOrFail();
 
         // Verify student is enrolled in the course
         $enrolled = CourseEnrollment::where('course_id', $exam->course_id)
@@ -148,11 +148,11 @@ class StudentExamController extends Controller
     /*  Results — Student views their individual exam results              */
     /* ------------------------------------------------------------------ */
 
-    public function results(int $id, Request $request): JsonResponse
+    public function results(string $id, Request $request): JsonResponse
     {
         $user = $request->user();
 
-        $exam = Exam::with(['course', 'examQuestions'])->findOrFail($id);
+        $exam = Exam::with(['course', 'examQuestions'])->where('uuid', $id)->firstOrFail();
 
         // Verify student is enrolled in the course
         $enrolled = CourseEnrollment::where('course_id', $exam->course_id)

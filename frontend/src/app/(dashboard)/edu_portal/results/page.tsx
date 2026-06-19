@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { getExams, getExamResults } from '@/lib/api/exams';
+import { getExams, getExamResults, publishResults } from '@/lib/api/exams';
 import type { Exam, ExamResults } from '@/lib/types/models';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
     CheckCircle2,
     Download,
     BarChart3,
+    Send,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -21,6 +22,7 @@ import {
 
 export default function ResultsPublishingPage() {
     const [exams, setExams] = useState<Exam[]>([]);
+    const [pendingExams, setPendingExams] = useState<Exam[]>([]);
     const [examResults, setExamResults] = useState<Record<number, ExamResults>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -43,19 +45,42 @@ export default function ResultsPublishingPage() {
         }
     };
 
+    const handlePublish = async (exam: Exam) => {
+        setProcessingId(exam.id);
+        setActionError('');
+        setActionSuccess('');
+        try {
+            await publishResults(exam.uuid);
+            setActionSuccess(`Results published for "${exam.title}". Students can now view their scores.`);
+            setTimeout(() => setActionSuccess(''), 4000);
+            await fetchExams();
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } } };
+            setActionError(e.response?.data?.message || 'Failed to publish results.');
+            setTimeout(() => setActionError(''), 5000);
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
     const fetchExams = useCallback(async () => {
         setIsLoading(true);
         setError('');
         try {
-            const res = await getExams({ results_status: 'results_published', per_page: 50 });
-            setExams(res.data);
+            // Verified results awaiting publication + already-published results.
+            const [pendingRes, publishedRes] = await Promise.all([
+                getExams({ results_status: 'results_verified', per_page: 50 }),
+                getExams({ results_status: 'results_published', per_page: 50 }),
+            ]);
+            setPendingExams(pendingRes.data);
+            setExams(publishedRes.data);
 
-            // Fetch results for each exam
+            // Fetch results for each published exam
             const resultsMap: Record<number, ExamResults> = {};
             await Promise.all(
-                res.data.map(async (exam: Exam) => {
+                publishedRes.data.map(async (exam: Exam) => {
                     try {
-                        const r = await getExamResults(exam.id);
+                        const r = await getExamResults(exam.uuid);
                         resultsMap[exam.id] = r.data;
                     } catch { /* ignore */ }
                 })
@@ -68,8 +93,6 @@ export default function ResultsPublishingPage() {
             setIsLoading(false);
         }
     }, []);
-
-    useEffect(() => { fetchExams(); }, [fetchExams]);
 
     useEffect(() => { fetchExams(); }, [fetchExams]);
 
@@ -111,8 +134,51 @@ export default function ResultsPublishingPage() {
                 </div>
             )}
 
+            {/* Pending publication — verified results awaiting Edu Portal publish */}
+            {pendingExams.length > 0 && (
+                <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-muted-foreground">
+                        Pending Publication ({pendingExams.length})
+                    </h2>
+                    {pendingExams.map(exam => (
+                        <Card key={exam.id} className="border-amber-200 bg-amber-50/40 shadow-sm dark:border-amber-800/40 dark:bg-amber-950/10">
+                            <CardContent className="p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-bold font-mono">
+                                                {exam.course?.code || `#${exam.course_id}`}
+                                            </span>
+                                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                results verified
+                                            </span>
+                                        </div>
+                                        <h3 className="font-semibold text-sm leading-tight">{exam.title}</h3>
+                                        {exam.creator?.full_name && (
+                                            <p className="text-xs text-muted-foreground">by {exam.creator.full_name}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handlePublish(exam)}
+                                            disabled={processingId !== null}
+                                            isLoading={processingId === exam.id}
+                                            className="gap-1.5 bg-green-600 hover:bg-green-700"
+                                        >
+                                            <Send className="h-3.5 w-3.5" />
+                                            Publish Results
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
             {/* Empty state */}
-            {exams.length === 0 && !error && (
+            {exams.length === 0 && pendingExams.length === 0 && !error && (
                 <Card>
                     <CardContent className="py-16 text-center">
                         <ClipboardCheck className="mx-auto h-10 w-10 text-muted-foreground/40" />

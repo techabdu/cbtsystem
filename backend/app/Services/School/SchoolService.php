@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class SchoolService
 {
@@ -50,16 +51,20 @@ class SchoolService
 
     public function allActive(): Collection
     {
-        return School::orderBy('name')->get(['id', 'code', 'name']);
+        return Cache::remember('schools.active', 3600, fn () =>
+            School::orderBy('name')->get(['id', 'code', 'name'])
+        );
     }
 
     /* ------------------------------------------------------------------ */
     /*  Show                                                               */
     /* ------------------------------------------------------------------ */
 
-    public function find(int $id): School
+    public function find(string $id): School
     {
-        return School::withCount('departments')->findOrFail($id);
+        return School::withCount('departments')
+            ->where('uuid', $id)
+            ->firstOrFail();
     }
 
     /* ------------------------------------------------------------------ */
@@ -127,9 +132,9 @@ class SchoolService
     /*  Restore                                                            */
     /* ------------------------------------------------------------------ */
 
-    public function restore(int $id, User $admin): School
+    public function restore(string $id, User $admin): School
     {
-        $school = School::onlyTrashed()->findOrFail($id);
+        $school = School::onlyTrashed()->where('uuid', $id)->firstOrFail();
         $school->restore();
 
         $this->logActivity($admin, 'school_restored', $school->id);

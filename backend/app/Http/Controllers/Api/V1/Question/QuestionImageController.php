@@ -30,7 +30,7 @@ class QuestionImageController extends Controller
      * @param  Request  $request
      * @return JsonResponse
      */
-    public function store(int $id, Request $request): JsonResponse
+    public function store(string $id, Request $request): JsonResponse
     {
         $request->validate([
             'image' => [
@@ -103,7 +103,7 @@ class QuestionImageController extends Controller
      * @param  Request  $request
      * @return JsonResponse
      */
-    public function destroy(int $id, Request $request): JsonResponse
+    public function destroy(string $id, Request $request): JsonResponse
     {
         $question = $this->questionService->find($id);
         $user     = $request->user();

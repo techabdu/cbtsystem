@@ -141,7 +141,7 @@ export default function EduPortalSchoolsPage() {
                 setSuccessMessage('School created successfully');
             } else if (formMode === 'edit' && editingSchool) {
                 const updateData: UpdateSchoolData = { ...formData };
-                await updateSchool(editingSchool.id, updateData);
+                await updateSchool(editingSchool.uuid, updateData);
                 setSuccessMessage('School updated successfully');
             }
             closeForm();
@@ -166,7 +166,7 @@ export default function EduPortalSchoolsPage() {
         if (!confirm(`Delete "${school.name}" (${school.code})?\n\nThis cannot be undone if the school has active departments.`)) return;
         setActionLoadingId(school.id);
         try {
-            await deleteSchool(school.id);
+            await deleteSchool(school.uuid);
             setSuccessMessage(`"${school.name}" deleted.`);
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchSchools();
@@ -188,7 +188,7 @@ export default function EduPortalSchoolsPage() {
         if (!confirm(`Restore "${school.name}"? This will reactivate the school.`)) return;
         setActionLoadingId(school.id);
         try {
-            await restoreSchool(school.id);
+            await restoreSchool(school.uuid);
             setSuccessMessage(`"${school.name}" restored successfully.`);
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchSchools();

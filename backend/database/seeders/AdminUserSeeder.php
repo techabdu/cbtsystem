@@ -9,21 +9,18 @@ use Illuminate\Support\Str;
 
 class AdminUserSeeder extends Seeder
 {
-    /**
-     * Seed the three administrator accounts:
-     *   1. System Admin      — admin@fctzuba.edu.ng   (role = admin)
-     *   2. Edu Portal Admin  — eduportal@fctzuba.edu.ng (role = edu_portal)
-     *   3. CBT Center Admin  — cbt@fctzuba.edu.ng     (role = cbt)
-     */
+    // WARNING: This seeder is for DEVELOPMENT ONLY. Never run in production.
+    // Admin accounts are created without passwords — use the activation flow.
     public function run(): void
     {
         $now = now();
+        $devPassword = Hash::make(env('SEED_ADMIN_PASSWORD', Str::random(24)));
 
         $admins = [
             [
                 'uuid'               => Str::uuid()->toString(),
                 'email'              => 'admin@fctzuba.edu.ng',
-                'password'           => Hash::make('Admin@123456'),
+                'password'           => $devPassword,
                 'first_name'         => 'System',
                 'last_name'          => 'Administrator',
                 'middle_name'        => null,
@@ -41,7 +38,7 @@ class AdminUserSeeder extends Seeder
             [
                 'uuid'               => Str::uuid()->toString(),
                 'email'              => 'eduportal@fctzuba.edu.ng',
-                'password'           => Hash::make('EduPortal@123'),
+                'password'           => $devPassword,
                 'first_name'         => 'Edu',
                 'last_name'          => 'Portal',
                 'middle_name'        => 'Manager',
@@ -59,7 +56,7 @@ class AdminUserSeeder extends Seeder
             [
                 'uuid'               => Str::uuid()->toString(),
                 'email'              => 'cbt@fctzuba.edu.ng',
-                'password'           => Hash::make('CbtAdmin@123'),
+                'password'           => $devPassword,
                 'first_name'         => 'CBT',
                 'last_name'          => 'Center',
                 'middle_name'        => 'Admin',
@@ -77,5 +74,9 @@ class AdminUserSeeder extends Seeder
         ];
 
         DB::table('users')->insert($admins);
+
+        if (app()->environment('local', 'testing')) {
+            $this->command->info('Admin accounts seeded. Set SEED_ADMIN_PASSWORD in .env or use activation flow.');
+        }
     }
 }

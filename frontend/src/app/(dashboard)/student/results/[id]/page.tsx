@@ -22,7 +22,7 @@ import {
 
 export default function StudentExamResultPage() {
     const params = useParams();
-    const examId = Number(params.id);
+    const examId = params.id as string;
 
     const [result, setResult] = useState<StudentExamResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);

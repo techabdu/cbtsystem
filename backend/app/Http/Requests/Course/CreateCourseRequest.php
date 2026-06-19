@@ -2,13 +2,21 @@
 
 namespace App\Http\Requests\Course;
 
+use App\Http\Requests\Concerns\SanitizesHtml;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateCourseRequest extends FormRequest
 {
+    use SanitizesHtml;
+
+    protected function htmlFields(): array
+    {
+        return ['description'];
+    }
+
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return in_array($this->user()?->role, ['admin', 'edu_portal'], true);
     }
 
     /** @return array<string, mixed> */
@@ -19,7 +27,7 @@ class CreateCourseRequest extends FormRequest
             'code'          => 'required|string|max:50|unique:courses,code',
             'title'         => 'required|string|max:255',
             'description'   => 'nullable|string|max:5000',
-            'credit_hours'  => 'nullable|integer|min:1|max:20',
+            'credit_hours'  => 'required|integer|min:1|max:20',
             'semester'      => 'nullable|string|max:20',
             'academic_year' => 'nullable|string|max:20',
             'level'         => 'nullable|string|max:20',
@@ -34,9 +42,10 @@ class CreateCourseRequest extends FormRequest
         return [
             'code.unique'          => 'A course with this code already exists.',
             'code.max'             => 'Course code must be 50 characters or fewer.',
-            'department_id.exists' => 'The selected department does not exist.',
-            'credit_hours.min'     => 'Credit hours must be at least 1.',
-            'credit_hours.max'     => 'Credit hours cannot exceed 20.',
+            'department_id.exists'  => 'The selected department does not exist.',
+            'credit_hours.required' => 'Credit hours is required.',
+            'credit_hours.min'      => 'Credit hours must be at least 1.',
+            'credit_hours.max'      => 'Credit hours cannot exceed 20.',
         ];
     }
 }

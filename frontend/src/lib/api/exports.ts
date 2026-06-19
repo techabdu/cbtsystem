@@ -3,9 +3,8 @@ import { API_BASE_URL, BACKEND_URL } from '@/lib/constants';
 /* ------------------------------------------------------------------ */
 /*  Authenticated file download                                         */
 /*                                                                      */
-/*  window.open() cannot set headers, so we fetch the file using axios  */
-/*  (which has the Bearer token interceptor) and trigger a download via */
-/*  a temporary blob URL.                                               */
+/*  window.open() cannot set auth headers, so we fetch the file with    */
+/*  credentials: 'include' (session cookies) and download via blob URL. */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -13,12 +12,10 @@ import { API_BASE_URL, BACKEND_URL } from '@/lib/constants';
  * trigger a browser "Save As" dialog with the given filename.
  */
 export async function downloadFile(path: string, filename: string): Promise<void> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-
     const response = await fetch(`${API_BASE_URL}${path}`, {
         method: 'GET',
+        credentials: 'include',
         headers: {
-            Authorization: token ? `Bearer ${token}` : '',
             Accept: 'application/octet-stream, application/pdf, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*',
         },
     });
@@ -86,7 +83,7 @@ export function downloadEnrollmentList(params?: { course_id?: number; department
 /**
  * Download a results export as Excel.
  */
-export function downloadResultsExport(params?: { exam_id?: number; department_id?: number }): Promise<void> {
+export function downloadResultsExport(params?: { exam_id?: string; department_id?: number }): Promise<void> {
     const query = params ? '?' + new URLSearchParams(
         Object.fromEntries(
             Object.entries(params)

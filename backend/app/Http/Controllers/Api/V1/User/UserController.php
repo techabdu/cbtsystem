@@ -65,7 +65,7 @@ class UserController extends Controller
     /**
      * Show a single user.
      */
-    public function show(int $id): JsonResponse
+    public function show(string $id): JsonResponse
     {
         $user = $this->userService->find($id);
 
@@ -82,7 +82,7 @@ class UserController extends Controller
     /**
      * Update a user.
      */
-    public function update(UpdateUserRequest $request, int $id): JsonResponse
+    public function update(UpdateUserRequest $request, string $id): JsonResponse
     {
         $user = $this->userService->find($id);
 
@@ -105,7 +105,7 @@ class UserController extends Controller
     /**
      * Soft-delete a user.
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $user = $this->userService->find($id);
 
@@ -134,7 +134,7 @@ class UserController extends Controller
     /**
      * Restore a soft-deleted user.
      */
-    public function restore(Request $request, int $id): JsonResponse
+    public function restore(Request $request, string $id): JsonResponse
     {
         $user = $this->userService->restore($id, $request->user());
 
@@ -151,7 +151,7 @@ class UserController extends Controller
     /**
      * Toggle a user's active status.
      */
-    public function toggleActive(Request $request, int $id): JsonResponse
+    public function toggleActive(Request $request, string $id): JsonResponse
     {
         $user = $this->userService->find($id);
 

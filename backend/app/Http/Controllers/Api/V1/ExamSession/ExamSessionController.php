@@ -19,7 +19,7 @@ class ExamSessionController extends Controller
     /*  GET /exam-sessions/{id}/status                                     */
     /* ------------------------------------------------------------------ */
 
-    public function status(int $id): JsonResponse
+    public function status(string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -45,7 +45,7 @@ class ExamSessionController extends Controller
     /*  GET /exam-sessions/{id}/questions                                  */
     /* ------------------------------------------------------------------ */
 
-    public function questions(int $id): JsonResponse
+    public function questions(string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -75,7 +75,7 @@ class ExamSessionController extends Controller
     /*  GET /exam-sessions/{id}/questions/{index}                          */
     /* ------------------------------------------------------------------ */
 
-    public function question(int $id, int $index): JsonResponse
+    public function question(string $id, int $index): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -104,7 +104,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/answers                                   */
     /* ------------------------------------------------------------------ */
 
-    public function saveAnswer(Request $request, int $id): JsonResponse
+    public function saveAnswer(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -150,7 +150,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/answers/batch                             */
     /* ------------------------------------------------------------------ */
 
-    public function saveAnswersBatch(Request $request, int $id): JsonResponse
+    public function saveAnswersBatch(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -204,7 +204,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/flag                                      */
     /* ------------------------------------------------------------------ */
 
-    public function toggleFlag(Request $request, int $id): JsonResponse
+    public function toggleFlag(Request $request, string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -231,7 +231,7 @@ class ExamSessionController extends Controller
     /*  POST /exam-sessions/{id}/submit                                    */
     /* ------------------------------------------------------------------ */
 
-    public function submit(int $id): JsonResponse
+    public function submit(string $id): JsonResponse
     {
         $session = $this->findAuthorizedSession($id);
         if (! $session) {
@@ -248,17 +248,44 @@ class ExamSessionController extends Controller
     }
 
     /* ------------------------------------------------------------------ */
+    /*  POST /exam-sessions/{id}/violations                                */
+    /* ------------------------------------------------------------------ */
+
+    public function recordViolation(Request $request, string $id): JsonResponse
+    {
+        $session = $this->findAuthorizedSession($id);
+        if (! $session) {
+            return ResponseHelper::error('Session not found or unauthorized.', 404);
+        }
+
+        if ($session->isSubmitted()) {
+            return ResponseHelper::error('This exam has already been submitted.', 409);
+        }
+
+        $validated = $request->validate([
+            'type'        => 'required|string|in:tab_switch,copy_paste,right_click,devtools,window_blur,screenshot_attempt',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $session->recordViolation($validated['type'], $validated['description'] ?? null);
+
+        return ResponseHelper::success([
+            'violation_count' => $session->violation_count,
+        ], 'Violation recorded.');
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Helper: Find session and verify ownership                          */
     /* ------------------------------------------------------------------ */
 
-    private function findAuthorizedSession(int $id): ?ExamSession
+    private function findAuthorizedSession(string $id): ?ExamSession
     {
         $user = auth()->user();
         if (! $user) {
             return null;
         }
 
-        return ExamSession::where('id', $id)
+        return ExamSession::where('uuid', $id)
             ->where('student_id', $user->id)
             ->with('exam')
             ->first();

@@ -15,10 +15,12 @@ class GradingService
     {
         $answers = $session->finalAnswers()->with('question')->get();
 
+        $examQuestions = $session->exam->examQuestions()->get()->keyBy('question_id');
+
         $totalScore = 0;
 
         foreach ($answers as $answer) {
-            $this->gradeAnswer($answer, $session);
+            $this->gradeAnswer($answer, $session, $examQuestions);
             $totalScore += (float) $answer->points_awarded;
         }
 
@@ -34,17 +36,20 @@ class GradingService
     /**
      * Grade a single answer based on question type.
      */
-    public function gradeAnswer(StudentAnswer $answer, ExamSession $session): void
+    public function gradeAnswer(StudentAnswer $answer, ExamSession $session, ?\Illuminate\Support\Collection $examQuestions = null): void
     {
         $question = $answer->question;
         if (! $question) {
             return;
         }
 
-        // Get points for this question from exam_questions pivot
-        $examQuestion = $session->exam->examQuestions()
-            ->where('question_id', $question->id)
-            ->first();
+        if ($examQuestions) {
+            $examQuestion = $examQuestions->get($question->id);
+        } else {
+            $examQuestion = $session->exam->examQuestions()
+                ->where('question_id', $question->id)
+                ->first();
+        }
 
         $maxPoints = $examQuestion ? (float) $examQuestion->points : (float) $question->points;
 

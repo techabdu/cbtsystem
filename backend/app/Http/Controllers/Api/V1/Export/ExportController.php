@@ -31,17 +31,18 @@ class ExportController extends Controller
      * @param  Request  $request
      * @return Response|JsonResponse
      */
-    public function studentTranscript(int $id, Request $request): Response|JsonResponse
+    public function studentTranscript(string $id, Request $request): Response|JsonResponse
     {
         $authUser = $request->user();
 
+        $student = User::with(['department.school', 'combination', 'level'])
+            ->where('uuid', $id)
+            ->firstOrFail();
+
         // Students can only access their own transcript
-        if ($authUser->role === 'student' && $authUser->id !== $id) {
+        if ($authUser->role === 'student' && $authUser->id !== $student->id) {
             return ResponseHelper::error('You can only view your own transcript.', 403);
         }
-
-        $student = User::with(['department.school', 'combination', 'level'])
-            ->findOrFail($id);
 
         if ($student->role !== 'student') {
             return ResponseHelper::error('The requested user is not a student.', 422);
@@ -49,7 +50,7 @@ class ExportController extends Controller
 
         // Fetch completed exam sessions with related data
         $sessions = ExamSession::query()
-            ->where('student_id', $id)
+            ->where('student_id', $student->id)
             ->whereIn('status', ['submitted', 'auto_submitted'])
             ->with(['exam.course.department'])
             ->orderByDesc('submitted_at')
@@ -99,10 +100,10 @@ class ExportController extends Controller
      * @param  Request  $request
      * @return Response|JsonResponse
      */
-    public function examResultsPdf(int $id, Request $request): Response|JsonResponse
+    public function examResultsPdf(string $id, Request $request): Response|JsonResponse
     {
         $authUser = $request->user();
-        $exam     = Exam::with(['course.department.school', 'creator'])->findOrFail($id);
+        $exam     = Exam::with(['course.department.school', 'creator'])->where('uuid', $id)->firstOrFail();
 
         // Lecturers can only export results for their own exams
         if ($authUser->role === 'lecturer' && $exam->created_by !== $authUser->id) {
@@ -119,7 +120,7 @@ class ExportController extends Controller
         }
 
         $sessions = ExamSession::query()
-            ->where('exam_id', $id)
+            ->where('exam_id', $exam->id)
             ->whereIn('status', ['submitted', 'auto_submitted'])
             ->with(['student'])
             ->orderByDesc('total_score')
@@ -211,16 +212,37 @@ class ExportController extends Controller
         $authUser = $request->user();
         $filters  = $request->only(['exam_id', 'department_id', 'school_id']);
 
-        // Lecturers can only export their own exam results
-        if ($authUser->role === 'lecturer' && ! empty($filters['exam_id'])) {
-            $exam = Exam::find((int) $filters['exam_id']);
-            if ($exam && $exam->created_by !== $authUser->id) {
+        // Resolve exam UUID to integer ID for downstream queries
+        if (! empty($filters['exam_id'])) {
+            $exam = Exam::where('uuid', $filters['exam_id'])->first();
+            if ($exam) {
+                $filters['exam_id'] = $exam->id;
+            }
+        }
+
+        if ($authUser->role === 'lecturer') {
+            if (! empty($filters['exam_id']) && isset($exam) && $exam) {
+                if ($exam->created_by !== $authUser->id) {
+                    $isOfficer = $authUser->is_department_exam_officer || $authUser->is_school_exam_officer;
+                    if (! $isOfficer) {
+                        return ResponseHelper::error(
+                            'You do not have permission to export results for this exam.',
+                            403
+                        );
+                    }
+                }
+            } elseif (empty($filters['exam_id'])) {
+                // Lecturers MUST specify exam_id unless they are an officer
                 $isOfficer = $authUser->is_department_exam_officer || $authUser->is_school_exam_officer;
                 if (! $isOfficer) {
                     return ResponseHelper::error(
-                        'You do not have permission to export results for this exam.',
-                        403
+                        'Please specify an exam_id to export results.',
+                        422
                     );
+                }
+                // Officers without exam_id are scoped to their department/school
+                if ($authUser->is_department_exam_officer && empty($filters['department_id'])) {
+                    $filters['department_id'] = $authUser->department_id;
                 }
             }
         }

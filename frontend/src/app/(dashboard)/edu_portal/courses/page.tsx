@@ -206,7 +206,7 @@ export default function AdminCoursesPage() {
                 setSuccessMessage('Course created successfully');
             } else if (formMode === 'edit' && editingCourse) {
                 const updateData: UpdateCourseData = { ...formData };
-                await updateCourse(editingCourse.id, updateData);
+                await updateCourse(editingCourse.uuid, updateData);
                 setSuccessMessage('Course updated successfully');
             }
             closeForm();
@@ -231,7 +231,7 @@ export default function AdminCoursesPage() {
         if (!confirm(`Delete "${course.title}" (${course.code})?\n\nThis will soft-delete the course.`)) return;
         setActionLoadingId(course.id);
         try {
-            await deleteCourse(course.id);
+            await deleteCourse(course.uuid);
             setSuccessMessage(`"${course.title}" deleted.`);
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchCourses();
@@ -247,7 +247,7 @@ export default function AdminCoursesPage() {
     const handleToggleActive = async (course: Course) => {
         setActionLoadingId(course.id);
         try {
-            await updateCourse(course.id, { is_active: !course.is_active });
+            await updateCourse(course.uuid, { is_active: !course.is_active });
             await fetchCourses();
         } catch {
             setErrorMessage('Failed to update status.');
@@ -266,7 +266,7 @@ export default function AdminCoursesPage() {
         if (!confirm(`Restore "${course.title}" (${course.code})? This will reactivate the course.`)) return;
         setActionLoadingId(course.id);
         try {
-            await restoreCourse(course.id);
+            await restoreCourse(course.uuid);
             setSuccessMessage(`"${course.title}" restored successfully.`);
             setTimeout(() => setSuccessMessage(''), 3000);
             await fetchCourses();
@@ -435,7 +435,7 @@ export default function AdminCoursesPage() {
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="credit_hours">Credit Hours</Label>
+                                    <Label htmlFor="credit_hours">Credit Hours *</Label>
                                     <Input
                                         id="credit_hours"
                                         name="credit_hours"
@@ -445,6 +445,7 @@ export default function AdminCoursesPage() {
                                         placeholder="e.g. 3"
                                         min={1}
                                         max={20}
+                                        required
                                         error={getError('credit_hours')}
                                     />
                                 </div>

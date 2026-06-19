@@ -53,7 +53,7 @@ class AnalyticsController extends Controller
      *
      * Detailed analytics for a specific course (lecturer/admin).
      */
-    public function courseAnalytics(Request $request, int $id): JsonResponse
+    public function courseAnalytics(Request $request, string $id): JsonResponse
     {
         $data = $this->analyticsService->getCourseAnalytics($id, $request->user());
         return ResponseHelper::success($data, 'Course analytics retrieved.');
@@ -68,7 +68,7 @@ class AnalyticsController extends Controller
      *
      * Detailed analytics for a specific exam (lecturer/admin).
      */
-    public function examAnalytics(Request $request, int $id): JsonResponse
+    public function examAnalytics(Request $request, string $id): JsonResponse
     {
         $data = $this->analyticsService->getExamAnalytics($id, $request->user());
         return ResponseHelper::success($data, 'Exam analytics retrieved.');

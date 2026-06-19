@@ -29,6 +29,11 @@ class Exam extends Model
         });
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Mass Assignment                                                   */
     /* ------------------------------------------------------------------ */

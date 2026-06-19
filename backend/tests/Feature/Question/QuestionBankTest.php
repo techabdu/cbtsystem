@@ -199,14 +199,14 @@ class QuestionBankTest extends TestCase
             'course_id'  => $this->course->id,
         ]);
 
-        $this->getJson("/api/v1/questions/{$question->id}", $this->authAs($this->lecturerToken))
+        $this->getJson("/api/v1/questions/{$question->uuid}", $this->authAs($this->lecturerToken))
             ->assertOk()
             ->assertJsonStructure(['data' => ['id', 'question_text', 'question_type']]);
     }
 
     public function test_show_returns_404_for_nonexistent_question(): void
     {
-        $this->getJson('/api/v1/questions/99999', $this->authAs($this->lecturerToken))
+        $this->getJson('/api/v1/questions/00000000-0000-0000-0000-000000000000', $this->authAs($this->lecturerToken))
             ->assertStatus(404);
     }
 
@@ -222,7 +222,7 @@ class QuestionBankTest extends TestCase
         ]);
 
         $this->putJson(
-            "/api/v1/questions/{$question->id}",
+            "/api/v1/questions/{$question->uuid}",
             ['question_text' => 'Updated question text here?'],
             $this->authAs($this->lecturerToken)
         )
@@ -238,7 +238,7 @@ class QuestionBankTest extends TestCase
     {
         $question = Question::factory()->create(['is_verified' => false]);
 
-        $this->patchJson("/api/v1/questions/{$question->id}/verify", [], $this->authAs($this->adminToken))
+        $this->patchJson("/api/v1/questions/{$question->uuid}/verify", [], $this->authAs($this->adminToken))
             ->assertOk();
 
         $this->assertDatabaseHas('questions', [
@@ -255,7 +255,7 @@ class QuestionBankTest extends TestCase
     {
         $question = Question::factory()->create(['created_by' => $this->lecturer->id]);
 
-        $this->deleteJson("/api/v1/questions/{$question->id}", [], $this->authAs($this->lecturerToken))
+        $this->deleteJson("/api/v1/questions/{$question->uuid}", [], $this->authAs($this->lecturerToken))
             ->assertOk();
 
         $this->assertSoftDeleted('questions', ['id' => $question->id]);
@@ -266,7 +266,7 @@ class QuestionBankTest extends TestCase
         $question = Question::factory()->create();
         $question->delete();
 
-        $this->postJson("/api/v1/questions/{$question->id}/restore", [], $this->authAs($this->adminToken))
+        $this->postJson("/api/v1/questions/{$question->uuid}/restore", [], $this->authAs($this->adminToken))
             ->assertOk();
 
         $this->assertDatabaseHas('questions', ['id' => $question->id, 'deleted_at' => null]);

@@ -18,7 +18,7 @@ class LevelSeeder extends Seeder
             [
                 'code'       => '100L',
                 'name'       => 'Year 1 (NCE I)',
-                'order'      => 1,
+                'numeric_order' => 1,
                 'is_active'  => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -26,7 +26,7 @@ class LevelSeeder extends Seeder
             [
                 'code'       => '200L',
                 'name'       => 'Year 2 (NCE II)',
-                'order'      => 2,
+                'numeric_order' => 2,
                 'is_active'  => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -34,7 +34,7 @@ class LevelSeeder extends Seeder
             [
                 'code'       => '300L',
                 'name'       => 'Year 3 (NCE III)',
-                'order'      => 3,
+                'numeric_order' => 3,
                 'is_active'  => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -42,7 +42,7 @@ class LevelSeeder extends Seeder
             [
                 'code'       => '400L',
                 'name'       => 'Post-Graduate Diploma (PGD)',
-                'order'      => 4,
+                'numeric_order' => 4,
                 'is_active'  => true,
                 'created_at' => now(),
                 'updated_at' => now(),

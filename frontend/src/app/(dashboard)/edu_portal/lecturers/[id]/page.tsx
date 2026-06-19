@@ -22,7 +22,7 @@ export default function LecturerDetailPage() {
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const userId = Number(params.id);
+    const userId = params.id as string;
 
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);

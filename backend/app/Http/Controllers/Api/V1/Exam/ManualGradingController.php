@@ -21,9 +21,9 @@ class ManualGradingController extends Controller
     /*  Index — Fetch all sessions with ungraded answers for an exam       */
     /* ------------------------------------------------------------------ */
 
-    public function index(int $id, Request $request): JsonResponse
+    public function index(string $id, Request $request): JsonResponse
     {
-        $exam = Exam::with(['course'])->findOrFail($id);
+        $exam = Exam::with(['course'])->where('uuid', $id)->firstOrFail();
 
         if (! $this->canGrade($exam, $request->user())) {
             return ResponseHelper::error('You do not have access to grade this exam.', 403);
@@ -94,9 +94,9 @@ class ManualGradingController extends Controller
     /*  Summary — Grading progress for an exam                             */
     /* ------------------------------------------------------------------ */
 
-    public function summary(int $id, Request $request): JsonResponse
+    public function summary(string $id, Request $request): JsonResponse
     {
-        $exam = Exam::findOrFail($id);
+        $exam = Exam::where('uuid', $id)->firstOrFail();
 
         if (! $this->canGrade($exam, $request->user())) {
             return ResponseHelper::error('You do not have access to this exam.', 403);

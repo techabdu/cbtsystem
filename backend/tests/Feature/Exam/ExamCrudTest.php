@@ -143,14 +143,14 @@ class ExamCrudTest extends TestCase
             'course_id'  => $this->course->id,
         ]);
 
-        $this->getJson("/api/v1/exams/{$exam->id}", $this->authAs($this->lecturerToken))
+        $this->getJson("/api/v1/exams/{$exam->uuid}", $this->authAs($this->lecturerToken))
             ->assertOk()
             ->assertJsonStructure(['data' => ['id', 'title', 'status', 'exam_type']]);
     }
 
     public function test_show_returns_404_for_nonexistent_exam(): void
     {
-        $this->getJson('/api/v1/exams/9999', $this->authAs($this->lecturerToken))
+        $this->getJson('/api/v1/exams/00000000-0000-0000-0000-000000000000', $this->authAs($this->lecturerToken))
             ->assertStatus(404);
     }
 
@@ -166,7 +166,7 @@ class ExamCrudTest extends TestCase
         ]);
 
         $this->putJson(
-            "/api/v1/exams/{$exam->id}",
+            "/api/v1/exams/{$exam->uuid}",
             ['title' => 'Updated Exam Title'],
             $this->authAs($this->lecturerToken)
         )
@@ -178,7 +178,7 @@ class ExamCrudTest extends TestCase
     {
         $exam = Exam::factory()->draft()->create(['course_id' => $this->course->id]);
 
-        $this->putJson("/api/v1/exams/{$exam->id}", ['title' => 'Hack'], $this->authAs($this->studentToken))
+        $this->putJson("/api/v1/exams/{$exam->uuid}", ['title' => 'Hack'], $this->authAs($this->studentToken))
             ->assertStatus(403);
     }
 
@@ -193,7 +193,7 @@ class ExamCrudTest extends TestCase
             'course_id'  => $this->course->id,
         ]);
 
-        $this->deleteJson("/api/v1/exams/{$exam->id}", [], $this->authAs($this->lecturerToken))
+        $this->deleteJson("/api/v1/exams/{$exam->uuid}", [], $this->authAs($this->lecturerToken))
             ->assertOk();
 
         $this->assertSoftDeleted('exams', ['id' => $exam->id]);
@@ -210,7 +210,7 @@ class ExamCrudTest extends TestCase
         ]);
         $exam->delete();
 
-        $this->postJson("/api/v1/exams/{$exam->id}/restore", [], $this->authAs($this->adminToken))
+        $this->postJson("/api/v1/exams/{$exam->uuid}/restore", [], $this->authAs($this->adminToken))
             ->assertOk();
 
         $this->assertDatabaseHas('exams', ['id' => $exam->id, 'deleted_at' => null]);

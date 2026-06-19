@@ -45,7 +45,13 @@ class NotificationController extends Controller
 
     public function markAsRead(int $id, Request $request): JsonResponse
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (! $notification) {
+            return ResponseHelper::error('Notification not found.', 404);
+        }
 
         try {
             $updated = $this->notificationService->markAsRead($notification, $request->user());
@@ -76,7 +82,13 @@ class NotificationController extends Controller
 
     public function destroy(int $id, Request $request): JsonResponse
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (! $notification) {
+            return ResponseHelper::error('Notification not found.', 404);
+        }
 
         try {
             $this->notificationService->delete($notification, $request->user());

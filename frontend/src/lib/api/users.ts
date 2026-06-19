@@ -26,7 +26,7 @@ export async function getUsers(filters: UserFilters = {}): Promise<PaginatedResp
 /**
  * Get a single user by ID.
  */
-export async function getUser(id: number): Promise<ApiResponse<{ user: User }>> {
+export async function getUser(id: string): Promise<ApiResponse<{ user: User }>> {
     const response = await apiClient.get<ApiResponse<{ user: User }>>(`/users/${id}`);
     return response.data;
 }
@@ -42,7 +42,7 @@ export async function createUser(data: CreateUserData): Promise<ApiResponse<{ us
 /**
  * Update an existing user.
  */
-export async function updateUser(id: number, data: UpdateUserData): Promise<ApiResponse<{ user: User }>> {
+export async function updateUser(id: string, data: UpdateUserData): Promise<ApiResponse<{ user: User }>> {
     const response = await apiClient.put<ApiResponse<{ user: User }>>(`/users/${id}`, data);
     return response.data;
 }
@@ -50,7 +50,7 @@ export async function updateUser(id: number, data: UpdateUserData): Promise<ApiR
 /**
  * Soft-delete a user.
  */
-export async function deleteUser(id: number): Promise<ApiResponse<null>> {
+export async function deleteUser(id: string): Promise<ApiResponse<null>> {
     const response = await apiClient.delete<ApiResponse<null>>(`/users/${id}`);
     return response.data;
 }
@@ -58,7 +58,7 @@ export async function deleteUser(id: number): Promise<ApiResponse<null>> {
 /**
  * Restore a soft-deleted user.
  */
-export async function restoreUser(id: number): Promise<ApiResponse<{ user: User }>> {
+export async function restoreUser(id: string): Promise<ApiResponse<{ user: User }>> {
     const response = await apiClient.post<ApiResponse<{ user: User }>>(`/users/${id}/restore`);
     return response.data;
 }
@@ -66,7 +66,7 @@ export async function restoreUser(id: number): Promise<ApiResponse<{ user: User 
 /**
  * Toggle a user's active status.
  */
-export async function toggleUserActive(id: number): Promise<ApiResponse<{ user: User }>> {
+export async function toggleUserActive(id: string): Promise<ApiResponse<{ user: User }>> {
     const response = await apiClient.patch<ApiResponse<{ user: User }>>(`/users/${id}/toggle-active`);
     return response.data;
 }

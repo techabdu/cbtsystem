@@ -11,7 +11,6 @@ import {
     BookOpen,
     Users,
     FileQuestion,
-    Settings,
     GraduationCap,
     Building2,
     Layers,
@@ -20,7 +19,6 @@ import {
     ClipboardCheck,
     Bell,
     FileText,
-    KeyRound,
     RefreshCw,
     School,
 } from 'lucide-react';
@@ -231,30 +229,11 @@ export function Sidebar({ className }: SidebarProps) {
             icon: RefreshCw,
             roles: [ROLES.CBT],
         },
-        {
-            href: '/cbt/access-codes',
-            label: 'Access Codes',
-            icon: KeyRound,
-            roles: [ROLES.CBT],
-        },
-
         // Admin Links
         {
             href: ROUTES.DASHBOARD.ADMIN,
             label: 'Dashboard',
             icon: LayoutDashboard,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/audits',
-            label: 'System Audits',
-            icon: FileText,
-            roles: [ROLES.ADMIN],
-        },
-        {
-            href: '/admin/settings',
-            label: 'System Health',
-            icon: Settings,
             roles: [ROLES.ADMIN],
         },
         {

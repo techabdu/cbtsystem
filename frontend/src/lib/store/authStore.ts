@@ -7,11 +7,6 @@ import { User } from '@/lib/types/models';
 import { LoginCredentials, ActivateAccountData, UpdateProfileData } from '@/lib/types/api';
 import * as authApi from '@/lib/api/auth';
 
-/**
- * Set a cookie that middleware.ts can read.
- * We set both `auth_token` and `auth_user_role` so middleware
- * can enforce role-based route protection at the edge.
- */
 function setCookie(name: string, value: string, days: number = 7) {
     const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
     document.cookie = `${name}=${encodeURIComponent(value)}; path=/; expires=${expires}; SameSite=Lax`;
@@ -23,7 +18,6 @@ function removeCookie(name: string) {
 
 interface AuthState {
     user: User | null;
-    token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
@@ -39,9 +33,8 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             user: null,
-            token: null,
             isAuthenticated: false,
             isLoading: false,
             error: null,
@@ -52,14 +45,10 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     const data = await authApi.login(credentials);
 
-                    // Persist token + role for middleware
-                    localStorage.setItem('auth_token', data.token);
-                    setCookie('auth_token', data.token);
                     setCookie('auth_user_role', data.user.role);
 
                     set({
                         user: data.user,
-                        token: data.token,
                         isAuthenticated: true,
                         isLoading: false,
                     });
@@ -76,14 +65,10 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     const result = await authApi.activateAccount(data);
 
-                    // Persist token + role for middleware (auto-login after activation)
-                    localStorage.setItem('auth_token', result.token);
-                    setCookie('auth_token', result.token);
                     setCookie('auth_user_role', result.user.role);
 
                     set({
                         user: result.user,
-                        token: result.token,
                         isAuthenticated: true,
                         isLoading: false,
                     });
@@ -99,54 +84,35 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     await authApi.logout();
                 } catch (e) {
-                    // Ignore API errors during logout (e.g. expired token)
                     console.warn('Logout API error (ignored):', e);
                 }
 
-                // Clear everything
-                localStorage.removeItem('auth_token');
-                removeCookie('auth_token');
                 removeCookie('auth_user_role');
 
                 set({
                     user: null,
-                    token: null,
                     isAuthenticated: false,
                     error: null,
                 });
             },
 
             checkAuth: async () => {
-                const token = localStorage.getItem('auth_token');
-                if (!token) {
-                    set({ isAuthenticated: false, user: null, token: null });
-                    return;
-                }
-
                 set({ isLoading: true });
                 try {
-                    // Verify token is still valid by fetching current user
                     const data = await authApi.getCurrentUser();
 
-                    // Update cookies in case they're stale
-                    setCookie('auth_token', token);
                     setCookie('auth_user_role', data.user.role);
 
                     set({
                         user: data.user,
-                        token,
                         isAuthenticated: true,
                         isLoading: false,
                     });
                 } catch {
-                    // Token invalid — clean up
-                    localStorage.removeItem('auth_token');
-                    removeCookie('auth_token');
                     removeCookie('auth_user_role');
 
                     set({
                         user: null,
-                        token: null,
                         isAuthenticated: false,
                         isLoading: false,
                     });
@@ -158,7 +124,6 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     const result = await authApi.updateProfile(data);
 
-                    // Update cookies in case role-related data changed
                     setCookie('auth_user_role', result.user.role);
 
                     set({
@@ -180,7 +145,6 @@ export const useAuthStore = create<AuthState>()(
         {
             name: 'auth-storage',
             partialize: (state) => ({
-                token: state.token,
                 user: state.user,
                 isAuthenticated: state.isAuthenticated,
             }),

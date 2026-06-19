@@ -9,6 +9,7 @@ import {
     toggleQuestionFlag,
     submitExam,
 } from '@/lib/api/sessions';
+import { useExamSecurity } from '@/hooks/useExamSecurity';
 import type {
     ExamSessionStatus,
     ExamSessionQuestion,
@@ -89,7 +90,7 @@ function useTimer(initialSeconds: number, onExpire: () => void) {
 
 export default function ExamPage() {
     const params = useParams();
-    const sessionId = Number(params.sessionId);
+    const sessionId = params.sessionId as string;
 
     // State
     const [status, setStatus] = useState<ExamSessionStatus | null>(null);
@@ -104,6 +105,12 @@ export default function ExamPage() {
     const [showConfirm, setShowConfirm] = useState(false);
     const [submitResult, setSubmitResult] = useState<ExamSubmitResult | null>(null);
     const [timeRemaining, setTimeRemaining] = useState(0);
+
+    // Anti-cheating security
+    useExamSecurity({
+        sessionId,
+        enabled: !submitResult && !isLoading,
+    });
 
     // Refs for auto-save
     const saveQueueRef = useRef<Set<number>>(new Set());
@@ -121,7 +128,7 @@ export default function ExamPage() {
             const cached = sessionStorage.getItem('exam_session');
             if (cached) {
                 const data = JSON.parse(cached);
-                if (data.session_id === sessionId) {
+                if (data.session_uuid === sessionId) {
                     setTimeRemaining(data.time_remaining_seconds);
                 }
             }
@@ -836,10 +843,9 @@ function SubmitResultView({ result }: { result: ExamSubmitResult }) {
                 <div className="flex justify-center">
                     <Button
                         onClick={() => {
-                            // Clear auth and redirect to entry
-                            localStorage.removeItem('auth_token');
-                            localStorage.removeItem('auth_user_role');
-                            document.cookie = 'auth_token=; path=/; max-age=0';
+                            // Clear exam auth and redirect to entry
+                            sessionStorage.removeItem('offline_exam_token');
+                            sessionStorage.removeItem('exam_session');
                             document.cookie = 'auth_user_role=; path=/; max-age=0';
                             window.location.href = '/exams';
                         }}

@@ -168,11 +168,12 @@ class CourseService
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function find(int $id): Course
+    public function find(string $id): Course
     {
         return Course::with(['department', 'levelRelation'])
             ->withCount(['students', 'lecturers', 'exams', 'questions'])
-            ->findOrFail($id);
+            ->where('uuid', $id)
+            ->firstOrFail();
     }
 
     /* ------------------------------------------------------------------ */
@@ -270,9 +271,9 @@ class CourseService
      * @param  User  $admin
      * @return Course
      */
-    public function restore(int $id, User $admin): Course
+    public function restore(string $id, User $admin): Course
     {
-        $course = Course::onlyTrashed()->findOrFail($id);
+        $course = Course::onlyTrashed()->where('uuid', $id)->firstOrFail();
         $course->restore();
         $course->update(['is_active' => true]);
 

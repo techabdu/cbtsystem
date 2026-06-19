@@ -8,11 +8,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateUserRequest extends FormRequest
 {
     /**
-     * Only admins can update users via this endpoint.
+     * Admins and edu_portal admins can update users via this endpoint.
      */
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return in_array($this->user()?->role, ['admin', 'edu_portal'], true);
     }
 
     /**
@@ -31,7 +31,17 @@ class UpdateUserRequest extends FormRequest
             'middle_name' => 'nullable|string|max:100',
             'email'       => "sometimes|email|max:255|unique:users,email,{$userId}",
             'password'    => ['sometimes', 'string', 'min:8', 'confirmed', new StrongPassword()],
-            'role'        => 'sometimes|string|in:admin,lecturer,student',
+            'role'        => [
+                'sometimes',
+                'string',
+                'in:admin,lecturer,student,edu_portal,cbt',
+                // Only an admin may assign the admin role (no privilege escalation by edu_portal).
+                function ($attribute, $value, $fail) {
+                    if ($value === 'admin' && $this->user()?->role !== 'admin') {
+                        $fail('Only administrators can assign the admin role.');
+                    }
+                },
+            ],
             'staff_id'    => "nullable|string|max:50|unique:users,staff_id,{$userId}",
             'student_id'  => "nullable|string|max:50|unique:users,student_id,{$userId}",
             'phone'       => 'nullable|string|max:20',
@@ -53,7 +63,7 @@ class UpdateUserRequest extends FormRequest
             'email.unique'      => 'A user with this email already exists.',
             'staff_id.unique'   => 'This staff ID is already in use.',
             'student_id.unique' => 'This student ID is already in use.',
-            'role.in'           => 'Role must be admin, lecturer, or student.',
+            'role.in'           => 'Role must be one of: admin, lecturer, student, edu_portal, cbt.',
         ];
     }
 }

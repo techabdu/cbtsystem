@@ -22,9 +22,9 @@ class StudentSeeder extends Seeder
             ->where('is_active', true)
             ->get(['id', 'code', 'name', 'first_department_id', 'second_department_id', 'is_double_major']);
 
-        $levels = DB::table('levels')->orderBy('order')->pluck('id', 'code');
+        $levels = DB::table('levels')->orderBy('numeric_order')->pluck('id', 'code');
 
-        $password = Hash::make('Student@123');
+        $password = Hash::make(env('SEED_STUDENT_PASSWORD', Str::random(24)));
         $now      = now();
         $users    = [];
 

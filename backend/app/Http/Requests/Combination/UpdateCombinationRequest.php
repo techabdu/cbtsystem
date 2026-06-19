@@ -8,12 +8,12 @@ class UpdateCombinationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return in_array($this->user()?->role, ['admin', 'edu_portal'], true);
     }
 
     public function rules(): array
     {
-        $id = $this->route('combination'); // Assuming route param is 'combination'
+        $id = $this->route('id'); // Route param is {id} (see routes/api.php)
 
         return [
             'code'                 => 'string|max:20|unique:combinations,code,' . $id,

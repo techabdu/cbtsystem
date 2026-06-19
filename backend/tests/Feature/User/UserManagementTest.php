@@ -163,14 +163,14 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_view_a_user(): void
     {
-        $this->getJson("/api/v1/users/{$this->student->id}", $this->authAs($this->adminToken))
+        $this->getJson("/api/v1/users/{$this->student->uuid}", $this->authAs($this->adminToken))
             ->assertOk()
             ->assertJsonStructure(['data' => ['user' => ['id', 'uuid', 'email', 'role', 'first_name', 'last_name']]]);
     }
 
     public function test_show_returns_404_for_nonexistent_user(): void
     {
-        $this->getJson('/api/v1/users/99999', $this->authAs($this->adminToken))
+        $this->getJson('/api/v1/users/00000000-0000-0000-0000-000000000000', $this->authAs($this->adminToken))
             ->assertStatus(404);
     }
 
@@ -181,7 +181,7 @@ class UserManagementTest extends TestCase
     public function test_admin_can_update_user_details(): void
     {
         $response = $this->putJson(
-            "/api/v1/users/{$this->student->id}",
+            "/api/v1/users/{$this->student->uuid}",
             ['first_name' => 'UpdatedName'],
             $this->authAs($this->adminToken)
         );
@@ -201,7 +201,7 @@ class UserManagementTest extends TestCase
     public function test_admin_can_deactivate_a_user(): void
     {
         $this->patchJson(
-            "/api/v1/users/{$this->student->id}/toggle-active",
+            "/api/v1/users/{$this->student->uuid}/toggle-active",
             [],
             $this->authAs($this->adminToken)
         )->assertOk();
@@ -217,7 +217,7 @@ class UserManagementTest extends TestCase
         $this->student->update(['is_active' => false]);
 
         $this->patchJson(
-            "/api/v1/users/{$this->student->id}/toggle-active",
+            "/api/v1/users/{$this->student->uuid}/toggle-active",
             [],
             $this->authAs($this->adminToken)
         )->assertOk();
@@ -236,7 +236,7 @@ class UserManagementTest extends TestCase
     {
         $user = User::factory()->student()->create();
 
-        $this->deleteJson("/api/v1/users/{$user->id}", [], $this->authAs($this->adminToken))
+        $this->deleteJson("/api/v1/users/{$user->uuid}", [], $this->authAs($this->adminToken))
             ->assertOk();
 
         $this->assertSoftDeleted('users', ['id' => $user->id]);
@@ -247,7 +247,7 @@ class UserManagementTest extends TestCase
         $user = User::factory()->student()->create();
         $user->delete();
 
-        $this->postJson("/api/v1/users/{$user->id}/restore", [], $this->authAs($this->adminToken))
+        $this->postJson("/api/v1/users/{$user->uuid}/restore", [], $this->authAs($this->adminToken))
             ->assertOk();
 
         $this->assertDatabaseHas('users', ['id' => $user->id, 'deleted_at' => null]);
