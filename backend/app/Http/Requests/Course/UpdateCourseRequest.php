@@ -26,7 +26,8 @@ class UpdateCourseRequest extends FormRequest
 
         return [
             'department_id' => 'sometimes|integer|exists:departments,id',
-            'code'          => "sometimes|string|max:50|unique:courses,code,{$courseId}",
+            // Courses are resolved by uuid, so ignore the current row by its uuid column.
+            'code'          => "sometimes|string|max:50|unique:courses,code,{$courseId},uuid",
             'title'         => 'sometimes|string|max:255',
             'description'   => 'nullable|string|max:5000',
             'credit_hours'  => 'nullable|integer|min:1|max:20',

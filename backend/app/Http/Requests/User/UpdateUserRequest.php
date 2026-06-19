@@ -29,7 +29,8 @@ class UpdateUserRequest extends FormRequest
             'first_name'  => 'sometimes|string|max:100',
             'last_name'   => 'sometimes|string|max:100',
             'middle_name' => 'nullable|string|max:100',
-            'email'       => "sometimes|email|max:255|unique:users,email,{$userId}",
+            // Users are resolved by uuid, so ignore the current row by its uuid column.
+            'email'       => "sometimes|email|max:255|unique:users,email,{$userId},uuid",
             'password'    => ['sometimes', 'string', 'min:8', 'confirmed', new StrongPassword()],
             'role'        => [
                 'sometimes',
@@ -42,8 +43,8 @@ class UpdateUserRequest extends FormRequest
                     }
                 },
             ],
-            'staff_id'    => "nullable|string|max:50|unique:users,staff_id,{$userId}",
-            'student_id'  => "nullable|string|max:50|unique:users,student_id,{$userId}",
+            'staff_id'    => "nullable|string|max:50|unique:users,staff_id,{$userId},uuid",
+            'student_id'  => "nullable|string|max:50|unique:users,student_id,{$userId},uuid",
             'phone'       => 'nullable|string|max:20',
             'is_active'   => 'sometimes|boolean',
             'is_verified' => 'sometimes|boolean',
