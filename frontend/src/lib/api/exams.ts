@@ -122,7 +122,7 @@ export async function hodApprove(id: string): Promise<ApiResponse<Exam>> {
  * HOD Reject
  */
 export async function hodReject(id: string, reason: string): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/hod-reject`, { reason });
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/hod-reject`, { comments: reason });
     return response.data;
 }
 
@@ -138,7 +138,7 @@ export async function schoolOfficerApprove(id: string): Promise<ApiResponse<Exam
  * School Officer Reject
  */
 export async function schoolOfficerReject(id: string, reason: string): Promise<ApiResponse<Exam>> {
-    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/school-officer-reject`, { reason });
+    const response = await apiClient.post<ApiResponse<Exam>>(`/exams/${id}/school-officer-reject`, { comments: reason });
     return response.data;
 }
 
@@ -305,7 +305,7 @@ export async function submitGrading(examId: string): Promise<ApiResponse<Exam>> 
 export async function deptOfficerReject(examId: string, reason: string): Promise<ApiResponse<Exam>> {
     const response = await apiClient.post<ApiResponse<Exam>>(
         `/exams/${examId}/dept-officer-reject`,
-        { reason }
+        { comments: reason }
     );
     return response.data;
 }
