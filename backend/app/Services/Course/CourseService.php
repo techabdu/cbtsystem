@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Course;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\Course;
@@ -246,7 +247,7 @@ class CourseService
     {
         // Guard: prevent delete if there are active exams
         if ($course->exams()->whereIn('status', ['published'])->exists()) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot delete a course that has published exams. Unpublish or delete exams first.'
             );
         }
@@ -334,7 +335,7 @@ class CourseService
         $student = User::where('id', $studentId)->where('role', 'student')->first();
 
         if (! $student) {
-            throw new \RuntimeException('Student not found.');
+            throw new BusinessRuleException('Student not found.');
         }
 
         $existing = CourseEnrollment::where('student_id', $studentId)
@@ -343,7 +344,7 @@ class CourseService
 
         if ($existing) {
             if ($existing->status === 'active') {
-                throw new \RuntimeException('Student is already enrolled in this course.');
+                throw new BusinessRuleException('Student is already enrolled in this course.');
             }
             // Re-enroll if was dropped/completed
             $existing->update([
@@ -385,7 +386,7 @@ class CourseService
             ->first();
 
         if (! $enrollment) {
-            throw new \RuntimeException('No active enrollment found for this student in this course.');
+            throw new BusinessRuleException('No active enrollment found for this student in this course.');
         }
 
         $enrollment->update(['status' => 'dropped']);
@@ -447,7 +448,7 @@ class CourseService
         $lecturer = User::where('id', $lecturerId)->where('role', 'lecturer')->first();
 
         if (! $lecturer) {
-            throw new \RuntimeException('Lecturer not found.');
+            throw new BusinessRuleException('Lecturer not found.');
         }
 
         $existing = CourseLecturer::where('lecturer_id', $lecturerId)
@@ -464,7 +465,7 @@ class CourseService
                 ]);
                 return $existing->fresh();
             }
-            throw new \RuntimeException('Lecturer is already assigned to this course.');
+            throw new BusinessRuleException('Lecturer is already assigned to this course.');
         }
 
         $assignment = CourseLecturer::create([
@@ -492,7 +493,7 @@ class CourseService
             ->first();
 
         if (! $assignment) {
-            throw new \RuntimeException('Lecturer is not assigned to this course.');
+            throw new BusinessRuleException('Lecturer is not assigned to this course.');
         }
 
         $assignment->delete();

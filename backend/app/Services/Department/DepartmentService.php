@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Department;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\Department;
@@ -168,7 +169,7 @@ class DepartmentService
     public function delete(Department $department, User $admin): void
     {
         if ($department->courses()->where('is_active', true)->exists()) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot delete a department that has active courses. Deactivate or reassign courses first.'
             );
         }

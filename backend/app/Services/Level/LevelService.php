@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Level;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\Level;
@@ -161,7 +162,7 @@ class LevelService
     public function delete(Level $level, User $admin): void
     {
         if ($level->students()->where('is_active', true)->exists()) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot delete a level that has active students assigned. Reassign students first.'
             );
         }

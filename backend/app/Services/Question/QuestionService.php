@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Question;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\Course;
@@ -214,7 +215,7 @@ class QuestionService
             ->count();
 
         if ($activeExamCount > 0) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Cannot delete a question that is used in {$activeExamCount} active exam(s). Remove it from those exams first."
             );
         }

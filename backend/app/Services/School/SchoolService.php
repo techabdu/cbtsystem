@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\School;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\School;
@@ -115,7 +116,7 @@ class SchoolService
     public function delete(School $school, User $admin): void
     {
         if ($school->departments()->exists()) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot delete a school that has departments. Remove or reassign departments first.'
             );
         }
