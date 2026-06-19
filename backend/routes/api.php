@@ -285,6 +285,13 @@ Route::prefix('v1')->group(function () {
         });
 
         /* -------------------------------------------------------------- */
+        /*  Results Publishing — Edu Portal admin (final post-exam step)   */
+        /* -------------------------------------------------------------- */
+        Route::prefix('exams')->middleware('role:admin,edu_portal')->group(function () {
+            Route::post('/{exam}/publish-results', [ExamWorkflowController::class, 'publishResults'])->name('exams.workflow.publish-results');
+        });
+
+        /* -------------------------------------------------------------- */
         /*  Manual Grading — Grade individual student answers              */
         /* -------------------------------------------------------------- */
         Route::prefix('student-answers')->middleware('role:admin,lecturer')->group(function () {

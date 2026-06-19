@@ -8,7 +8,7 @@ class CreateDepartmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return in_array($this->user()?->role, ['admin', 'edu_portal'], true);
     }
 
     /** @return array<string, mixed> */

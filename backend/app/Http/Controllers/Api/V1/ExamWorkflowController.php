@@ -26,6 +26,7 @@ use Illuminate\Http\JsonResponse;
  *    Lecturer   → submitGrading    → results_status = grading_submitted
  *    Dept Off.  → deptOfficerApprove → results_status = results_verified
  *    Dept Off.  → deptOfficerReject  → results_status = pending_grading  (+ feedback)
+ *    Edu Portal → publishResults     → results_status = results_published
  */
 class ExamWorkflowController extends Controller
 {
@@ -235,6 +236,23 @@ class ExamWorkflowController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Grading rejected by Dept Officer. Returned to lecturer.',
+            'data'    => $exam,
+        ]);
+    }
+
+    /**
+     * Edu Portal admin publishes verified results to students.
+     * results_status: results_verified → results_published
+     */
+    public function publishResults(Exam $exam): JsonResponse
+    {
+        $this->authorize('publishResultsAsEduPortal', $exam);
+
+        $exam = $this->service->publishResults($exam, request()->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Results published. Students can now view their scores.',
             'data'    => $exam,
         ]);
     }

@@ -184,6 +184,16 @@ class ExamPolicy
     }
 
     /**
+     * Edu Portal admin (or admin) publishes verified results to students.
+     * Final step of the post-exam flow: results_verified → results_published.
+     */
+    public function publishResultsAsEduPortal(User $user, Exam $exam): bool
+    {
+        return ($user->isEduPortal() || $user->isAdmin())
+            && $exam->results_status === 'results_verified';
+    }
+
+    /**
      * Department Exam Officer can view exams in their own department.
      */
     public function viewForDepartmentOfficer(User $user, Exam $exam): bool

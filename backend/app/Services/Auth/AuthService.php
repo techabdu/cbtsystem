@@ -180,7 +180,11 @@ class AuthService
 
         Auth::guard('web')->logout();
 
-        if ($session = request()->session()) {
+        // Only touch the session for stateful (SPA cookie) requests. For
+        // stateless Bearer-token clients (e.g. the offline exam server) no
+        // session is bound, and request()->session() would throw.
+        if (request()->hasSession()) {
+            $session = request()->session();
             $session->invalidate();
             $session->regenerateToken();
         }

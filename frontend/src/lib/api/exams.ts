@@ -321,6 +321,17 @@ export async function deptOfficerApprove(examId: string): Promise<ApiResponse<Ex
 }
 
 /**
+ * Publish verified results to students (Edu Portal admin action).
+ * Final step of the post-exam flow: results_verified → results_published.
+ */
+export async function publishResults(examId: string): Promise<ApiResponse<Exam>> {
+    const response = await apiClient.post<ApiResponse<Exam>>(
+        `/exams/${examId}/publish-results`
+    );
+    return response.data;
+}
+
+/**
  * Get student's individual exam results (published only).
  */
 export async function getStudentExamResults(examId: string): Promise<ApiResponse<StudentExamResult>> {

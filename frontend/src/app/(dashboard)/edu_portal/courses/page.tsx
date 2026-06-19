@@ -435,7 +435,7 @@ export default function AdminCoursesPage() {
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="credit_hours">Credit Hours</Label>
+                                    <Label htmlFor="credit_hours">Credit Hours *</Label>
                                     <Input
                                         id="credit_hours"
                                         name="credit_hours"
@@ -445,6 +445,7 @@ export default function AdminCoursesPage() {
                                         placeholder="e.g. 3"
                                         min={1}
                                         max={20}
+                                        required
                                         error={getError('credit_hours')}
                                     />
                                 </div>
