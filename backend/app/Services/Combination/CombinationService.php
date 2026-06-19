@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Combination;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\Combination;
@@ -180,7 +181,7 @@ class CombinationService
     public function delete(Combination $combination, User $admin): void
     {
         if ($combination->students()->where('is_active', true)->exists()) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot delete a combination that has active students assigned. Reassign students first.'
             );
         }

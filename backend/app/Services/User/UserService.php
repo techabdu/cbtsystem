@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\User;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\User;
@@ -215,7 +216,7 @@ class UserService
     public function delete(User $user, User $admin): void
     {
         if ($user->id === $admin->id) {
-            throw new \RuntimeException('You cannot delete your own account.');
+            throw new BusinessRuleException('You cannot delete your own account.');
         }
 
         $user->update(['is_active' => false]);
@@ -269,7 +270,7 @@ class UserService
     public function toggleActive(User $user, User $admin): User
     {
         if ($user->id === $admin->id) {
-            throw new \RuntimeException('You cannot deactivate your own account.');
+            throw new BusinessRuleException('You cannot deactivate your own account.');
         }
 
         $user->update(['is_active' => ! $user->is_active]);

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Notification;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\Notification;
 use App\Models\User;
@@ -98,7 +99,7 @@ class NotificationService
     public function markAsRead(Notification $notification, User $user): Notification
     {
         if ($notification->user_id !== $user->id) {
-            throw new \RuntimeException('Notification does not belong to this user.');
+            throw new BusinessRuleException('Notification does not belong to this user.');
         }
 
         $notification->markAsRead();
@@ -122,7 +123,7 @@ class NotificationService
     public function delete(Notification $notification, User $user): void
     {
         if ($notification->user_id !== $user->id && $user->role !== 'admin') {
-            throw new \RuntimeException('You do not have permission to delete this notification.');
+            throw new BusinessRuleException('You do not have permission to delete this notification.');
         }
 
         $notification->delete();

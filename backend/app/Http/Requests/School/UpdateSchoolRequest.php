@@ -17,7 +17,8 @@ class UpdateSchoolRequest extends FormRequest
         $schoolId = $this->route('id');
 
         return [
-            'code' => "sometimes|string|max:20|unique:schools,code,{$schoolId}",
+            // Schools are resolved by uuid, so ignore the current row by its uuid column.
+            'code' => "sometimes|string|max:20|unique:schools,code,{$schoolId},uuid",
             'name' => 'sometimes|string|max:200',
         ];
     }

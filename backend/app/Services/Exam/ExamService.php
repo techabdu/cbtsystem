@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services\Exam;
+use App\Exceptions\BusinessRuleException;
 
 use App\Models\ActivityLog;
 use App\Models\Exam;
@@ -173,7 +174,7 @@ class ExamService
             ];
             foreach ($restrictedFields as $field) {
                 if (array_key_exists($field, $data)) {
-                    throw new \RuntimeException(
+                    throw new BusinessRuleException(
                         "Cannot update '{$field}' on a published exam. Only title, description, and instructions can be changed."
                     );
                 }
@@ -219,7 +220,7 @@ class ExamService
             ->count();
 
         if ($activeSessions > 0) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Cannot delete this exam — it has {$activeSessions} active session(s) in progress."
             );
         }
@@ -377,12 +378,12 @@ class ExamService
         // Practice exams bypass the HOD/admin workflow — publishable from draft directly
         if ($exam->is_practice) {
             if (! in_array($exam->status, ['draft', 'verified'], true)) {
-                throw new \RuntimeException(
+                throw new BusinessRuleException(
                     "Practice exam cannot be published from '{$exam->status}' status."
                 );
             }
         } elseif ($exam->status !== 'verified') {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only verified exams can be published. This exam is currently '{$exam->status}'. " .
                 "It must be submitted for review and verified by an HOD first."
             );
@@ -393,14 +394,14 @@ class ExamService
             ->count();
 
         if ($questionCount < 1) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot publish an exam with no questions. Add at least one question first.'
             );
         }
 
         if (! $exam->is_practice) {
             if (is_null($exam->start_time) || is_null($exam->end_time)) {
-                throw new \RuntimeException(
+                throw new BusinessRuleException(
                     'Cannot publish a non-practice exam without a valid start_time and end_time.'
                 );
             }
@@ -469,13 +470,13 @@ class ExamService
     public function submitForReview(Exam $exam, User $user): Exam
     {
         if ($exam->is_practice) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Practice exams do not require HOD review. You can publish them directly.'
             );
         }
 
         if ($exam->status !== 'draft') {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only draft exams can be submitted for review. This exam is currently '{$exam->status}'."
             );
         }
@@ -485,7 +486,7 @@ class ExamService
             ->count();
 
         if ($questionCount < 1) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 'Cannot submit for review: exam has no questions. Add at least one question first.'
             );
         }
@@ -537,7 +538,7 @@ class ExamService
     public function verifyExam(Exam $exam, User $user): Exam
     {
         if ($exam->status !== 'pending_review') {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only pending_review exams can be verified. This exam is currently '{$exam->status}'."
             );
         }
@@ -595,7 +596,7 @@ class ExamService
     public function rejectExam(Exam $exam, User $user, string $reason = ''): Exam
     {
         if (! in_array($exam->status, ['pending_review', 'verified'], true)) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only pending_review or verified exams can be rejected. This exam is currently '{$exam->status}'."
             );
         }
@@ -638,7 +639,7 @@ class ExamService
     public function submitGrading(Exam $exam, User $user): Exam
     {
         if (! in_array($exam->results_status, ['pending_grading', 'grading_rejected', null], true)) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Grading can only be submitted when status is 'pending_grading' or 'grading_rejected'. " .
                 "Current status: '{$exam->results_status}'."
             );
@@ -656,7 +657,7 @@ class ExamService
             ->count();
 
         if ($ungradedCount > 0) {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Cannot submit grading — {$ungradedCount} answer(s) still need manual grading."
             );
         }
@@ -703,7 +704,7 @@ class ExamService
     public function rejectGrading(Exam $exam, User $user, string $reason): Exam
     {
         if ($exam->results_status !== 'grading_submitted') {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only submitted grading can be rejected. Current status: '{$exam->results_status}'."
             );
         }
@@ -745,7 +746,7 @@ class ExamService
     public function verifyResults(Exam $exam, User $user): Exam
     {
         if ($exam->results_status !== 'grading_submitted') {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only submitted grading can be verified. Current status: '{$exam->results_status}'."
             );
         }
@@ -797,7 +798,7 @@ class ExamService
     public function publishResults(Exam $exam, User $user): Exam
     {
         if ($exam->results_status !== 'results_verified') {
-            throw new \RuntimeException(
+            throw new BusinessRuleException(
                 "Only verified results can be published. Current status: '{$exam->results_status}'."
             );
         }
@@ -859,7 +860,7 @@ class ExamService
     public function getStudentResults(Exam $exam, User $student): array
     {
         if ($exam->results_status !== 'results_published') {
-            throw new \RuntimeException('Results for this exam have not been published yet.');
+            throw new BusinessRuleException('Results for this exam have not been published yet.');
         }
 
         $session = $exam->sessions()
@@ -868,7 +869,7 @@ class ExamService
             ->first();
 
         if (! $session) {
-            throw new \RuntimeException('No submitted exam session found.');
+            throw new BusinessRuleException('No submitted exam session found.');
         }
 
         $answers = $session->finalAnswers()
